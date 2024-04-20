@@ -1,0 +1,25 @@
+{
+  "name": "infocyph/uid",
+  "description": "UUID (RFC 4122 + Unofficial), ULID generator",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "abmmhasan",
+      "email": "abmmhasan@gmail.com"
+    }
+  ],
+  "autoload": {
+    "files": [
+      "src/functions.php"
+    ],
+    "psr-4": {
+      "Infocyph\\UID\\": "src/"
+    }
+  },
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=8.0",
+    "ext-bcmath": "*"
+  }
+}
