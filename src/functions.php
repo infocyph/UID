@@ -78,16 +78,15 @@ if (!function_exists('Infocyph\UID\uuid6')) {
 
 if (!function_exists('Infocyph\UID\uuid7')) {
     /**
-     * Generates a Version 7 UUID for a given string using the specified namespace.
+     * Generates a version 7 UUID.
      *
-     * @param string $string The string to generate the UUID from.
-     * @param string $namespace The namespace to use for the UUID generation.
-     * @return string The generated UUID.
-     * @throws InvalidArgumentException
+     * @param string|null $node The node identifier. Defaults to null.
+     * @return string
+     * @throws Exception
      */
-    function uuid7(string $string, string $namespace): string
+    function uuid7(string $node = null): string
     {
-        return UUID::v7($string, $namespace);
+        return UUID::v7($node);
     }
 }
 

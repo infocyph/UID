@@ -6,7 +6,10 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
 use InvalidArgumentException;
+use RuntimeException;
 use UnexpectedValueException;
+
+use const STR_PAD_LEFT;
 
 class UUID
 {
@@ -18,11 +21,31 @@ class UUID
     ];
 
     private static array $node = [];
-    private static int $unixTs = 0;
-    private static int $subSec = 0;
+    private static array $unixTs = [
+        1 => 0,
+        6 => 0,
+        7 => 0,
+    ];
+    private static int $unixTsMs = 0;
+    private static array $subSec = [
+        1 => 0,
+        6 => 0,
+        7 => 0,
+    ];
     private static int $secondIntervals = 10_000_000;
     private static int $secondIntervals78 = 10_000;
     private static int $timeOffset = 0x01b21dd213814000;
+    private static string $time = '';
+    private static ?string $seed = null;
+    private static int $seedIndex = 0;
+    /**
+     * @var int[]
+     */
+    private static array $rand;
+    /**
+     * @var int[]
+     */
+    private static array $seedParts;
 
     /**
      * Generates a version 1 UUID.
@@ -117,21 +140,23 @@ class UUID
     }
 
     /**
-     * Generates the v7 UUID for a given string using the specified namespace.
+     * Generates a version 7 UUID.
      *
-     * @param string $string The random string to generate the UUID from.
-     * @param string $namespace The namespace to use for the UUID generation.
+     * @param string|null $node The node identifier. Defaults to null.
      * @return string
-     * @throws InvalidArgumentException
+     * @throws Exception
      */
-    public static function v7(string $string, string $namespace): string
+    public static function v7(string $node = null): string
     {
-        $namespace = self::nsResolve($namespace);
-        if (!$namespace) {
-            throw new InvalidArgumentException('Invalid NameSpace!');
+        $unixTsMs = (new DateTimeImmutable('now'))->format('Uv');
+        if ($unixTsMs <= self::$unixTsMs) {
+            $unixTsMs = self::$unixTsMs + 1;
         }
-        $hash = hash('sha256',hex2bin($namespace) . $string);
-        return self::output(7, $hash);
+        self::$unixTsMs = $unixTsMs;
+
+        $string = substr(str_pad(dechex($unixTsMs), 12, '0', STR_PAD_LEFT), -12)
+            . ($node ?? self::getNode(7));
+        return self::output(7, $string);
     }
 
     /**
@@ -167,7 +192,8 @@ class UUID
             match ($version) {
                 1 => random_bytes(6),
                 6 => random_bytes(8),
-                8 => random_bytes(7),
+                7 => random_bytes(10),
+                8 => random_bytes(7)
             }
         );
     }
@@ -189,22 +215,28 @@ class UUID
         $timestamp = match ($version) {
             1 => substr($uuid[2], -3) . $uuid[1] . $uuid[0],
             6, 8 => $uuid[0] . $uuid[1] . substr($uuid[2], -3),
+            7 => sprintf('%011s%04s', $uuid[0], $uuid[1]),
             default => throw new UnexpectedValueException('Invalid version')
         };
 
-        if ($version == 8) {
-            $unixTs = hexdec(substr('0' . $timestamp, 0, 13));
-            $subSec = -(
-                -(
-                    (hexdec(substr('0' . $timestamp, 13)) << 2) +
-                    (hexdec($uuid[3][0]) & 0x03)
-                ) * self::$secondIntervals78 >> 14);
-            $time = str_split(strval($unixTs * self::$secondIntervals78 + $subSec), 10);
-            $time[1] = substr($time[1], 0, 6);
-        } else {
-            $timestamp = base_convert($timestamp, 16, 10);
-            $epochNanoseconds = bcsub($timestamp, self::$timeOffset);
-            $time = str_getcsv(bcdiv($epochNanoseconds, self::$secondIntervals, 6), '.');
+        switch ($version) {
+            case 8:
+                $unixTs = hexdec(substr('0' . $timestamp, 0, 13));
+                $subSec = -(
+                    -(
+                        (hexdec(substr('0' . $timestamp, 13)) << 2) +
+                        (hexdec($uuid[3][0]) & 0x03)
+                    ) * self::$secondIntervals78 >> 14);
+                $time = str_split(strval($unixTs * self::$secondIntervals78 + $subSec), 10);
+                $time[1] = substr($time[1], 0, 6);
+                break;
+            case 7:
+                $time = str_split(base_convert($timestamp, 16, 10), 10);
+                break;
+            default:
+                $timestamp = base_convert($timestamp, 16, 10);
+                $epochNanoseconds = bcsub($timestamp, self::$timeOffset);
+                $time = str_getcsv(bcdiv($epochNanoseconds, self::$secondIntervals, 6), '.');
         }
 
         return new DateTimeImmutable(
@@ -240,9 +272,13 @@ class UUID
         if ($version === 1) {
             return [$unixTs, $subSec];
         }
-        if (self::$unixTs > $unixTs || self::$unixTs === $unixTs && self::$subSec >= $subSec) {
-            $unixTs = self::$unixTs;
-            $subSec = self::$subSec;
+        if (
+            self::$unixTs[$version] > $unixTs ||
+            self::$unixTs[$version] === $unixTs &&
+            self::$subSec[$version] >= $subSec
+        ) {
+            $unixTs = self::$unixTs[$version];
+            $subSec = self::$subSec[$version];
             if ($subSec >= self::$secondIntervals - 1) {
                 $subSec = 0;
                 $unixTs++;
@@ -250,8 +286,8 @@ class UUID
                 $subSec++;
             }
         }
-        self::$unixTs = $unixTs;
-        self::$subSec = $subSec;
+        self::$unixTs[$version] = $unixTs;
+        self::$subSec[$version] = $subSec;
         return [$unixTs, $subSec];
     }
 

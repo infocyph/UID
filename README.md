@@ -120,17 +120,23 @@ $node = \Infocyph\UID\UUID::getNode(6);
 
 ### UUID v7 (draft-based/unofficial)
 
-Namespace based UUID. Better replacement for v5.
+Time-based UUID.
 
 ```php
-// Get v5 UUID for 'TestString'
-\Infocyph\UID\UUID::v7('TestString');
+// Get v1 UUID (Time based)
+\Infocyph\UID\UUID::v7();
 
-// You can generate a random UUID & use as namespace
-\Infocyph\UID\UUID::v7('some random string','fa1700dd-828c-4d1b-8e6d-a6104807da90');
+// Get generated node, for further use
+$node = \Infocyph\UID\UUID::getNode(7);
+
+// Pass your pre-generated node (for node specific UUID)
+\Infocyph\UID\UUID::v7($node);
 
 // alternatively can also use
 \Infocyph\UID\uuid7();
+
+// Extract generation/creation time from UUID
+\Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
 ### UUID v8 (draft-based/unofficial)
