@@ -6,7 +6,6 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
 use InvalidArgumentException;
-use RuntimeException;
 use UnexpectedValueException;
 
 use const STR_PAD_LEFT;
@@ -35,17 +34,6 @@ class UUID
     private static int $secondIntervals = 10_000_000;
     private static int $secondIntervals78 = 10_000;
     private static int $timeOffset = 0x01b21dd213814000;
-    private static string $time = '';
-    private static ?string $seed = null;
-    private static int $seedIndex = 0;
-    /**
-     * @var int[]
-     */
-    private static array $rand;
-    /**
-     * @var int[]
-     */
-    private static array $seedParts;
 
     /**
      * Generates a version 1 UUID.
@@ -216,10 +204,13 @@ class UUID
             1 => substr($uuid[2], -3) . $uuid[1] . $uuid[0],
             6, 8 => $uuid[0] . $uuid[1] . substr($uuid[2], -3),
             7 => sprintf('%011s%04s', $uuid[0], $uuid[1]),
-            default => throw new UnexpectedValueException('Invalid version')
+            default => throw new UnexpectedValueException('Invalid version (applicable: 1, 6, 7, 8)')
         };
 
         switch ($version) {
+            case 7:
+                $time = str_split(base_convert($timestamp, 16, 10), 10);
+                break;
             case 8:
                 $unixTs = hexdec(substr('0' . $timestamp, 0, 13));
                 $subSec = -(
@@ -229,9 +220,6 @@ class UUID
                     ) * self::$secondIntervals78 >> 14);
                 $time = str_split(strval($unixTs * self::$secondIntervals78 + $subSec), 10);
                 $time[1] = substr($time[1], 0, 6);
-                break;
-            case 7:
-                $time = str_split(base_convert($timestamp, 16, 10), 10);
                 break;
             default:
                 $timestamp = base_convert($timestamp, 16, 10);

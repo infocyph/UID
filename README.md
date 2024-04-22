@@ -1,6 +1,5 @@
 # UID
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/infocyph/uid/ci.yml?branch=main)
 ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/infocyph/uid)
 ![Packagist Downloads](https://img.shields.io/packagist/dt/infocyph/uid)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
@@ -8,7 +7,7 @@
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/infocyph/uid)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
 
-UUID (RFC 4122 + Unofficial), ULID generator
+UUID (RFC 4122 + Unofficial/Draft), ULID generator!
 
 ## Prerequisites
 
@@ -22,9 +21,9 @@ composer require infocyph/uid
 
 ## Usage
 
-### UUID v1
+### UUID (Universal Unique Identifier)
 
-Time-based UUID.
+#### UUID v1: Time-based UUID.
 
 ```php
 // Get v1 UUID (Time based)
@@ -43,9 +42,7 @@ $node = \Infocyph\UID\UUID::getNode(1);
 \Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
-### UUID v3
-
-Name-based UUID.
+#### UUID v3: Namespace based UUID.
 
 ```php
 // Get v3 UUID for 'TestString'
@@ -64,9 +61,7 @@ Name-based UUID.
 \Infocyph\UID\uuid3();
 ```
 
-### UUID v4
-
-Random UUID.
+#### UUID v4: Random UUID.
 
 ```php
 // Get v4 UUID (completely random)
@@ -76,9 +71,7 @@ Random UUID.
 \Infocyph\UID\uuid4();
 ```
 
-### UUID v5
-
-Namespace based UUID. Better replacement for v3.
+#### UUID v5: Namespace based UUID. Better replacement for v3.
 
 ```php
 // Get v5 UUID for 'TestString'
@@ -97,9 +90,7 @@ Namespace based UUID. Better replacement for v3.
 \Infocyph\UID\uuid5();
 ```
 
-### UUID v6 (draft-based/unofficial)
-
-Time-based UUID. A better replacement for v1.
+#### UUID v6 (draft-based/unofficial): Time-based UUID. A better replacement for v1.
 
 ```php
 // Get v6 UUID (Time based)
@@ -118,9 +109,7 @@ $node = \Infocyph\UID\UUID::getNode(6);
 \Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
-### UUID v7 (draft-based/unofficial)
-
-Time-based UUID.
+#### UUID v7 (draft-based/unofficial): Time-based UUID.
 
 ```php
 // Get v1 UUID (Time based)
@@ -139,9 +128,7 @@ $node = \Infocyph\UID\UUID::getNode(7);
 \Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
-### UUID v8 (draft-based/unofficial)
-
-Time-based UUID. Lexicographically sortable.
+#### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
 
 ```php
 // Get v6 UUID (Time based)
@@ -160,6 +147,32 @@ $node = \Infocyph\UID\UUID::getNode(8);
 \Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
+#### Additional
+
+```php
+// Validate any UUID
+\Infocyph\UID\UUID::isValid($uuid); // true/false
+```
+
+### ULID (Universally Unique Lexicographically Sortable Identifier)
+
+```php
+// Get ULID
+\Infocyph\UID\ULID::generate();
+
+// Get ULID time
+\Infocyph\UID\ULID::getTime($ulid); // returns DateTimeInterface object
+
+// Validate ULID
+\Infocyph\UID\ULID::isValid($ulid); // true/false
+```
+
 ## Support
 
 Having trouble? Create an issue!
+
+## Reference
+
+- UUID (RFC4122): https://tools.ietf.org/html/rfc4122
+- UUID (Drafts/Proposals): https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis
+- ULID: https://github.com/ulid/spec
