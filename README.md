@@ -176,3 +176,4 @@ Having trouble? Create an issue!
 - UUID (RFC4122): https://tools.ietf.org/html/rfc4122
 - UUID (Drafts/Proposals): https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis
 - ULID: https://github.com/ulid/spec
+- Snowflake (X): https://github.com/twitter-archive/snowflake/tree/snowflake-2010

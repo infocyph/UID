@@ -29,16 +29,16 @@ class ULID
         $isDuplicate = $time === static::$lastGenTime;
         static::$lastGenTime = $time;
 
+        // Generate time characters
         $timeChars = '';
-        $randChars = '';
-        $encodingChars = static::$encodingChars;
-
         for ($i = static::$timeLength - 1; $i >= 0; $i--) {
             $mod = $time % static::$encodingLength;
-            $timeChars = $encodingChars[$mod] . $timeChars;
+            $timeChars = static::$encodingChars[$mod] . $timeChars;
             $time = ($time - $mod) / static::$encodingLength;
         }
 
+        // Generate random characters
+        $randChars = '';
         if (!$isDuplicate) {
             for ($i = 0; $i < static::$randomLength; $i++) {
                 static::$lastRandChars[$i] = random_int(0, 31);
@@ -47,12 +47,10 @@ class ULID
             for ($i = static::$randomLength - 1; $i >= 0 && static::$lastRandChars[$i] === 31; $i--) {
                 static::$lastRandChars[$i] = 0;
             }
-
             static::$lastRandChars[$i]++;
         }
-
         for ($i = 0; $i < static::$randomLength; $i++) {
-            $randChars .= $encodingChars[static::$lastRandChars[$i]];
+            $randChars .= static::$encodingChars[static::$lastRandChars[$i]];
         }
 
         return $timeChars . $randChars;
@@ -67,19 +65,21 @@ class ULID
      */
     public static function getTime(string $ulid): DateTimeImmutable
     {
+        if (!static::isValid($ulid)) {
+            throw new UnexpectedValueException('Invalid ULID string');
+        }
+
         $timeChars = str_split(strrev(substr($ulid, 0, static::$timeLength)));
 
         $time = 0;
         foreach ($timeChars as $index => $char) {
-            if (($encodingIndex = strripos(static::$encodingChars, $char)) === false) {
-                throw new UnexpectedValueException('Invalid ULID character: ' . $char);
-            }
+            $encodingIndex = strripos(static::$encodingChars, $char);
             $time += ($encodingIndex * pow(static::$encodingLength, $index));
         }
 
         $time = str_split($time, static::$timeLength);
 
-        if ($time[0] > (time() + 86400)) {
+        if ($time[0] > (time() + (86400 * 365 * 10))) {
             throw new UnexpectedValueException('Invalid ULID string: timestamp too large');
         }
 
@@ -96,5 +96,4 @@ class ULID
     {
         return (bool)preg_match('/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/', $ulid);
     }
-
 }
