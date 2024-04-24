@@ -103,3 +103,29 @@ if (!function_exists('Infocyph\UID\uuid8')) {
         return UUID::v8($node);
     }
 }
+
+if (!function_exists('Infocyph\UID\ulid')) {
+    /**
+     * Generates ULID.
+     *
+     * @return string
+     * @throws Exception
+     */
+    function ulid(): string
+    {
+        return ULID::generate();
+    }
+}
+
+if (!function_exists('Infocyph\UID\snowflake')) {
+    /**
+     * Generates Snowflake ID.
+     *
+     * @return string
+     * @throws Exception
+     */
+    function snowflake(): string
+    {
+        return Snowflake::generate();
+    }
+}
