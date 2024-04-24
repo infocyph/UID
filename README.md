@@ -152,6 +152,9 @@ $node = \Infocyph\UID\UUID::getNode(8);
 ```php
 // Validate any UUID
 \Infocyph\UID\UUID::isValid($uuid); // true/false
+
+// Parse any UUID string
+\Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'time', 'node']
 ```
 
 ### ULID (Universally Unique Lexicographically Sortable Identifier)
@@ -165,6 +168,16 @@ $node = \Infocyph\UID\UUID::getNode(8);
 
 // Validate ULID
 \Infocyph\UID\ULID::isValid($ulid); // true/false
+```
+
+### Snowflake ID
+```php
+// Get Snowflake ID
+\Infocyph\UID\Snowflake::generate();
+
+// Get Snowflake ID time
+\Infocyph\UID\Snowflake::getTime($snowflake); // returns DateTimeInterface object
+
 ```
 
 ## Support

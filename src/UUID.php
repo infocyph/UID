@@ -18,22 +18,28 @@ class UUID
         'oid' => 2,
         'x500' => 4
     ];
-
-    private static array $node = [];
     private static array $unixTs = [
         1 => 0,
         6 => 0,
         7 => 0,
+        8 => 0,
     ];
     private static int $unixTsMs = 0;
     private static array $subSec = [
         1 => 0,
         6 => 0,
         7 => 0,
+        8 => 0,
     ];
     private static int $secondIntervals = 10_000_000;
     private static int $secondIntervals78 = 10_000;
     private static int $timeOffset = 0x01b21dd213814000;
+    private static array $nodeLength = [
+        1 => 6,
+        6 => 8,
+        7 => 10,
+        8 => 7
+    ];
 
     /**
      * Generates a version 1 UUID.
@@ -176,14 +182,7 @@ class UUID
      */
     public static function getNode(int $version): string
     {
-        return self::$node[$version] ??= bin2hex(
-            match ($version) {
-                1 => random_bytes(6),
-                6 => random_bytes(8),
-                7 => random_bytes(10),
-                8 => random_bytes(7)
-            }
-        );
+        return bin2hex(random_bytes(self::$nodeLength[$version]));
     }
 
     /**
@@ -233,6 +232,39 @@ class UUID
             . '.'
             . str_pad($time[1], 6, '0', STR_PAD_LEFT)
         );
+    }
+
+    /**
+     * Parses a UUID string and returns an array with information about the UUID.
+     *
+     * @param string $uuid The UUID string to parse.
+     * @return array ['isValid', 'version', 'time', 'node']
+     * @throws Exception
+     */
+    public static function parse(string $uuid): array
+    {
+        $data = [
+            'uuid' => $uuid,
+            'isValid' => self::isValid($uuid),
+            'version' => null,
+            'time' => null,
+            'node' => null
+        ];
+
+        if (!$data['isValid']) {
+            return $data;
+        }
+
+        $data['version'] = (int)$uuid[14];
+
+        $timeNodeApplicable = in_array($data['version'], [1, 6, 7, 8]);
+        $data['time'] = $timeNodeApplicable ? self::getTime($uuid) : null;
+        $data['node'] = $timeNodeApplicable ? substr(
+            str_replace('-', '', $uuid),
+            -(self::$nodeLength[$data['version']] * 2)
+        ) : null;
+
+        return $data;
     }
 
     /**

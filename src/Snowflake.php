@@ -51,47 +51,12 @@ class Snowflake
     }
 
     /**
-     * Retrieves the start timestamp for the Snowflake algorithm.
-     *
-     * @return float|int The start timestamp in milliseconds.
-     */
-    private static function getStartTimeStamp(): float|int
-    {
-        if (!empty(self::$startTime)) {
-            return self::$startTime;
-        }
-
-        // default start time, if not set.
-        $defaultTime = '2000-01-01 00:00:00';
-        return strtotime($defaultTime) * 1000;
-    }
-
-    /**
-     * Generates a sequence number based on the current time.
-     *
-     * @param int $currentTime The current time in milliseconds.
-     * @return int The generated sequence number.
-     * @throws Exception
-     */
-    private static function sequence(int $currentTime): int
-    {
-        if (self::$lastTimeStamp === $currentTime) {
-            self::$sequence++;
-            self::$lastTimeStamp = $currentTime;
-            return self::$sequence;
-        }
-        self::$sequence = random_int(0, self::$maxSequence ?? (-1 ^ (-1 << self::$maxSequenceLength)));
-        self::$lastTimeStamp = $currentTime;
-        return self::$sequence;
-    }
-
-    /**
      * Parse the given ID into components.
      *
      * @param string $id The ID to parse.
      * @return array
      */
-    public static function parseId(string $id): array
+    public static function parse(string $id): array
     {
         $id = decbin((int)$id);
 
@@ -140,5 +105,40 @@ class Snowflake
     public static function setMaxSequence(int $maxSequence): void
     {
         self::$maxSequence = $maxSequence;
+    }
+
+    /**
+     * Retrieves the start timestamp for the Snowflake algorithm.
+     *
+     * @return float|int The start timestamp in milliseconds.
+     */
+    private static function getStartTimeStamp(): float|int
+    {
+        if (!empty(self::$startTime)) {
+            return self::$startTime;
+        }
+
+        // default start time, if not set.
+        $defaultTime = '2000-01-01 00:00:00';
+        return strtotime($defaultTime) * 1000;
+    }
+
+    /**
+     * Generates a sequence number based on the current time.
+     *
+     * @param int $currentTime The current time in milliseconds.
+     * @return int The generated sequence number.
+     * @throws Exception
+     */
+    private static function sequence(int $currentTime): int
+    {
+        if (self::$lastTimeStamp === $currentTime) {
+            self::$sequence++;
+            self::$lastTimeStamp = $currentTime;
+            return self::$sequence;
+        }
+        self::$sequence = random_int(0, self::$maxSequence ?? (-1 ^ (-1 << self::$maxSequenceLength)));
+        self::$lastTimeStamp = $currentTime;
+        return self::$sequence;
     }
 }
