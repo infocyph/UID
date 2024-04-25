@@ -4,7 +4,7 @@ namespace Infocyph\UID;
 
 use DateTimeImmutable;
 use Exception;
-use UnexpectedValueException;
+use Infocyph\UID\Exceptions\ULIDException;
 
 class ULID
 {
@@ -61,12 +61,12 @@ class ULID
      *
      * @param string $ulid The ULID to extract the timestamp from.
      * @return DateTimeImmutable The extracted DateTimeImmutable object.
-     * @throws UnexpectedValueException|Exception
+     * @throws ULIDException|Exception
      */
     public static function getTime(string $ulid): DateTimeImmutable
     {
         if (!static::isValid($ulid)) {
-            throw new UnexpectedValueException('Invalid ULID string');
+            throw new ULIDException('Invalid ULID string');
         }
 
         $timeChars = str_split(strrev(substr($ulid, 0, static::$timeLength)));
@@ -80,7 +80,7 @@ class ULID
         $time = str_split($time, static::$timeLength);
 
         if ($time[0] > (time() + (86400 * 365 * 10))) {
-            throw new UnexpectedValueException('Invalid ULID string: timestamp too large');
+            throw new ULIDException('Invalid ULID string: timestamp too large');
         }
 
         return new DateTimeImmutable("@$time[0].$time[1]");

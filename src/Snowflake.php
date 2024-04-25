@@ -4,7 +4,7 @@ namespace Infocyph\UID;
 
 use DateTimeImmutable;
 use Exception;
-use InvalidArgumentException;
+use Infocyph\UID\Exceptions\SnowflakeException;
 
 class Snowflake
 {
@@ -12,13 +12,9 @@ class Snowflake
     private static int $maxDatacenterLength = 5;
     private static int $maxWorkIdLength = 5;
     private static int $maxSequenceLength = 12;
-    private static int $lastTimeStamp = 0;
-    private static int $sequence;
     private static int $datacenter;
     private static int $workerId;
     private static ?int $startTime;
-    private static int $maxSequence;
-
     private static string $fileLocation;
 
     /**
@@ -85,7 +81,7 @@ class Snowflake
      * Sets the start timestamp for the Snowflake algorithm.
      *
      * @param string $timeString The start time in string format.
-     * @throws InvalidArgumentException
+     * @throws SnowflakeException
      */
     public static function setStartTimeStamp(string $timeString): void
     {
@@ -93,11 +89,11 @@ class Snowflake
         $current = time();
 
         if ($time > $current) {
-            throw new InvalidArgumentException('The start time cannot be in the future');
+            throw new SnowflakeException('The start time cannot be in the future');
         }
 
         if (($current - $time) > (-1 ^ (-1 << self::$maxTimestampLength))) {
-            throw new InvalidArgumentException(
+            throw new SnowflakeException(
                 sprintf(
                     'The current microtime - start_time is not allowed to exceed -1 ^ (-1 << %d),
                     You can reset the start time to fix this',
@@ -107,17 +103,6 @@ class Snowflake
         }
 
         self::$startTime = $time * 1000;
-    }
-
-    /**
-     * Sets the maximum sequence value.
-     *
-     * @param int $maxSequence The maximum sequence value to set.
-     * @return void
-     */
-    public static function setMaxSequence(int $maxSequence): void
-    {
-        self::$maxSequence = $maxSequence;
     }
 
     /**
@@ -141,26 +126,31 @@ class Snowflake
      *
      * @param int $currentTime The current time in milliseconds.
      * @return int The generated sequence number.
-     * @throws Exception
+     * @throws SnowflakeException
      */
     private static function sequence(int $currentTime, int $datacenter = 0, int $workerId = 0): int
     {
         self::$fileLocation = sys_get_temp_dir() . DIRECTORY_SEPARATOR .
-            'uid-snf-' . $datacenter . $workerId . '.sequence';
-        $handle = fopen(self::$fileLocation, "r+");
-        if (flock($handle, LOCK_EX)) {
-            $count = fread($handle, filesize(self::$fileLocation)) ?: 0;
-            $count++;
-            ftruncate($handle, 0);    //Truncate the file to 0
-            rewind($handle);           //Set write pointer to beginning of file
-            fwrite($handle, $count);    //Write the new Hit Count
-            flock($handle, LOCK_UN);    //Unlock File
-        } else {
-            echo "Could not Lock File!";
+            'uid-snf-' . $datacenter . $workerId . date('Ymd') . '.sequence';
+        if (!file_exists(self::$fileLocation)) {
+            touch(self::$fileLocation);
         }
+        $handle = fopen(self::$fileLocation, "r+");
+        if (!flock($handle, LOCK_EX)) {
+            throw new SnowflakeException('Could not acquire lock on ' . self::$fileLocation);
+        }
+        $content = '';
+        while (!feof($handle)) {
+            $content .= fread($handle, 1024);
+        }
+        $content = json_decode($content, true);
+        $content[$currentTime] = ($content[$currentTime] ?? 0) + 1;
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, json_encode($content));
+        flock($handle, LOCK_UN);
         fclose($handle);
-        self::$sequence++;
-        self::$lastTimeStamp = $currentTime;
-        return self::$sequence;
+
+        return $content[$currentTime];
     }
 }

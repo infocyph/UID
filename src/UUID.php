@@ -5,8 +5,7 @@ namespace Infocyph\UID;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
-use InvalidArgumentException;
-use UnexpectedValueException;
+use Infocyph\UID\Exceptions\UUIDException;
 
 use const STR_PAD_LEFT;
 
@@ -70,13 +69,13 @@ class UUID
      * @param string $string The string to generate the hash for.
      * @param string $namespace The namespace to use for the hash generation.
      * @return string
-     * @throws InvalidArgumentException
+     * @throws UUIDException
      */
     public static function v3(string $string, string $namespace): string
     {
         $namespace = self::nsResolve($namespace);
         if (!$namespace) {
-            throw new InvalidArgumentException('Invalid NameSpace!');
+            throw new UUIDException('Invalid NameSpace!');
         }
         $hash = md5(hex2bin($namespace) . $string);
         return self::output(3, $hash);
@@ -100,13 +99,13 @@ class UUID
      * @param string $string The string to generate the UUID from.
      * @param string $namespace The namespace to use for the UUID generation.
      * @return string
-     * @throws InvalidArgumentException
+     * @throws UUIDException
      */
     public static function v5(string $string, string $namespace): string
     {
         $namespace = self::nsResolve($namespace);
         if (!$namespace) {
-            throw new InvalidArgumentException('Invalid NameSpace!');
+            throw new UUIDException('Invalid NameSpace!');
         }
         $hash = sha1(hex2bin($namespace) . $string);
         return self::output(5, $hash);
@@ -190,12 +189,12 @@ class UUID
      *
      * @param string $uuid The UUID string to extract time from.
      * @return DateTimeInterface The DateTimeImmutable object representing the extracted time.
-     * @throws InvalidArgumentException|Exception|UnexpectedValueException
+     * @throws UUIDException|Exception
      */
     public static function getTime(string $uuid): DateTimeInterface
     {
         if (!self::isValid($uuid)) {
-            throw new InvalidArgumentException('Invalid UUID');
+            throw new UUIDException('Invalid UUID');
         }
         $uuid = str_getcsv($uuid, '-');
         $version = (int)$uuid[2][0];
@@ -203,7 +202,7 @@ class UUID
             1 => substr($uuid[2], -3) . $uuid[1] . $uuid[0],
             6, 8 => $uuid[0] . $uuid[1] . substr($uuid[2], -3),
             7 => sprintf('%011s%04s', $uuid[0], $uuid[1]),
-            default => throw new UnexpectedValueException('Invalid version (applicable: 1, 6, 7, 8)')
+            default => throw new UUIDException('Invalid version (applicable: 1, 6, 7, 8)')
         };
 
         switch ($version) {

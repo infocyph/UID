@@ -7,7 +7,7 @@
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/infocyph/uid)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
 
-UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, generator!
+UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID generator!
 
 ## Prerequisites
 
@@ -183,9 +183,6 @@ $node = \Infocyph\UID\UUID::getNode(8);
 // You should/can change this accordingly (but once set, this should always stay same as long as your project lives)
 // & if this need change, you must call this before any snowflake call (generate/parse)
 \Infocyph\UID\Snowflake::setStartTimeStamp('2000-01-01 00:00:00');
-
-
-
 ```
 
 ## Support
