@@ -3,6 +3,7 @@
 namespace Infocyph\UID;
 
 use DateTimeImmutable;
+use DateTimeInterface;
 use Exception;
 use Infocyph\UID\Exceptions\SnowflakeException;
 
@@ -23,7 +24,7 @@ class Snowflake
      * @param int $datacenter The datacenter ID (default: 0)
      * @param int $workerId The worker ID (default: 0)
      * @return string The generated unique identifier
-     * @throws Exception
+     * @throws Exception|SnowflakeException
      */
     public static function generate(int $datacenter = 0, int $workerId = 0): string
     {
@@ -33,13 +34,14 @@ class Snowflake
         self::$datacenter = $datacenter > $maxDataCenter || $datacenter < 0 ? random_int(0, 31) : $datacenter;
         self::$workerId = $workerId > $maxWorkId || $workerId < 0 ? random_int(0, 31) : $workerId;
 
-        $currentTime = (int)(new DateTimeImmutable('now'))->format('Uv');
+        $now = new DateTimeImmutable('now');
+        $currentTime = (int)$now->format('Uv');
         while (($sequence = self::sequence(
-                $currentTime,
+                $now,
                 $datacenter,
                 $workerId
             )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
-            $currentTime++;
+            ++$currentTime;
         }
 
         $workerLeftMoveLength = self::$maxSequenceLength;
@@ -124,14 +126,16 @@ class Snowflake
     /**
      * Generates a sequence number based on the current time.
      *
-     * @param int $currentTime The current time in milliseconds.
+     * @param DateTimeInterface $now The current time.
+     * @param int $datacenter
+     * @param int $workerId
      * @return int The generated sequence number.
      * @throws SnowflakeException
      */
-    private static function sequence(int $currentTime, int $datacenter = 0, int $workerId = 0): int
+    private static function sequence(DateTimeInterface $now, int $datacenter, int $workerId): int
     {
         self::$fileLocation = sys_get_temp_dir() . DIRECTORY_SEPARATOR .
-            'uid-snf-' . $datacenter . $workerId . date('Ymd') . '.sequence';
+            'uid-snf-' . $datacenter . $workerId . $now->format('Ymd') . '.seq';
         if (!file_exists(self::$fileLocation)) {
             touch(self::$fileLocation);
         }
@@ -144,6 +148,7 @@ class Snowflake
             $content .= fread($handle, 1024);
         }
         $content = json_decode($content, true);
+        $currentTime = (int)$now->format('Uv');
         $content[$currentTime] = ($content[$currentTime] ?? 0) + 1;
         ftruncate($handle, 0);
         rewind($handle);
