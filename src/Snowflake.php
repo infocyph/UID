@@ -13,26 +13,29 @@ class Snowflake
     private static int $maxDatacenterLength = 5;
     private static int $maxWorkIdLength = 5;
     private static int $maxSequenceLength = 12;
-    private static int $datacenter;
-    private static int $workerId;
     private static ?int $startTime;
     private static string $fileLocation;
 
     /**
-     * Generates a unique identifier using the Snowflake algorithm.
+     * Generates a unique snowflake ID.
      *
-     * @param int $datacenter The datacenter ID (default: 0)
-     * @param int $workerId The worker ID (default: 0)
-     * @return string The generated unique identifier
-     * @throws Exception|SnowflakeException
+     * @param int $datacenter The ID of the datacenter (default: 0)
+     * @param int $workerId The ID of the worker (default: 0)
+     * @return string The generated snowflake ID
+     * @throws SnowflakeException
      */
     public static function generate(int $datacenter = 0, int $workerId = 0): string
     {
         $maxDataCenter = -1 ^ (-1 << self::$maxDatacenterLength);
         $maxWorkId = -1 ^ (-1 << self::$maxWorkIdLength);
 
-        self::$datacenter = $datacenter > $maxDataCenter || $datacenter < 0 ? random_int(0, 31) : $datacenter;
-        self::$workerId = $workerId > $maxWorkId || $workerId < 0 ? random_int(0, 31) : $workerId;
+        if ($datacenter > $maxDataCenter || $datacenter < 0) {
+            throw new SnowflakeException("Invalid datacenter ID, must be between 0 ~ $maxDataCenter.");
+        }
+
+        if ($workerId > $maxWorkId || $workerId < 0) {
+            throw new SnowflakeException("Invalid worker ID, must be between 0 ~ $maxWorkId.");
+        }
 
         $now = new DateTimeImmutable('now');
         $currentTime = (int)$now->format('Uv');
@@ -49,8 +52,8 @@ class Snowflake
         $timestampLeftMoveLength = self::$maxDatacenterLength + $datacenterLeftMoveLength;
 
         return (string)((($currentTime - self::getStartTimeStamp()) << $timestampLeftMoveLength)
-            | (self::$datacenter << $datacenterLeftMoveLength)
-            | (self::$workerId << $workerLeftMoveLength)
+            | ($datacenter << $datacenterLeftMoveLength)
+            | ($workerId << $workerLeftMoveLength)
             | ($sequence));
     }
 
@@ -108,19 +111,13 @@ class Snowflake
     }
 
     /**
-     * Retrieves the start timestamp for the Snowflake algorithm.
+     * Retrieves the start timestamp.
      *
      * @return float|int The start timestamp in milliseconds.
      */
     private static function getStartTimeStamp(): float|int
     {
-        if (!empty(self::$startTime)) {
-            return self::$startTime;
-        }
-
-        // default start time, if not set.
-        $defaultTime = '2020-01-01 00:00:00';
-        return strtotime($defaultTime) * 1000;
+        return self::$startTime ??= (strtotime('2020-01-01 00:00:00') * 1000);
     }
 
     /**

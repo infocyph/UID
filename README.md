@@ -7,7 +7,29 @@
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/infocyph/uid)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
 
-UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID generator!
+UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID generator!
+
+## Table of contents
+
+<!--ts-->
+* [Prerequisites](#prerequisites)
+* [Installation](#installation)
+* [Usage](#usage)
+    * [UUID](#uuid-universal-unique-identifier)
+        * [UUID v1](#uuid-v1-time-based-uuid)
+        * [UUID v3](#uuid-v3-namespace-based-uuid)
+        * [UUID v4](#uuid-v4-random-uuid)
+        * [UUID v5](#uuid-v5-namespace-based-uuid)
+        * [UUID v6](#uuid-v6-draft-basedunofficial-time-based-uuid)
+        * [UUID v7](#uuid-v7-draft-basedunofficial-time-based-uuid)
+        * [UUID v8](#uuid-v8-draft-basedunofficial-time-based-uuid-lexicographically-sortable)
+        * [Additional](#additional)
+    * [ULID](#ulid-universally-unique-lexicographically-sortable-identifier)
+    * [Snowflake ID](#snowflake-id)
+    * [Sonyflake ID](#sonyflake-id)
+* [Support](#support)
+* [References](#references)
+<!--te-->
 
 ## Prerequisites
 
@@ -71,7 +93,7 @@ $node = \Infocyph\UID\UUID::getNode(1);
 \Infocyph\UID\uuid4();
 ```
 
-#### UUID v5: Namespace based UUID. Better replacement for v3.
+#### UUID v5: Namespace based UUID.
 
 ```php
 // Get v5 UUID for 'TestString'
@@ -90,7 +112,7 @@ $node = \Infocyph\UID\UUID::getNode(1);
 \Infocyph\UID\UUID::v5('abmmhasan.github.io','fa1700dd-828c-4d1b-8e6d-a6104807da90');
 ```
 
-#### UUID v6 (draft-based/unofficial): Time-based UUID. A better replacement for v1.
+#### UUID v6 (draft-based/unofficial): Time-based UUID.
 
 ```php
 // Get v6 UUID (Time based)
@@ -179,19 +201,35 @@ $node = \Infocyph\UID\UUID::getNode(8);
 // Parse Snowflake ID
 \Infocyph\UID\Snowflake::parse($snowflake); // returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
 
-// Important: by default the snowflake start time is set to `2020-01-01 00:00:00`
+// Important: by default the start time is set to `2020-01-01 00:00:00`
 // You should/can change this accordingly (but once set, this should always stay same as long as your project lives)
-// & if this need change, you must call this before any snowflake call (generate/parse)
+// & if this need change, you must call this before any Snowflake call (generate/parse)
 \Infocyph\UID\Snowflake::setStartTimeStamp('2000-01-01 00:00:00');
+```
+
+### Sonyflake ID
+
+```php
+// Get Sonyflake ID
+\Infocyph\UID\Sonyflake::generate();
+
+// Parse Snowflake ID
+\Infocyph\UID\Sonyflake::parse($snowflake); // returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
+
+// Important: by default the start time is set to `2020-01-01 00:00:00`
+// You should/can change this accordingly (but once set, this should always stay same as long as your project lives)
+// & if this need change, you must call this before any Sonyflake call (generate/parse)
+\Infocyph\UID\Sonyflake::setStartTimeStamp('2000-01-01 00:00:00');
 ```
 
 ## Support
 
 Having trouble? Create an issue!
 
-## Reference
+## References
 
 - UUID (RFC4122): https://tools.ietf.org/html/rfc4122
 - UUID (Drafts/Proposals): https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis
 - ULID: https://github.com/ulid/spec
-- Snowflake (X): https://github.com/twitter-archive/snowflake/tree/snowflake-2010
+- Snowflake ID: https://github.com/twitter-archive/snowflake/tree/snowflake-2010
+- Sonyflake ID: https://github.com/sony/sonyflake
