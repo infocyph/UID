@@ -7,7 +7,7 @@
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/infocyph/uid)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
 
-UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID generator!
+UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (library exclusive) generator!
 
 ## Table of contents
 
@@ -27,6 +27,7 @@ UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID generator!
     * [ULID](#ulid-universally-unique-lexicographically-sortable-identifier)
     * [Snowflake ID](#snowflake-id)
     * [Sonyflake ID](#sonyflake-id)
+    * [TBSL ID](#tbsl-time-based-keys-with-lexicographic-sorting)
 * [Support](#support)
 * [References](#references)
 <!--te-->
@@ -59,9 +60,6 @@ $node = \Infocyph\UID\UUID::getNode(1);
 
 // Pass your pre-generated node (for node specific UUID)
 \Infocyph\UID\UUID::v1($node);
-
-// Extract generation/creation time from UUID
-\Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
 #### UUID v3: Namespace based UUID.
@@ -126,9 +124,6 @@ $node = \Infocyph\UID\UUID::getNode(6);
 
 // Pass your pre-generated node (for node specific UUID)
 \Infocyph\UID\UUID::v6($node);
-
-// Extract generation/creation time from UUID
-\Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
 #### UUID v7 (draft-based/unofficial): Time-based UUID.
@@ -145,9 +140,6 @@ $node = \Infocyph\UID\UUID::getNode(7);
 
 // Pass your pre-generated node (for node specific UUID)
 \Infocyph\UID\UUID::v7($node);
-
-// Extract generation/creation time from UUID
-\Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
 #### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
@@ -164,17 +156,11 @@ $node = \Infocyph\UID\UUID::getNode(8);
 
 // Pass your pre-generated node (for node specific UUID)
 \Infocyph\UID\UUID::v8($node);
-
-// Extract generation/creation time from UUID
-\Infocyph\UID\UUID::getTime($uuid); // returns DateTimeInterface object
 ```
 
 #### Additional
 
 ```php
-// Validate any UUID
-\Infocyph\UID\UUID::isValid($uuid); // true/false
-
 // Parse any UUID string
 \Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'time', 'node']
 ```
@@ -199,11 +185,12 @@ $node = \Infocyph\UID\UUID::getNode(8);
 \Infocyph\UID\Snowflake::generate();
 
 // Parse Snowflake ID
-\Infocyph\UID\Snowflake::parse($snowflake); // returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
+// returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
+\Infocyph\UID\Snowflake::parse($snowflake);
 
-// Important: by default the start time is set to `2020-01-01 00:00:00`
-// You should/can change this accordingly (but once set, this should always stay same as long as your project lives)
-// & if this need change, you must call this before any Snowflake call (generate/parse)
+// By default, the start time is set to `2020-01-01 00:00:00`, which is changeable
+// but if changed, this should always stay same as long as your project lives
+// & must call this before any Sonyflake call (generate/parse)
 \Infocyph\UID\Snowflake::setStartTimeStamp('2000-01-01 00:00:00');
 ```
 
@@ -213,13 +200,25 @@ $node = \Infocyph\UID\UUID::getNode(8);
 // Get Sonyflake ID
 \Infocyph\UID\Sonyflake::generate();
 
-// Parse Snowflake ID
-\Infocyph\UID\Sonyflake::parse($snowflake); // returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
+// Parse Sonyflake ID
+// returns [time => DateTimeInterface object, sequence, machine_id]
+\Infocyph\UID\Sonyflake::parse($sonyflake);
 
-// Important: by default the start time is set to `2020-01-01 00:00:00`
-// You should/can change this accordingly (but once set, this should always stay same as long as your project lives)
-// & if this need change, you must call this before any Sonyflake call (generate/parse)
+// By default, the start time is set to `2020-01-01 00:00:00`, which is changeable
+// but if changed, this should always stay same as long as your project lives
+// & must call this before any Sonyflake call (generate/parse)
 \Infocyph\UID\Sonyflake::setStartTimeStamp('2000-01-01 00:00:00');
+```
+
+### TBSL: Time-Based Keys with Lexicographic Sorting
+Library exclusive.
+
+```php
+// Get TBSL ID
+\Infocyph\UID\TBSL::generate();
+
+// Parse TBSL
+\Infocyph\UID\TBSL::parse($tbsl);
 ```
 
 ## Support

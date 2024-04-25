@@ -185,17 +185,57 @@ class UUID
     }
 
     /**
+     * Parses a UUID string and returns an array with information about the UUID.
+     *
+     * @param string $uuid The UUID string to parse.
+     * @return array ['isValid', 'version', 'time', 'node']
+     * @throws Exception
+     */
+    public static function parse(string $uuid): array
+    {
+        $data = [
+            'isValid' => self::isValid($uuid),
+            'version' => null,
+            'time' => null,
+            'node' => null
+        ];
+
+        if (!$data['isValid']) {
+            return $data;
+        }
+
+        $data['version'] = (int)$uuid[14];
+
+        $timeNodeApplicable = in_array($data['version'], [1, 6, 7, 8]);
+        $data['time'] = $timeNodeApplicable ? self::getTime($uuid) : null;
+        $data['node'] = $timeNodeApplicable ? substr(
+            str_replace('-', '', $uuid),
+            -(self::$nodeLength[$data['version']] * 2)
+        ) : null;
+
+        return $data;
+    }
+
+    /**
+     * Check if UUID is valid (validates version 1-9 & NIL)
+     *
+     * @param string $uuid The UUID to be checked
+     * @return bool
+     */
+    private static function isValid(string $uuid): bool
+    {
+        return (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-\d[0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
+    }
+
+    /**
      * Retrieves the time from the UUID.
      *
      * @param string $uuid The UUID string to extract time from.
      * @return DateTimeInterface The DateTimeImmutable object representing the extracted time.
      * @throws UUIDException|Exception
      */
-    public static function getTime(string $uuid): DateTimeInterface
+    private static function getTime(string $uuid): DateTimeInterface
     {
-        if (!self::isValid($uuid)) {
-            throw new UUIDException('Invalid UUID');
-        }
         $uuid = str_getcsv($uuid, '-');
         $version = (int)$uuid[2][0];
         $timestamp = match ($version) {
@@ -231,50 +271,6 @@ class UUID
             . '.'
             . str_pad($time[1], 6, '0', STR_PAD_LEFT)
         );
-    }
-
-    /**
-     * Parses a UUID string and returns an array with information about the UUID.
-     *
-     * @param string $uuid The UUID string to parse.
-     * @return array ['isValid', 'version', 'time', 'node']
-     * @throws Exception
-     */
-    public static function parse(string $uuid): array
-    {
-        $data = [
-            'uuid' => $uuid,
-            'isValid' => self::isValid($uuid),
-            'version' => null,
-            'time' => null,
-            'node' => null
-        ];
-
-        if (!$data['isValid']) {
-            return $data;
-        }
-
-        $data['version'] = (int)$uuid[14];
-
-        $timeNodeApplicable = in_array($data['version'], [1, 6, 7, 8]);
-        $data['time'] = $timeNodeApplicable ? self::getTime($uuid) : null;
-        $data['node'] = $timeNodeApplicable ? substr(
-            str_replace('-', '', $uuid),
-            -(self::$nodeLength[$data['version']] * 2)
-        ) : null;
-
-        return $data;
-    }
-
-    /**
-     * Check if UUID is valid (validates version 1-9 & NIL)
-     *
-     * @param string $uuid The UUID to be checked
-     * @return bool
-     */
-    public static function isValid(string $uuid): bool
-    {
-        return (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-\d[0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
     }
 
     /**
