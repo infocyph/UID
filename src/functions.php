@@ -3,7 +3,8 @@
 namespace Infocyph\UID;
 
 use Exception;
-use InvalidArgumentException;
+use Infocyph\UID\Exceptions\SnowflakeException;
+use Infocyph\UID\Exceptions\SonyflakeException;
 
 if (!function_exists('Infocyph\UID\uuid1')) {
     /**
@@ -26,7 +27,7 @@ if (!function_exists('Infocyph\UID\uuid3')) {
      * @param string $string The string to generate the UUID from.
      * @param string $namespace The namespace to use for the UUID generation.
      * @return string The generated UUID.
-     * @throws Exception|InvalidArgumentException
+     * @throws Exception|Exceptions\UUIDException
      */
     function uuid3(string $string, string $namespace): string
     {
@@ -54,7 +55,7 @@ if (!function_exists('Infocyph\UID\uuid5')) {
      * @param string $string The string to generate the UUID from.
      * @param string $namespace The namespace to use for the UUID generation.
      * @return string The generated UUID.
-     * @throws InvalidArgumentException
+     * @throws Exceptions\UUIDException
      */
     function uuid5(string $string, string $namespace): string
     {
@@ -121,11 +122,41 @@ if (!function_exists('Infocyph\UID\snowflake')) {
     /**
      * Generates Snowflake ID.
      *
+     * @param int $datacenter
+     * @param int $workerId
+     * @return string
+     * @throws SnowflakeException
+     */
+    function snowflake(int $datacenter = 0, int $workerId = 0): string
+    {
+        return Snowflake::generate($datacenter, $workerId);
+    }
+}
+
+if (!function_exists('Infocyph\UID\sonyflake')) {
+    /**
+     * Generates Sonyflake ID.
+     *
+     * @param int $machineId
+     * @return string
+     * @throws SonyflakeException
+     */
+    function sonyflake(int $machineId = 0): string
+    {
+        return Sonyflake::generate($machineId);
+    }
+}
+
+if (!function_exists('Infocyph\UID\tbsl')) {
+    /**
+     * Generates TBSL ID.
+     *
+     * @param int $machineId
      * @return string
      * @throws Exception
      */
-    function snowflake(): string
+    function tbsl(int $machineId = 0): string
     {
-        return Snowflake::generate();
+        return TBSL::generate($machineId);
     }
 }

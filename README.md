@@ -1,5 +1,6 @@
 # UID
 
+[![build](https://github.com/infocyph/UID/actions/workflows/build.yml/badge.svg)](https://github.com/infocyph/UID/actions/workflows/build.yml)
 ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/infocyph/uid)
 ![Packagist Downloads](https://img.shields.io/packagist/dt/infocyph/uid)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
@@ -45,6 +46,9 @@ composer require infocyph/uid
 ## Usage
 
 ### UUID (Universal Unique Identifier)
+
+The node specific UUID's `$node` parameter (1, 6, 7, 8) is optional. If not provided, it will be generated randomly. But,
+if you wanna track the source of the UUIDs, you should use it (pre-define the node per server & pass it accordingly).
 
 #### UUID v1: Time-based UUID.
 
@@ -182,7 +186,10 @@ $node = \Infocyph\UID\UUID::getNode(8);
 
 ```php
 // Get Snowflake ID
+// optionally set worker_id & datacenter_id
 \Infocyph\UID\Snowflake::generate();
+// alternatively
+\Infocyph\UID\snowflake();
 
 // Parse Snowflake ID
 // returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
@@ -198,7 +205,10 @@ $node = \Infocyph\UID\UUID::getNode(8);
 
 ```php
 // Get Sonyflake ID
+// optionally set machine_id
 \Infocyph\UID\Sonyflake::generate();
+// alternatively
+\Infocyph\UID\sonyflake();
 
 // Parse Sonyflake ID
 // returns [time => DateTimeInterface object, sequence, machine_id]
@@ -215,9 +225,13 @@ Library exclusive.
 
 ```php
 // Get TBSL ID
+// optionally set machine_id
 \Infocyph\UID\TBSL::generate();
+// alternatively
+\Infocyph\UID\tbsl();
 
 // Parse TBSL
+// returns [isValid, time => DateTimeInterface object, machine_id]
 \Infocyph\UID\TBSL::parse($tbsl);
 ```
 

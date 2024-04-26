@@ -20,7 +20,7 @@ class Sonyflake
      *
      * @param int $machineId The machine identifier. Must be between 0 and the maximum machine ID.
      * @return string The generated unique identifier.
-     * @throws SonyflakeException If the machine ID is invalid.
+     * @throws SonyflakeException
      */
     public static function generate(int $machineId = 0): string
     {
