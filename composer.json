@@ -1,6 +1,6 @@
 {
   "name": "infocyph/uid",
-  "description": "UUID (RFC 4122 + Unofficial), ULID generator",
+  "description": "UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (library exclusive) generator!",
   "type": "library",
   "license": "MIT",
   "authors": [
@@ -18,8 +18,21 @@
     }
   },
   "minimum-stability": "stable",
+  "prefer-stable": true,
   "require": {
     "php": ">=8.0",
     "ext-bcmath": "*"
+  },
+  "config": {
+    "sort-packages": true,
+    "optimize-autoloader": true
+  },
+  "archive": {
+    "exclude": [
+      "/.github"
+    ]
+  },
+  "replace": {
+    "abmmhasan/uuid": "*"
   }
 }
