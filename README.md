@@ -1,6 +1,6 @@
 # UID
 
-[![build](https://github.com/infocyph/UID/actions/workflows/build.yml/badge.svg)](https://github.com/infocyph/UID/actions/workflows/build.yml)
+[![build](https://github.com/infocyph/UID/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/infocyph/UID/actions/workflows/build.yml)
 ![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/infocyph/uid)
 ![Packagist Downloads](https://img.shields.io/packagist/dt/infocyph/uid)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
