@@ -236,7 +236,7 @@ class UUID
      */
     private static function getTime(string $uuid): DateTimeInterface
     {
-        $uuid = str_getcsv($uuid, '-');
+        $uuid = explode('-', $uuid);
         $version = (int)$uuid[2][0];
         $timestamp = match ($version) {
             1 => substr($uuid[2], -3) . $uuid[1] . $uuid[0],
@@ -262,7 +262,7 @@ class UUID
             default:
                 $timestamp = base_convert($timestamp, 16, 10);
                 $epochNanoseconds = bcsub($timestamp, self::$timeOffset);
-                $time = str_getcsv(bcdiv($epochNanoseconds, self::$secondIntervals, 6), '.');
+                $time = explode('.', bcdiv($epochNanoseconds, self::$secondIntervals, 6));
         }
 
         return new DateTimeImmutable(
@@ -282,8 +282,8 @@ class UUID
     private static function getUnixTimeSubSec(int $version = 1): array
     {
         $timestamp = microtime();
-        $unixTs = intval(substr($timestamp, 11));
-        $subSec = intval(substr($timestamp, 2, 7));
+        $unixTs = (int)substr($timestamp, 11);
+        $subSec = (int)substr($timestamp, 2, 7);
         if ($version === 1) {
             return [$unixTs, $subSec];
         }
