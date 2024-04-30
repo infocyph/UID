@@ -14,6 +14,7 @@ UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (libr
 ## Table of contents
 
 <!--ts-->
+
 * [Prerequisites](#prerequisites)
 * [Installation](#installation)
 * [Usage](#usage)
@@ -32,6 +33,7 @@ UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (libr
     * [TBSL ID](#tbsl-time-based-keys-with-lexicographic-sorting)
 * [Support](#support)
 * [References](#references)
+
 <!--te-->
 
 ## Prerequisites
@@ -48,7 +50,8 @@ composer require infocyph/uid
 
 ### UUID (Universal Unique Identifier)
 
-The node specific UUID's `$node` parameter (1, 6, 7, 8) is optional. If not provided, it will be generated randomly. But,
+The node specific UUID's `$node` parameter (1, 6, 7, 8) is optional. If not provided, it will be generated randomly.
+But,
 if you wanna track the source of the UUIDs, you should use it (pre-define the node per server & pass it accordingly).
 
 #### UUID v1: Time-based UUID.
@@ -60,11 +63,8 @@ if you wanna track the source of the UUIDs, you should use it (pre-define the no
 // alternatively can also use
 \Infocyph\UID\uuid1();
 
-// Get generated node, for further use
-$node = \Infocyph\UID\UUID::getNode(1);
-
 // Pass your pre-generated node (for node specific UUID)
-\Infocyph\UID\UUID::v1($node);
+\Infocyph\UID\UUID::v1($node); // check additional section for how to generate one
 ```
 
 #### UUID v3: Namespace based UUID.
@@ -98,6 +98,8 @@ $node = \Infocyph\UID\UUID::getNode(1);
 
 #### UUID v5: Namespace based UUID.
 
+Better replacement for v3 due to better hashing algorithm (SHA1 instead of MD5).
+
 ```php
 // Get v5 UUID for 'TestString'
 \Infocyph\UID\UUID::v5('TestString');
@@ -117,6 +119,8 @@ $node = \Infocyph\UID\UUID::getNode(1);
 
 #### UUID v6 (draft-based/unofficial): Time-based UUID.
 
+Better replacement for v1. Provides more randomness & uniqueness.
+
 ```php
 // Get v6 UUID (Time based)
 \Infocyph\UID\UUID::v6();
@@ -124,11 +128,8 @@ $node = \Infocyph\UID\UUID::getNode(1);
 // alternatively can also use
 \Infocyph\UID\uuid6();
 
-// Get generated node, for further use
-$node = \Infocyph\UID\UUID::getNode(6);
-
 // Pass your pre-generated node (for node specific UUID)
-\Infocyph\UID\UUID::v6($node);
+\Infocyph\UID\UUID::v6($node); // check additional section for how to generate one
 ```
 
 #### UUID v7 (draft-based/unofficial): Time-based UUID.
@@ -140,11 +141,8 @@ $node = \Infocyph\UID\UUID::getNode(6);
 // alternatively can also use
 \Infocyph\UID\uuid7();
 
-// Get generated node, for further use
-$node = \Infocyph\UID\UUID::getNode(7);
-
 // Pass your pre-generated node (for node specific UUID)
-\Infocyph\UID\UUID::v7($node);
+\Infocyph\UID\UUID::v7($node); // check additional section for how to generate one
 ```
 
 #### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
@@ -156,16 +154,16 @@ $node = \Infocyph\UID\UUID::getNode(7);
 // alternatively can also use
 \Infocyph\UID\uuid8();
 
-// Get generated node, for further use
-$node = \Infocyph\UID\UUID::getNode(8);
-
 // Pass your pre-generated node (for node specific UUID)
-\Infocyph\UID\UUID::v8($node);
+\Infocyph\UID\UUID::v8($node); // check additional section for how to generate one
 ```
 
 #### Additional
 
 ```php
+// Generate node for further use (with version: 1, 6, 7, 8)
+\Infocyph\UID\UUID::getNode();
+
 // Parse any UUID string
 \Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'time', 'node']
 ```
@@ -187,7 +185,7 @@ $node = \Infocyph\UID\UUID::getNode(8);
 
 ```php
 // Get Snowflake ID
-// optionally set worker_id & datacenter_id
+// optionally you can set worker_id & datacenter_id, for server/module detection
 \Infocyph\UID\Snowflake::generate();
 // alternatively
 \Infocyph\UID\snowflake();
@@ -198,7 +196,7 @@ $node = \Infocyph\UID\UUID::getNode(8);
 
 // By default, the start time is set to `2020-01-01 00:00:00`, which is changeable
 // but if changed, this should always stay same as long as your project lives
-// & must call this before any Sonyflake call (generate/parse)
+// & must call this before any Snowflake call (generate/parse)
 \Infocyph\UID\Snowflake::setStartTimeStamp('2000-01-01 00:00:00');
 ```
 
@@ -206,7 +204,7 @@ $node = \Infocyph\UID\UUID::getNode(8);
 
 ```php
 // Get Sonyflake ID
-// optionally set machine_id
+// optionally set machine_id, for server detection
 \Infocyph\UID\Sonyflake::generate();
 // alternatively
 \Infocyph\UID\sonyflake();
@@ -222,11 +220,12 @@ $node = \Infocyph\UID\UUID::getNode(8);
 ```
 
 ### TBSL: Time-Based Keys with Lexicographic Sorting
+
 Library exclusive.
 
 ```php
 // Get TBSL ID
-// optionally set machine_id
+// optionally set machine_id, for server detection
 \Infocyph\UID\TBSL::generate();
 // alternatively
 \Infocyph\UID\tbsl();
@@ -235,6 +234,26 @@ Library exclusive.
 // returns [isValid, time => DateTimeInterface object, machine_id]
 \Infocyph\UID\TBSL::parse($tbsl);
 ```
+
+## Benchmark
+
+| Type                       | Total Duration (1M Generation, Single thread) |
+|:---------------------------|:---------------------------------------------:|
+| UUID v1 (random node)      |                   	1.23968s                   |
+| UUID v1 (fixed node)	      |                   0.94521s                    |         
+| UUID v3 (custom namespace) |                   	0.76439s                   |         
+| UUID v4	                   |                   0.70501s                    |         
+| UUID v5 (custom namespace) |                   	0.89831s                   |       
+| UUID v6 (random node)	     |                   1.39867s                    |     
+| UUID v6 (fixed node)	      |                   1.42344s                    |     
+| UUID v7 (random node)      |                   	1.40466s                   |    
+| UUID v7 (fixed node)       |                   	1.49268s                   |   
+| UUID v8 (random node)      |                   	1.80438s                   |  
+| UUID v8 (fixed node)       |                   	1.78257s                   |              
+| ULID                       |                   	1.79775s                   |             
+| TBSL	                      |                   0.80612s                    |            
+
+_Note: Snowflake & Sonyflake not included, due to their way of work_
 
 ## Support
 

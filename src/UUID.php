@@ -33,11 +33,10 @@ class UUID
     private static int $secondIntervals = 10_000_000;
     private static int $secondIntervals78 = 10_000;
     private static int $timeOffset = 0x01b21dd213814000;
-    private static array $nodeLength = [
-        1 => 6,
-        6 => 8,
-        7 => 10,
-        8 => 7
+    private static array $randomLength = [
+        6 => 2,
+        7 => 4,
+        8 => 1
     ];
 
     /**
@@ -59,7 +58,7 @@ class UUID
             substr($time, -12, 4),
             substr($time, -15, 3),
             $clockSeq | 0x8000,
-            $node ?? self::getNode(1)
+            $node ?? self::getNode()
         );
     }
 
@@ -128,7 +127,7 @@ class UUID
                 '6',
                 -3,
                 0
-            ) . ($node ?? self::getNode(6));
+            ) . self::prepareNode(6, $node);
         return self::output(6, $string);
     }
 
@@ -148,7 +147,7 @@ class UUID
         self::$unixTsMs = $unixTsMs;
 
         $string = substr(str_pad(dechex($unixTsMs), 12, '0', STR_PAD_LEFT), -12)
-            . ($node ?? self::getNode(7));
+            . self::prepareNode(7, $node);
         return self::output(7, $string);
     }
 
@@ -168,20 +167,35 @@ class UUID
         $string = substr(str_pad(dechex($unixTsMs), 12, '0', STR_PAD_LEFT), -12) .
             '8' . str_pad(dechex($subSecA), 3, '0', STR_PAD_LEFT) .
             bin2hex(chr(ord(random_bytes(1)) & 0x0f | ($subSec & 0x03) << 4)) .
-            ($node ?? self::getNode(8));
+            self::prepareNode(8, $node);
         return self::output(8, $string);
     }
 
     /**
-     * Generate unique hexadecimal node.
+     * Generates a random node string based on the given version and node.
      *
-     * @param int $version The version of the UUID.
-     * @return string The generated hexadecimal node.
+     * @param int $version The version of the node.
+     * @param string|null $node The node identifier. Defaults to null.
+     * @return string The generated node string.
      * @throws Exception
      */
-    public static function getNode(int $version): string
+    private static function prepareNode(int $version, string $node = null): string
     {
-        return bin2hex(random_bytes(self::$nodeLength[$version]));
+        if (!$node) {
+            return bin2hex(random_bytes(self::$randomLength[$version] + 6));
+        }
+        return bin2hex(random_bytes(self::$randomLength[$version])) . $node;
+    }
+
+    /**
+     * Generate unique node.
+     *
+     * @return string The generated node.
+     * @throws Exception
+     */
+    public static function getNode(): string
+    {
+        return bin2hex(random_bytes(6));
     }
 
     /**
@@ -204,14 +218,10 @@ class UUID
             return $data;
         }
 
-        $data['version'] = (int)$uuid[14];
-
-        $timeNodeApplicable = in_array($data['version'], [1, 6, 7, 8]);
-        $data['time'] = $timeNodeApplicable ? self::getTime($uuid) : null;
-        $data['node'] = $timeNodeApplicable ? substr(
-            str_replace('-', '', $uuid),
-            -(self::$nodeLength[$data['version']] * 2)
-        ) : null;
+        $uuidData = explode('-', $uuid);
+        $data['version'] = (int)$uuidData[2][0];
+        $data['time'] = in_array($data['version'], [1, 6, 7, 8]) ? self::getTime($uuidData, $data['version']) : null;
+        $data['node'] = $uuidData[4];
 
         return $data;
     }
@@ -230,14 +240,13 @@ class UUID
     /**
      * Retrieves the time from the UUID.
      *
-     * @param string $uuid The UUID string to extract time from.
+     * @param array $uuid The UUID array to extract time from.
+     * @param int $version The version of the UUID.
      * @return DateTimeInterface The DateTimeImmutable object representing the extracted time.
      * @throws UUIDException|Exception
      */
-    private static function getTime(string $uuid): DateTimeInterface
+    private static function getTime(array $uuid, int $version): DateTimeInterface
     {
-        $uuid = explode('-', $uuid);
-        $version = (int)$uuid[2][0];
         $timestamp = match ($version) {
             1 => substr($uuid[2], -3) . $uuid[1] . $uuid[0],
             6, 8 => $uuid[0] . $uuid[1] . substr($uuid[2], -3),
@@ -256,7 +265,7 @@ class UUID
                         (hexdec(substr('0' . $timestamp, 13)) << 2) +
                         (hexdec($uuid[3][0]) & 0x03)
                     ) * self::$secondIntervals78 >> 14);
-                $time = str_split(strval($unixTs * self::$secondIntervals78 + $subSec), 10);
+                $time = str_split((string)($unixTs * self::$secondIntervals78 + $subSec), 10);
                 $time[1] = substr($time[1], 0, 6);
                 break;
             default:
@@ -289,8 +298,8 @@ class UUID
         }
         if (
             self::$unixTs[$version] > $unixTs ||
-            self::$unixTs[$version] === $unixTs &&
-            self::$subSec[$version] >= $subSec
+            (self::$unixTs[$version] === $unixTs &&
+                self::$subSec[$version] >= $subSec)
         ) {
             $unixTs = self::$unixTs[$version];
             $subSec = self::$subSec[$version];
@@ -310,12 +319,12 @@ class UUID
      * Generates a formatted string based on the given version and string.
      *
      * @param int $version The version number.
-     * @param string $string The input string.
+     * @param string $id The string to be formatted.
      * @return string The formatted string.
      */
-    private static function output(int $version, string $string): string
+    private static function output(int $version, string $id): string
     {
-        $string = str_split($string, 4);
+        $string = str_split($id, 4);
         return sprintf(
             "%08s-%04s-$version%03s-%04x-%012s",
             $string[0] . $string[1],
@@ -330,9 +339,9 @@ class UUID
      * Resolves the given namespace.
      *
      * @param string $namespace The namespace to be resolved.
-     * @return string|array|bool The resolved namespace or false if it cannot be resolved.
+     * @return string The resolved namespace or false if it cannot be resolved.
      */
-    private static function nsResolve(string $namespace): string|array|bool
+    private static function nsResolve(string $namespace): string
     {
         if (self::isValid($namespace)) {
             return str_replace('-', '', $namespace);
@@ -341,6 +350,6 @@ class UUID
         if (isset(self::$nsList[$namespace])) {
             return "6ba7b81" . self::$nsList[$namespace] . "9dad11d180b400c04fd430c8";
         }
-        return false;
+        return '';
     }
 }
