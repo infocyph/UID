@@ -237,21 +237,21 @@ Library exclusive.
 
 ## Benchmark
 
-| Type                       | Total Duration (1M Generation, Single thread) |
-|:---------------------------|:---------------------------------------------:|
-| UUID v1 (random node)      |                   	1.23968s                   |
-| UUID v1 (fixed node)	      |                   0.94521s                    |         
-| UUID v3 (custom namespace) |                   	0.76439s                   |         
-| UUID v4	                   |                   0.70501s                    |         
-| UUID v5 (custom namespace) |                   	0.89831s                   |       
-| UUID v6 (random node)	     |                   1.39867s                    |     
-| UUID v6 (fixed node)	      |                   1.42344s                    |     
-| UUID v7 (random node)      |                   	1.40466s                   |    
-| UUID v7 (fixed node)       |                   	1.49268s                   |   
-| UUID v8 (random node)      |                   	1.80438s                   |  
-| UUID v8 (fixed node)       |                   	1.78257s                   |              
-| ULID                       |                   	1.79775s                   |             
-| TBSL	                      |                   0.80612s                    |            
+| Type                       | Generation time (ms) |
+|:---------------------------|:--------------------:|
+| UUID v1 (random node)      |       	0.00124       |
+| UUID v1 (fixed node)       |       0.00095        |         
+| UUID v3 (custom namespace) |       0.00076        |         
+| UUID v4                    |       0.00071        |         
+| UUID v5 (custom namespace) |       	0.0009        |       
+| UUID v6 (random node)      |        0.0014        |     
+| UUID v6 (fixed node)       |       0.00142        |     
+| UUID v7 (random node)      |       	0.0014        |    
+| UUID v7 (fixed node)       |       	0.00149       |   
+| UUID v8 (random node)      |       	0.0018        |  
+| UUID v8 (fixed node)       |       	0.00178       |              
+| ULID                       |       	0.0018        |             
+| TBSL                       |       0.00081        |            
 
 _Note: Snowflake & Sonyflake not included, due to their way of work_
 
