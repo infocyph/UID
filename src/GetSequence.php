@@ -17,10 +17,9 @@ trait GetSequence
      * @return int The generated sequence number.
      * @throws FileLockException
      */
-    private static function sequence(DateTimeInterface $dateTime, string $machineId): int
+    private static function sequence(DateTimeInterface $dateTime, string $machineId, string $type): int
     {
-        self::$fileLocation = sys_get_temp_dir() . DIRECTORY_SEPARATOR .
-            'uid-snf-' . $machineId . $dateTime->format('Ymd') . '.seq';
+        self::$fileLocation = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "uid-$type-$machineId.seq";
         if (!file_exists(self::$fileLocation)) {
             touch(self::$fileLocation);
         }

@@ -31,7 +31,7 @@ class Sonyflake
         }
         $now = new DateTimeImmutable('now');
         $elapsedTime = self::elapsedTime();
-        while (($sequence = self::sequence($now, $machineId)) > (-1 ^ (-1 << self::$maxSequenceLength))) {
+        while (($sequence = self::sequence($now, $machineId, 'sonyflake')) > (-1 ^ (-1 << self::$maxSequenceLength))) {
             $nextMillisecond = self::elapsedTime();
             while ($nextMillisecond === $elapsedTime) {
                 ++$nextMillisecond;
