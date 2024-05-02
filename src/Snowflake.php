@@ -3,18 +3,19 @@
 namespace Infocyph\UID;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 use Exception;
+use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SnowflakeException;
 
 class Snowflake
 {
+    use GetSequence;
+
     private static int $maxTimestampLength = 41;
     private static int $maxDatacenterLength = 5;
     private static int $maxWorkIdLength = 5;
     private static int $maxSequenceLength = 12;
     private static ?int $startTime;
-    private static string $fileLocation;
 
     /**
      * Generates a unique snowflake ID.
@@ -22,7 +23,7 @@ class Snowflake
      * @param int $datacenter The ID of the datacenter (default: 0)
      * @param int $workerId The ID of the worker (default: 0)
      * @return string The generated snowflake ID
-     * @throws SnowflakeException
+     * @throws SnowflakeException|FileLockException
      */
     public static function generate(int $datacenter = 0, int $workerId = 0): string
     {
@@ -41,8 +42,7 @@ class Snowflake
         $currentTime = (int)$now->format('Uv');
         while (($sequence = self::sequence(
                 $now,
-                $datacenter,
-                $workerId
+                $datacenter . $workerId
             )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
             ++$currentTime;
         }
@@ -118,41 +118,5 @@ class Snowflake
     private static function getStartTimeStamp(): float|int
     {
         return self::$startTime ??= (strtotime('2020-01-01 00:00:00') * 1000);
-    }
-
-    /**
-     * Generates a sequence number based on the current time.
-     *
-     * @param DateTimeInterface $now The current time.
-     * @param int $datacenter
-     * @param int $workerId
-     * @return int The generated sequence number.
-     * @throws SnowflakeException
-     */
-    private static function sequence(DateTimeInterface $now, int $datacenter, int $workerId): int
-    {
-        self::$fileLocation = sys_get_temp_dir() . DIRECTORY_SEPARATOR .
-            'uid-snf-' . $datacenter . $workerId . $now->format('Ymd') . '.seq';
-        if (!file_exists(self::$fileLocation)) {
-            touch(self::$fileLocation);
-        }
-        $handle = fopen(self::$fileLocation, "r+");
-        if (!flock($handle, LOCK_EX)) {
-            throw new SnowflakeException('Could not acquire lock on ' . self::$fileLocation);
-        }
-        $content = '';
-        while (!feof($handle)) {
-            $content .= fread($handle, 1024);
-        }
-        $content = json_decode($content, true);
-        $currentTime = (int)$now->format('Uv');
-        $content[$currentTime] = ($content[$currentTime] ?? 0) + 1;
-        ftruncate($handle, 0);
-        rewind($handle);
-        fwrite($handle, json_encode($content));
-        flock($handle, LOCK_UN);
-        fclose($handle);
-
-        return $content[$currentTime];
     }
 }
