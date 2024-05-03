@@ -3,8 +3,10 @@
 namespace Infocyph\UID;
 
 use DateTimeImmutable;
+use DateTimeInterface;
 use Exception;
 use Infocyph\UID\Exceptions\ULIDException;
+use Random\RandomException;
 
 class ULID
 {
@@ -19,12 +21,13 @@ class ULID
     /**
      * Generates a ULID (Universally Unique Lexicographically Identifier).
      *
+     * @param DateTimeInterface|null $dateTime
      * @return string
-     * @throws Exception
+     * @throws RandomException
      */
-    public static function generate(): string
+    public static function generate(?DateTimeInterface $dateTime = null): string
     {
-        $time = (int)(new DateTimeImmutable('now'))->format('Uv');
+        $time = (int)($dateTime ?? new DateTimeImmutable('now'))->format('Uv');
 
         $isDuplicate = $time === static::$lastGenTime;
         static::$lastGenTime = $time;

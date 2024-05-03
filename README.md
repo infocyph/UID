@@ -9,7 +9,12 @@
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/infocyph/uid)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
 
-UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (library exclusive) generator!
+An AIO Unique ID generator for php. Supports,
+- UUID (RFC 4122 + Unofficial/Draft)
+- ULID (ulid specification)
+- Snowflake ID (Twitter Snowflake specification)
+- Sonyflake ID (Snowflake Inspired specification, ported from Golang)
+- TBSL (library exclusive)
 
 ## Table of contents
 
@@ -31,6 +36,7 @@ UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (libr
     * [Snowflake ID](#snowflake-id)
     * [Sonyflake ID](#sonyflake-id)
     * [TBSL ID](#tbsl-time-based-keys-with-lexicographic-sorting)
+* [Benchmark](#benchmark)
 * [Support](#support)
 * [References](#references)
 
@@ -51,41 +57,46 @@ composer require infocyph/uid
 ### UUID (Universal Unique Identifier)
 
 The node specific UUID's `$node` parameter (1, 6, 7, 8) is optional. If not provided, it will be generated randomly.
-But,
-if you wanna track the source of the UUIDs, you should use it (pre-define the node per server & pass it accordingly).
+But, if you wanna track the source of the UUIDs, you should use it (pre-define the node per server & pass it accordingly).
 
 #### UUID v1: Time-based UUID.
 
+- Generate v1 UUID
 ```php
-// Get v1 UUID (Time based)
+// Get v1 UUID
 \Infocyph\UID\UUID::v1();
 // alternatively can also use
 \Infocyph\UID\uuid1();
-
-// Pass your pre-generated node (for node specific UUID)
+```
+- Pass your pre-generated node (for node specific UUID)
+```php
 \Infocyph\UID\UUID::v1($node); // check additional section for how to generate one
 ```
 
 #### UUID v3: Namespace based UUID.
 
+- Generate v3 UUID
 ```php
-// Get v3 UUID for 'TestString'
+// Get v3 UUID
 \Infocyph\UID\UUID::v3('a pre-generated UUID', 'the string you wanna get UUID for');
 // alternatively can also use
 \Infocyph\UID\uuid3();
-
+```
+- Get v3 UUID for predefined namespaces (RFC4122 #Appendix C)
+```php
 /**
-* Get v3 UUID for an URL & pre-defined namespace
 * You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
 */
 \Infocyph\UID\UUID::v3('url', 'abmmhasan.github.io');
-
-// You can generate a random UUID & use as namespace as well
+```
+- You can generate a UUID & use as namespace as well
+```php
 \Infocyph\UID\UUID::v3('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
 ```
 
 #### UUID v4: Random UUID.
 
+- Generate v4 UUID
 ```php
 // Get v4 UUID (completely random)
 \Infocyph\UID\UUID::v4();
@@ -95,102 +106,121 @@ if you wanna track the source of the UUIDs, you should use it (pre-define the no
 
 #### UUID v5: Namespace based UUID.
 
-Better replacement for v3 due to better hashing algorithm (SHA1 instead of MD5).
-
+- Generate v5 UUID
 ```php
-// Get v5 UUID for 'TestString'
+// Get v5 UUID
 \Infocyph\UID\UUID::v5('a pre-generated UUID', 'the string you wanna get UUID for');
 // alternatively can also use
 \Infocyph\UID\uuid5();
-
+```
+- Get v5 UUID for predefined namespaces (RFC4122 #Appendix C)
+```php
 /**
-* Get v5 UUID for an URL & pre-defined namespace
 * You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
 */
 \Infocyph\UID\UUID::v5('url', 'abmmhasan.github.io');
-
-// You can generate a random UUID & use as namespace as well
+```
+- You can generate a UUID & use as namespace as well
+```php
 \Infocyph\UID\UUID::v5('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
 ```
 
 #### UUID v6 (draft-based/unofficial): Time-based UUID.
 
-Better replacement for v1. Provides more randomness & uniqueness.
-
+- Generate v6 UUID
 ```php
 // Get v6 UUID (Time based)
 \Infocyph\UID\UUID::v6();
 // alternatively can also use
 \Infocyph\UID\uuid6();
-
-// Pass your pre-generated node (for node specific UUID)
+```
+- Or if you wanna get v6 UUID using predefined node:
+```php
 \Infocyph\UID\UUID::v6($node); // check additional section for how to generate one
 ```
 
 #### UUID v7 (draft-based/unofficial): Time-based UUID.
 
+- Generate v7 UUID
 ```php
-// Get v7 UUID for curren time
+// Get v7 UUID for current time
 \Infocyph\UID\UUID::v7();
 // alternatively can also use
 \Infocyph\UID\uuid7();
-
-// Pass your pre-generated node (for node specific UUID) for current time
-\Infocyph\UID\UUID::v7(null, $node); // check additional section for how to generate one
-
-// Get v7 UUID for pre-define time using DateTimeInterface
+```
+- Or if you wanna get v7 UUID using predefined node:
+```php
+\Infocyph\UID\UUID::v7(null, $node); // check additional section for, how to generate one
+```
+- Or if you wanna get v7 UUID using predefined time:
+```php
 $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 \Infocyph\UID\UUID::v7($timeInterface);
 ```
+- You can combine both parameters together.
 
 #### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
 
+- Generate v8 UUID
 ```php
-// Get v6 UUID (Time based)
+// Get v8 UUID
 \Infocyph\UID\UUID::v8();
 // alternatively can also use
 \Infocyph\UID\uuid8();
-
-// Pass your pre-generated node (for node specific UUID)
-\Infocyph\UID\UUID::v8($node); // check additional section for how to generate one
+```
+- Or if you wanna get v8 UUID using predefined node:
+```php
+\Infocyph\UID\UUID::v8($node); // check additional section for, how to generate one
 ```
 
 #### Additional
 
+- Generate node for further use (with version: 1, 6, 7, 8)
 ```php
-// Generate node for further use (with version: 1, 6, 7, 8)
 \Infocyph\UID\UUID::getNode();
-
-// Parse any UUID string
+```
+- Parse any UUID string:
+```php
 \Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'time', 'node']
 ```
 
 ### ULID (Universally Unique Lexicographically Sortable Identifier)
 
+- Generating ULID is very simple,
 ```php
-// Get ULID
 \Infocyph\UID\ULID::generate();
-
-// Get ULID time
+```
+- Or if you wanna get ULID for specific time:
+```php
+\Infocyph\UID\ULID::generate(new DateTimeImmutable('2020-01-01 00:00:00'));
+```
+- Extract datetime from any ULID string:
+```php
 \Infocyph\UID\ULID::getTime($ulid); // returns DateTimeInterface object
-
-// Validate ULID
+```
+- Validate any ULID string:
+```php
 \Infocyph\UID\ULID::isValid($ulid); // true/false
 ```
 
 ### Snowflake ID
 
+- Generate a new Snowflake ID (You can also pass your pre-generated worker_id & datacenter_id for server/module detection):
 ```php
 // Get Snowflake ID
 // optionally you can set worker_id & datacenter_id, for server/module detection
 \Infocyph\UID\Snowflake::generate();
 // alternatively
 \Infocyph\UID\snowflake();
-
+```
+- Parse Snowflake ID (get the timestamp, sequence, worker_id, datacenter_id from any Snowflake ID):
+```php
 // Parse Snowflake ID
 // returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
 \Infocyph\UID\Snowflake::parse($snowflake);
-
+```
+- Specify start time for Snowflake ID (a Snowflake ID is unique upto 69 years from the start date):
+```php
 // By default, the start time is set to `2020-01-01 00:00:00`, which is changeable
 // but if changed, this should always stay same as long as your project lives
 // & must call this before any Snowflake call (generate/parse)
@@ -199,26 +229,31 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 
 ### Sonyflake ID
 
+- Generate a new Sonyflake ID (You can also pass your pre-generated machine_id for server detection):
 ```php
 // Get Sonyflake ID
 // optionally set machine_id, for server detection
 \Infocyph\UID\Sonyflake::generate();
 // alternatively
 \Infocyph\UID\sonyflake();
-
+```
+- Parse Sonyflake ID (get the timestamp, sequence, machine_id from any Snowflake ID):
+```php
 // Parse Sonyflake ID
 // returns [time => DateTimeInterface object, sequence, machine_id]
 \Infocyph\UID\Sonyflake::parse($sonyflake);
-
+```
+- Specify start time for Sonyflake ID (a Sonyflake ID is unique upto 174 years from the start date):
+```php
 // By default, the start time is set to `2020-01-01 00:00:00`, which is changeable
 // but if changed, this should always stay same as long as your project lives
 // & must call this before any Sonyflake call (generate/parse)
 \Infocyph\UID\Sonyflake::setStartTimeStamp('2000-01-01 00:00:00');
 ```
 
-### TBSL: Time-Based Keys with Lexicographic Sorting
+### TBSL: Time-Based Keys with Lexicographic Sorting (library exclusive)
 
-Library exclusive.
+- Get TBSL ID (You can also pass your pre-generated machine_id for server detection):
 
 ```php
 // Get TBSL ID
@@ -226,7 +261,9 @@ Library exclusive.
 \Infocyph\UID\TBSL::generate();
 // alternatively
 \Infocyph\UID\tbsl();
-
+```
+- Parse TBSL ID (get the timestamp, machine_id):
+```php
 // Parse TBSL
 // returns [isValid, time => DateTimeInterface object, machine_id]
 \Infocyph\UID\TBSL::parse($tbsl);
