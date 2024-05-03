@@ -3,6 +3,16 @@
   "description": "UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (library exclusive) generator!",
   "type": "library",
   "license": "MIT",
+  "keywords": [
+    "uuid",
+    "ulid",
+    "snowflake",
+    "sonyflake",
+    "tbsl",
+    "id",
+    "key",
+    "unique"
+  ],
   "authors": [
     {
       "name": "abmmhasan",
