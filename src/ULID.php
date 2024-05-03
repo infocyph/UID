@@ -6,7 +6,6 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
 use Infocyph\UID\Exceptions\ULIDException;
-use Random\RandomException;
 
 class ULID
 {
@@ -23,7 +22,7 @@ class ULID
      *
      * @param DateTimeInterface|null $dateTime
      * @return string
-     * @throws RandomException
+     * @throws Exception
      */
     public static function generate(?DateTimeInterface $dateTime = null): string
     {
