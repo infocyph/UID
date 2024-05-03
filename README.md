@@ -59,7 +59,6 @@ if you wanna track the source of the UUIDs, you should use it (pre-define the no
 ```php
 // Get v1 UUID (Time based)
 \Infocyph\UID\UUID::v1();
-
 // alternatively can also use
 \Infocyph\UID\uuid1();
 
@@ -71,8 +70,7 @@ if you wanna track the source of the UUIDs, you should use it (pre-define the no
 
 ```php
 // Get v3 UUID for 'TestString'
-\Infocyph\UID\UUID::v3('TestString');
-
+\Infocyph\UID\UUID::v3('a pre-generated UUID', 'the string you wanna get UUID for');
 // alternatively can also use
 \Infocyph\UID\uuid3();
 
@@ -80,10 +78,10 @@ if you wanna track the source of the UUIDs, you should use it (pre-define the no
 * Get v3 UUID for an URL & pre-defined namespace
 * You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
 */
-\Infocyph\UID\UUID::v3('abmmhasan.github.io','url');
+\Infocyph\UID\UUID::v3('url', 'abmmhasan.github.io');
 
 // You can generate a random UUID & use as namespace as well
-\Infocyph\UID\UUID::v3('abmmhasan.github.io','fa1700dd-828c-4d1b-8e6d-a6104807da90');
+\Infocyph\UID\UUID::v3('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
 ```
 
 #### UUID v4: Random UUID.
@@ -91,7 +89,6 @@ if you wanna track the source of the UUIDs, you should use it (pre-define the no
 ```php
 // Get v4 UUID (completely random)
 \Infocyph\UID\UUID::v4();
-
 // alternatively can also use
 \Infocyph\UID\uuid4();
 ```
@@ -102,8 +99,7 @@ Better replacement for v3 due to better hashing algorithm (SHA1 instead of MD5).
 
 ```php
 // Get v5 UUID for 'TestString'
-\Infocyph\UID\UUID::v5('TestString');
-
+\Infocyph\UID\UUID::v5('a pre-generated UUID', 'the string you wanna get UUID for');
 // alternatively can also use
 \Infocyph\UID\uuid5();
 
@@ -111,10 +107,10 @@ Better replacement for v3 due to better hashing algorithm (SHA1 instead of MD5).
 * Get v5 UUID for an URL & pre-defined namespace
 * You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
 */
-\Infocyph\UID\UUID::v5('abmmhasan.github.io','url');
+\Infocyph\UID\UUID::v5('url', 'abmmhasan.github.io');
 
 // You can generate a random UUID & use as namespace as well
-\Infocyph\UID\UUID::v5('abmmhasan.github.io','fa1700dd-828c-4d1b-8e6d-a6104807da90');
+\Infocyph\UID\UUID::v5('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
 ```
 
 #### UUID v6 (draft-based/unofficial): Time-based UUID.
@@ -124,7 +120,6 @@ Better replacement for v1. Provides more randomness & uniqueness.
 ```php
 // Get v6 UUID (Time based)
 \Infocyph\UID\UUID::v6();
-
 // alternatively can also use
 \Infocyph\UID\uuid6();
 
@@ -135,14 +130,17 @@ Better replacement for v1. Provides more randomness & uniqueness.
 #### UUID v7 (draft-based/unofficial): Time-based UUID.
 
 ```php
-// Get v7 UUID (Time based)
+// Get v7 UUID for curren time
 \Infocyph\UID\UUID::v7();
-
 // alternatively can also use
 \Infocyph\UID\uuid7();
 
-// Pass your pre-generated node (for node specific UUID)
-\Infocyph\UID\UUID::v7($node); // check additional section for how to generate one
+// Pass your pre-generated node (for node specific UUID) for current time
+\Infocyph\UID\UUID::v7(null, $node); // check additional section for how to generate one
+
+// Get v7 UUID for pre-define time using DateTimeInterface
+$timeInterface = new DateTime(); // DateTime implements DateTimeInterface
+\Infocyph\UID\UUID::v7($timeInterface);
 ```
 
 #### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
@@ -150,7 +148,6 @@ Better replacement for v1. Provides more randomness & uniqueness.
 ```php
 // Get v6 UUID (Time based)
 \Infocyph\UID\UUID::v8();
-
 // alternatively can also use
 \Infocyph\UID\uuid8();
 
@@ -237,23 +234,23 @@ Library exclusive.
 
 ## Benchmark
 
-| Type                       | Total Duration (1M Generation, Single thread) |
-|:---------------------------|:---------------------------------------------:|
-| UUID v1 (random node)      |                   	1.23968s                   |
-| UUID v1 (fixed node)	      |                   0.94521s                    |         
-| UUID v3 (custom namespace) |                   	0.76439s                   |         
-| UUID v4	                   |                   0.70501s                    |         
-| UUID v5 (custom namespace) |                   	0.89831s                   |       
-| UUID v6 (random node)	     |                   1.39867s                    |     
-| UUID v6 (fixed node)	      |                   1.42344s                    |     
-| UUID v7 (random node)      |                   	1.40466s                   |    
-| UUID v7 (fixed node)       |                   	1.49268s                   |   
-| UUID v8 (random node)      |                   	1.80438s                   |  
-| UUID v8 (fixed node)       |                   	1.78257s                   |              
-| ULID                       |                   	1.79775s                   |             
-| TBSL	                      |                   0.80612s                    |            
-
-_Note: Snowflake & Sonyflake not included, due to their way of work_
+| Type                       |                               Generation time (ms)                                |
+|:---------------------------|:---------------------------------------------------------------------------------:|
+| UUID v1 (random node)      |                          0.00411 (ramsey/Uuid: 0.18753)                           |
+| UUID v1 (fixed node)       |                          0.00115 (ramsey/Uuid: 0.17386)                           |         
+| UUID v3 (custom namespace) |                          0.00257 (ramsey/Uuid: 0.03015)                           |         
+| UUID v4                    |                          0.00362 (ramsey/Uuid: 0.16501)                           |         
+| UUID v5 (custom namespace) |                          0.00108 (ramsey/Uuid: 0.03658)                           |       
+| UUID v6 (random node)      |                          0.00444 (ramsey/Uuid: 0.17469)                           |     
+| UUID v6 (fixed node)       |                          0.00164 (ramsey/Uuid: 0.17382)                           |     
+| UUID v7 (random node)      |                          0.00503 (ramsey/Uuid: 0.16278)                           |    
+| UUID v7 (fixed node)**     |                          0.00154 (ramsey/Uuid: 0.18753)                           |   
+| UUID v8 (random node)      |                            0.00505 (ramsey/Uuid: N/A)                             |  
+| UUID v8 (fixed node)       | 0.00209 (ramsey/Uuid: 0.16029 _*predefined random node, not usable as signature_) |              
+| ULID                       |                    0.00506 (robinvdvleuten/php-ulid: 0.00508)                     |             
+| TBSL                       |                              0.0034 (library unique)                              |            
+| Snowflake                  |                     0.13951 (godruoyi/php-snowflake: 0.14856)                     |            
+| Sonyflake                  |                     0.13821 (godruoyi/php-snowflake: 0.14583)                     |
 
 ## Support
 

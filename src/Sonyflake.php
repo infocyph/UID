@@ -3,24 +3,25 @@
 namespace Infocyph\UID;
 
 use DateTimeImmutable;
-use DateTimeInterface;
 use Exception;
+use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SonyflakeException;
 
 class Sonyflake
 {
+    use GetSequence;
+
     private static int $maxTimestampLength = 39;
     private static int $maxMachineIdLength = 16;
     private static int $maxSequenceLength = 8;
     private static ?int $startTime;
-    private static string $fileLocation;
 
     /**
      * Generates a unique identifier using the SonyFlake algorithm.
      *
      * @param int $machineId The machine identifier. Must be between 0 and the maximum machine ID.
      * @return string The generated unique identifier.
-     * @throws SonyflakeException
+     * @throws SonyflakeException|FileLockException
      */
     public static function generate(int $machineId = 0): string
     {
@@ -30,7 +31,7 @@ class Sonyflake
         }
         $now = new DateTimeImmutable('now');
         $elapsedTime = self::elapsedTime();
-        while (($sequence = self::sequence($now, $machineId)) > (-1 ^ (-1 << self::$maxSequenceLength))) {
+        while (($sequence = self::sequence($now, $machineId, 'sonyflake')) > (-1 ^ (-1 << self::$maxSequenceLength))) {
             $nextMillisecond = self::elapsedTime();
             while ($nextMillisecond === $elapsedTime) {
                 ++$nextMillisecond;
@@ -121,40 +122,5 @@ class Sonyflake
     private static function elapsedTime(): int
     {
         return floor(((new DateTimeImmutable('now'))->format('Uv') - self::getStartTimeStamp()) / 10) | 0;
-    }
-
-    /**
-     * Generates a sequence number based on the current time.
-     *
-     * @param DateTimeInterface $now The current time.
-     * @param string $machineId The machine identifier.
-     * @return int The generated sequence number.
-     * @throws SonyflakeException
-     */
-    private static function sequence(DateTimeInterface $now, string $machineId): int
-    {
-        self::$fileLocation = sys_get_temp_dir() . DIRECTORY_SEPARATOR .
-            'uid-sof-' . $machineId . $now->format('Ymd') . '.seq';
-        if (!file_exists(self::$fileLocation)) {
-            touch(self::$fileLocation);
-        }
-        $handle = fopen(self::$fileLocation, "r+");
-        if (!flock($handle, LOCK_EX)) {
-            throw new SonyflakeException('Could not acquire lock on ' . self::$fileLocation);
-        }
-        $content = '';
-        while (!feof($handle)) {
-            $content .= fread($handle, 1024);
-        }
-        $content = json_decode($content, true);
-        $currentTime = (int)$now->format('Uv');
-        $content[$currentTime] = ($content[$currentTime] ?? 0) + 1;
-        ftruncate($handle, 0);
-        rewind($handle);
-        fwrite($handle, json_encode($content));
-        flock($handle, LOCK_UN);
-        fclose($handle);
-
-        return $content[$currentTime];
     }
 }

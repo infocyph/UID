@@ -65,12 +65,12 @@ class UUID
     /**
      * Generates the v3 UUID for a given string using the specified namespace.
      *
-     * @param string $string The string to generate the hash for.
      * @param string $namespace The namespace to use for the hash generation.
+     * @param string $string The string to generate the hash for.
      * @return string
      * @throws UUIDException
      */
-    public static function v3(string $string, string $namespace): string
+    public static function v3(string $namespace, string $string): string
     {
         $namespace = self::nsResolve($namespace);
         if (!$namespace) {
@@ -95,12 +95,12 @@ class UUID
     /**
      * Generates the v3 UUID for a given string using the specified namespace.
      *
-     * @param string $string The string to generate the UUID from.
-     * @param string $namespace The namespace to use for the UUID generation.
+     * @param string $namespace The namespace to use for the hash generation.
+     * @param string $string The string to generate the hash for.
      * @return string
      * @throws UUIDException
      */
-    public static function v5(string $string, string $namespace): string
+    public static function v5(string $namespace, string $string): string
     {
         $namespace = self::nsResolve($namespace);
         if (!$namespace) {
@@ -134,13 +134,14 @@ class UUID
     /**
      * Generates a version 7 UUID.
      *
+     * @param DateTimeInterface|null $dateTime An optional DateTimeInterface object to create the UUID.
      * @param string|null $node The node identifier. Defaults to null.
      * @return string
      * @throws Exception
      */
-    public static function v7(string $node = null): string
+    public static function v7(?DateTimeInterface $dateTime = null, string $node = null): string
     {
-        $unixTsMs = (new DateTimeImmutable('now'))->format('Uv');
+        $unixTsMs = ($dateTime ?? new DateTimeImmutable('now'))->format('Uv');
         if ($unixTsMs <= self::$unixTsMs) {
             $unixTsMs = self::$unixTsMs + 1;
         }
