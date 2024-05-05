@@ -18,7 +18,7 @@ class ULID
 
 
     /**
-     * Generates a ULID (Universally Unique Lexicographically Identifier).
+     * Generates a ULID (Universally Unique Lexicographically Sortable Identifier).
      *
      * @param DateTimeInterface|null $dateTime
      * @return string
