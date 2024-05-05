@@ -29,7 +29,7 @@ class Sonyflake
         if ($machineId < 0 || $machineId > $maxMachineID) {
             throw new SonyflakeException("Invalid machine ID, must be between 0 ~ $maxMachineID.");
         }
-        $now = new DateTimeImmutable('now');
+        $now = (int)(new DateTimeImmutable('now'))->format('Uv');
         $elapsedTime = self::elapsedTime();
         while (($sequence = self::sequence($now, $machineId, 'sonyflake')) > (-1 ^ (-1 << self::$maxSequenceLength))) {
             $nextMillisecond = self::elapsedTime();

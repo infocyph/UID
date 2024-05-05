@@ -12,14 +12,14 @@ trait GetSequence
     /**
      * Generates a sequence number based on the current time.
      *
-     * @param DateTimeInterface $dateTime The current time.
+     * @param int $dateTime The current time.
      * @param string $machineId The machine ID.
      * @return int The generated sequence number.
      * @throws FileLockException
      */
-    private static function sequence(DateTimeInterface $dateTime, string $machineId, string $type): int
+    private static function sequence(int $dateTime, string $machineId, string $type): int
     {
-        self::$fileLocation = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "uid-$type-$machineId.seq";
+        self::$fileLocation ??= sys_get_temp_dir() . DIRECTORY_SEPARATOR . "uid-$type-$machineId.seq";
         if (!file_exists(self::$fileLocation)) {
             touch(self::$fileLocation);
         }
@@ -27,18 +27,17 @@ trait GetSequence
         if (!flock($handle, LOCK_EX)) {
             throw new FileLockException('Could not acquire lock on ' . self::$fileLocation);
         }
-        $now = $dateTime->format('Uv');
         $line = fgetcsv($handle);
         $sequence = 0;
-        if ($line) {
+        if ($line && ($line[0] = (int)$line[0]) <= $dateTime) {
             $sequence = match ($line[0]) {
-                $now => $line[1],
+                $dateTime => $line[1],
                 default => $sequence
             };
         }
         ftruncate($handle, 0);
         rewind($handle);
-        fputcsv($handle, [$now, ++$sequence]);
+        fputcsv($handle, [$dateTime, ++$sequence]);
         flock($handle, LOCK_UN);
         fclose($handle);
         return $sequence;
