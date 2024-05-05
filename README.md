@@ -35,7 +35,7 @@ An AIO Unique ID generator for php. Supports,
     * [ULID](#ulid-universally-unique-lexicographically-sortable-identifier)
     * [Snowflake ID](#snowflake-id)
     * [Sonyflake ID](#sonyflake-id)
-    * [TBSL ID](#tbsl-time-based-keys-with-lexicographic-sorting)
+    * [TBSL ID](#tbsl-time-based-keys-with-lexicographic-sorting-library-exclusive)
 * [Benchmark](#benchmark)
 * [Support](#support)
 * [References](#references)
