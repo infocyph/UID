@@ -2,7 +2,9 @@
 
 namespace Infocyph\UID;
 
+use DateTimeInterface;
 use Exception;
+use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SnowflakeException;
 use Infocyph\UID\Exceptions\SonyflakeException;
 
@@ -24,14 +26,14 @@ if (!function_exists('Infocyph\UID\uuid3')) {
     /**
      * Generate a Version 3 UUID.
      *
-     * @param string $string The string to generate the UUID from.
      * @param string $namespace The namespace to use for the UUID generation.
+     * @param string $string The string to generate the UUID from.
      * @return string The generated UUID.
      * @throws Exception|Exceptions\UUIDException
      */
-    function uuid3(string $string, string $namespace): string
+    function uuid3(string $namespace, string $string): string
     {
-        return UUID::v3($string, $namespace);
+        return UUID::v3($namespace, $string);
     }
 }
 
@@ -50,16 +52,16 @@ if (!function_exists('Infocyph\UID\uuid4')) {
 
 if (!function_exists('Infocyph\UID\uuid5')) {
     /**
-     * Generates a version 5 UUID for a given string using the specified namespace.
+     * Generate a Version 5 UUID.
      *
-     * @param string $string The string to generate the UUID from.
      * @param string $namespace The namespace to use for the UUID generation.
+     * @param string $string The string to generate the UUID from.
      * @return string The generated UUID.
-     * @throws Exceptions\UUIDException
+     * @throws Exception|Exceptions\UUIDException
      */
-    function uuid5(string $string, string $namespace): string
+    function uuid5(string $namespace, string $string): string
     {
-        return UUID::v5($string, $namespace);
+        return UUID::v5($namespace, $string);
     }
 }
 
@@ -81,13 +83,14 @@ if (!function_exists('Infocyph\UID\uuid7')) {
     /**
      * Generates a version 7 UUID.
      *
+     * @param DateTimeInterface|null $dateTime An optional DateTimeInterface object to create the UUID.
      * @param string|null $node The node identifier. Defaults to null.
      * @return string
      * @throws Exception
      */
-    function uuid7(string $node = null): string
+    function uuid7(?DateTimeInterface $dateTime = null, string $node = null): string
     {
-        return UUID::v7($node);
+        return UUID::v7($dateTime, $node);
     }
 }
 
@@ -109,12 +112,13 @@ if (!function_exists('Infocyph\UID\ulid')) {
     /**
      * Generates ULID.
      *
+     * @param DateTimeInterface|null $dateTime
      * @return string
      * @throws Exception
      */
-    function ulid(): string
+    function ulid(?DateTimeInterface $dateTime = null): string
     {
-        return ULID::generate();
+        return ULID::generate($dateTime);
     }
 }
 
@@ -125,7 +129,7 @@ if (!function_exists('Infocyph\UID\snowflake')) {
      * @param int $datacenter
      * @param int $workerId
      * @return string
-     * @throws SnowflakeException
+     * @throws SnowflakeException|FileLockException
      */
     function snowflake(int $datacenter = 0, int $workerId = 0): string
     {
@@ -139,7 +143,7 @@ if (!function_exists('Infocyph\UID\sonyflake')) {
      *
      * @param int $machineId
      * @return string
-     * @throws SonyflakeException
+     * @throws SonyflakeException|FileLockException
      */
     function sonyflake(int $machineId = 0): string
     {
