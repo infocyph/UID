@@ -38,10 +38,9 @@ class Snowflake
             throw new SnowflakeException("Invalid worker ID, must be between 0 ~ $maxWorkId.");
         }
 
-        $now = new DateTimeImmutable('now');
-        $currentTime = (int)$now->format('Uv');
+        $currentTime = (int)(new DateTimeImmutable('now'))->format('Uv');
         while (($sequence = self::sequence(
-                $now,
+                $currentTime,
                 $datacenter . $workerId,
                 'snowflake'
             )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
