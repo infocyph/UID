@@ -2,18 +2,17 @@
 
 [![build](https://github.com/infocyph/UID/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/infocyph/UID/actions/workflows/build.yml)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/cec4c7ed0e274b3da4571973732a363e)](https://app.codacy.com/gh/infocyph/UID/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
-![Libraries.io dependency status for GitHub repo](https://img.shields.io/librariesio/github/infocyph/uid)
 ![Packagist Downloads](https://img.shields.io/packagist/dt/infocyph/uid)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 ![Packagist Version](https://img.shields.io/packagist/v/infocyph/uid)
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/infocyph/uid)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
 
-An AIO Unique ID generator for php. Supports,
+An AIO Unique ID generator written in PHP. Supports,
 - UUID (RFC 4122 + Unofficial/Draft)
 - ULID (ulid specification)
-- Snowflake ID (Twitter Snowflake specification)
-- Sonyflake ID (Snowflake Inspired specification, ported from Golang)
+- Snowflake ID (Twitter Snowflake)
+- Sonyflake ID (Snowflake Inspired, ported from Golang)
 - TBSL (library exclusive)
 
 ## Table of contents
@@ -134,7 +133,7 @@ But, if you wanna track the source of the UUIDs, you should use it (pre-define t
 // alternatively can also use
 \Infocyph\UID\uuid6();
 ```
-- Or if you wanna get v6 UUID using predefined node:
+- Get v6 UUID using predefined node:
 ```php
 \Infocyph\UID\UUID::v6($node); // check additional section for how to generate one
 ```
@@ -148,7 +147,7 @@ But, if you wanna track the source of the UUIDs, you should use it (pre-define t
 // alternatively can also use
 \Infocyph\UID\uuid7();
 ```
-- Or if you wanna get v7 UUID using predefined node:
+- Get v7 UUID using predefined node:
 ```php
 \Infocyph\UID\UUID::v7(null, $node); // check additional section for, how to generate one
 ```
@@ -157,7 +156,7 @@ But, if you wanna track the source of the UUIDs, you should use it (pre-define t
 $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 \Infocyph\UID\UUID::v7($timeInterface);
 ```
-- You can combine both parameters together.
+- You can combine both parameters together as well.
 
 #### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
 
@@ -168,7 +167,7 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 // alternatively can also use
 \Infocyph\UID\uuid8();
 ```
-- Or if you wanna get v8 UUID using predefined node:
+- Get v8 UUID using predefined node:
 ```php
 \Infocyph\UID\UUID::v8($node); // check additional section for, how to generate one
 ```
