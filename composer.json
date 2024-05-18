@@ -11,7 +11,8 @@
     "tbsl",
     "id",
     "key",
-    "unique"
+    "unique",
+    "rfc4122"
   ],
   "authors": [
     {
