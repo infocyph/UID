@@ -36,14 +36,42 @@
   },
   "config": {
     "sort-packages": true,
-    "optimize-autoloader": true
-  },
-  "archive": {
-    "exclude": [
-      "/.github"
-    ]
+    "optimize-autoloader": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
   },
   "replace": {
     "abmmhasan/uuid": "*"
+  },
+  "require-dev": {
+    "captainhook/captainhook": "^5.23",
+    "laravel/pint": "^1.16",
+    "pestphp/pest": "^2.34",
+    "rector/rector": "^1.1",
+    "symfony/var-dumper": "^7.0"
+  },
+  "scripts": {
+    "test:code": "pest --parallel --processes=10",
+    "test:refactor": "rector process --dry-run",
+    "test:lint": "pint --test",
+    "test:hook": [
+      "captainhook hook:post-checkout",
+      "captainhook hook:pre-commit",
+      "captainhook hook:post-commit",
+      "captainhook hook:post-merge",
+      "captainhook hook:post-rewrite",
+      "captainhook hook:pre-push"
+    ],
+    "tests": [
+      "@test:code",
+      "@test:lint",
+      "@test:refactor"
+    ],
+    "git:hook": "captainhook install --only-enabled -nf",
+    "test": "pest",
+    "refactor": "rector process",
+    "lint": "pint",
+    "post-install-cmd": "@git:hook"
   }
 }

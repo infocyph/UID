@@ -13,7 +13,7 @@ An AIO Unique ID generator written in PHP. Supports,
 - ULID (ulid specification)
 - Snowflake ID (Twitter Snowflake)
 - Sonyflake ID (Snowflake Inspired, ported from Golang)
-- TBSL (library exclusive)
+- TBSL (tbsl spec)
 
 ## Table of contents
 
@@ -229,25 +229,28 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 ### Sonyflake ID
 
 - Generate a new Sonyflake ID (You can also pass your pre-generated machine_id for server detection):
+
 ```php
 // Get Sonyflake ID
 // optionally set machine_id, for server detection
-\Infocyph\UID\Sonyflake::generate();
+\Infocyph\UID\TBSL::generate();
 // alternatively
 \Infocyph\UID\sonyflake();
 ```
 - Parse Sonyflake ID (get the timestamp, sequence, machine_id from any Snowflake ID):
+
 ```php
 // Parse Sonyflake ID
 // returns [time => DateTimeInterface object, sequence, machine_id]
-\Infocyph\UID\Sonyflake::parse($sonyflake);
+\Infocyph\UID\TBSL::parse($sonyflake);
 ```
 - Specify start time for Sonyflake ID (a Sonyflake ID is unique upto 174 years from the start date):
+
 ```php
 // By default, the start time is set to `2020-01-01 00:00:00`, which is changeable
 // but if changed, this should always stay same as long as your project lives
 // & must call this before any Sonyflake call (generate/parse)
-\Infocyph\UID\Sonyflake::setStartTimeStamp('2000-01-01 00:00:00');
+\Infocyph\UID\TBSL::setStartTimeStamp('2000-01-01 00:00:00');
 ```
 
 ### TBSL: Time-Based Keys with Lexicographic Sorting (library exclusive)
@@ -299,3 +302,4 @@ Having trouble? Create an issue!
 - ULID: https://github.com/ulid/spec
 - Snowflake ID: https://github.com/twitter-archive/snowflake/tree/snowflake-2010
 - Sonyflake ID: https://github.com/sony/sonyflake
+- TBSL ID: https://github.com/infocyph/UID/blob/main/TBSL.md

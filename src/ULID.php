@@ -7,7 +7,7 @@ use DateTimeInterface;
 use Exception;
 use Infocyph\UID\Exceptions\ULIDException;
 
-class ULID
+final class ULID
 {
     private static string $encodingChars = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
     private static int $encodingLength = 32;
@@ -76,7 +76,7 @@ class ULID
         $time = 0;
         foreach ($timeChars as $index => $char) {
             $encodingIndex = strripos(static::$encodingChars, $char);
-            $time += ($encodingIndex * pow(static::$encodingLength, $index));
+            $time += ($encodingIndex * static::$encodingLength ** $index);
         }
 
         $time = str_split($time, static::$timeLength);

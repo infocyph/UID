@@ -7,14 +7,14 @@ use Exception;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SonyflakeException;
 
-class Sonyflake
+final class Sonyflake
 {
     use GetSequence;
 
     private static int $maxTimestampLength = 39;
     private static int $maxMachineIdLength = 16;
     private static int $maxSequenceLength = 8;
-    private static ?int $startTime;
+    private static ?int $startTime = null;
 
     /**
      * Generates a unique identifier using the SonyFlake algorithm.

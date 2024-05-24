@@ -2,11 +2,10 @@
 
 namespace Infocyph\UID;
 
-
 use DateTimeImmutable;
 use Exception;
 
-class TBSL
+final class TBSL
 {
     /**
      * Generates a unique identifier using the TBSL algorithm.
