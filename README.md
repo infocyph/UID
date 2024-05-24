@@ -233,7 +233,7 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 ```php
 // Get Sonyflake ID
 // optionally set machine_id, for server detection
-\Infocyph\UID\TBSL::generate();
+\Infocyph\UID\Sonyflake::generate();
 // alternatively
 \Infocyph\UID\sonyflake();
 ```
@@ -242,7 +242,7 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 ```php
 // Parse Sonyflake ID
 // returns [time => DateTimeInterface object, sequence, machine_id]
-\Infocyph\UID\TBSL::parse($sonyflake);
+\Infocyph\UID\Sonyflake::parse($sonyflake);
 ```
 - Specify start time for Sonyflake ID (a Sonyflake ID is unique upto 174 years from the start date):
 
@@ -250,7 +250,7 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 // By default, the start time is set to `2020-01-01 00:00:00`, which is changeable
 // but if changed, this should always stay same as long as your project lives
 // & must call this before any Sonyflake call (generate/parse)
-\Infocyph\UID\TBSL::setStartTimeStamp('2000-01-01 00:00:00');
+\Infocyph\UID\Sonyflake::setStartTimeStamp('2000-01-01 00:00:00');
 ```
 
 ### TBSL: Time-Based Keys with Lexicographic Sorting (library exclusive)
