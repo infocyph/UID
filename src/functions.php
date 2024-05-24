@@ -108,7 +108,7 @@ if (!function_exists('Infocyph\UID\uuid8')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\ulid')) {
+if (!function_exists(\Infocyph\UID\ulid::class)) {
     /**
      * Generates ULID.
      *
@@ -122,7 +122,7 @@ if (!function_exists('Infocyph\UID\ulid')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\snowflake')) {
+if (!function_exists(\Infocyph\UID\snowflake::class)) {
     /**
      * Generates Snowflake ID.
      *
@@ -137,7 +137,7 @@ if (!function_exists('Infocyph\UID\snowflake')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\sonyflake')) {
+if (!function_exists(\Infocyph\UID\TBSL::class)) {
     /**
      * Generates Sonyflake ID.
      *
@@ -147,11 +147,11 @@ if (!function_exists('Infocyph\UID\sonyflake')) {
      */
     function sonyflake(int $machineId = 0): string
     {
-        return Sonyflake::generate($machineId);
+        return TBSL::generate($machineId);
     }
 }
 
-if (!function_exists('Infocyph\UID\tbsl')) {
+if (!function_exists(\Infocyph\UID\tbsl::class)) {
     /**
      * Generates TBSL ID.
      *

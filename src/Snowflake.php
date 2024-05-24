@@ -7,7 +7,7 @@ use Exception;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SnowflakeException;
 
-class Snowflake
+final class Snowflake
 {
     use GetSequence;
 
@@ -15,7 +15,7 @@ class Snowflake
     private static int $maxDatacenterLength = 5;
     private static int $maxWorkIdLength = 5;
     private static int $maxSequenceLength = 12;
-    private static ?int $startTime;
+    private static ?int $startTime = null;
 
     /**
      * Generates a unique snowflake ID.
@@ -40,10 +40,10 @@ class Snowflake
 
         $currentTime = (int)(new DateTimeImmutable('now'))->format('Uv');
         while (($sequence = self::sequence(
-                $currentTime,
-                $datacenter . $workerId,
-                'snowflake'
-            )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
+            $currentTime,
+            $datacenter . $workerId,
+            'snowflake'
+        )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
             ++$currentTime;
         }
 

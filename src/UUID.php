@@ -9,7 +9,7 @@ use Infocyph\UID\Exceptions\UUIDException;
 
 use const STR_PAD_LEFT;
 
-class UUID
+final class UUID
 {
     private static array $nsList = [
         'dns' => 0,
@@ -123,11 +123,11 @@ class UUID
         $timestamp = $unixTs * self::$secondIntervals + $subSec;
         $timeHex = str_pad(dechex($timestamp + self::$timeOffset), 15, '0', STR_PAD_LEFT);
         $string = substr_replace(
-                substr($timeHex, -15),
-                '6',
-                -3,
-                0
-            ) . self::prepareNode(6, $node);
+            substr($timeHex, -15),
+            '6',
+            -3,
+            0
+        ) . self::prepareNode(6, $node);
         return self::output(6, $string);
     }
 
@@ -173,22 +173,6 @@ class UUID
     }
 
     /**
-     * Generates a random node string based on the given version and node.
-     *
-     * @param int $version The version of the node.
-     * @param string|null $node The node identifier. Defaults to null.
-     * @return string The generated node string.
-     * @throws Exception
-     */
-    private static function prepareNode(int $version, string $node = null): string
-    {
-        if (!$node) {
-            return bin2hex(random_bytes(self::$randomLength[$version] + 6));
-        }
-        return bin2hex(random_bytes(self::$randomLength[$version])) . $node;
-    }
-
-    /**
      * Generate unique node.
      *
      * @return string The generated node.
@@ -225,6 +209,22 @@ class UUID
         $data['node'] = $uuidData[4];
 
         return $data;
+    }
+
+    /**
+     * Generates a random node string based on the given version and node.
+     *
+     * @param int $version The version of the node.
+     * @param string|null $node The node identifier. Defaults to null.
+     * @return string The generated node string.
+     * @throws Exception
+     */
+    private static function prepareNode(int $version, string $node = null): string
+    {
+        if (!$node) {
+            return bin2hex(random_bytes(self::$randomLength[$version] + 6));
+        }
+        return bin2hex(random_bytes(self::$randomLength[$version])) . $node;
     }
 
     /**
@@ -265,7 +265,8 @@ class UUID
                     -(
                         (hexdec(substr('0' . $timestamp, 13)) << 2) +
                         (hexdec($uuid[3][0]) & 0x03)
-                    ) * self::$secondIntervals78 >> 14);
+                    ) * self::$secondIntervals78 >> 14
+                );
                 $time = str_split((string)($unixTs * self::$secondIntervals78 + $subSec), 10);
                 $time[1] = substr($time[1], 0, 6);
                 break;

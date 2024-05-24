@@ -2,7 +2,6 @@
 
 namespace Infocyph\UID;
 
-use DateTimeInterface;
 use Infocyph\UID\Exceptions\FileLockException;
 
 trait GetSequence

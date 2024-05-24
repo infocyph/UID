@@ -1,3 +1,5 @@
+.gitattributes abmmhasan@users.noreply.github.com
+.github/CODEOWNERS abmmhasan@users.noreply.github.com
 .github/dependabot.yml abmmhasan@users.noreply.github.com
 .github/workflows/build.yml abmmhasan@users.noreply.github.com
 .gitignore abmmhasan@users.noreply.github.com
@@ -5,7 +7,11 @@ LICENSE abmmhasan@users.noreply.github.com
 README.md abmmhasan@users.noreply.github.com
 SECURITY.md abmmhasan@users.noreply.github.com
 TBSL.md abmmhasan@users.noreply.github.com
+captainhook.json abmmhasan@users.noreply.github.com
 composer.json abmmhasan@users.noreply.github.com
+phpunit.xml abmmhasan@users.noreply.github.com
+pint.json abmmhasan@users.noreply.github.com
+rector.php abmmhasan@users.noreply.github.com
 src/Exceptions/FileLockException.php abmmhasan@users.noreply.github.com
 src/Exceptions/SnowflakeException.php abmmhasan@users.noreply.github.com
 src/Exceptions/SonyflakeException.php abmmhasan@users.noreply.github.com
@@ -18,3 +24,9 @@ src/TBSL.php abmmhasan@users.noreply.github.com
 src/ULID.php abmmhasan@users.noreply.github.com
 src/UUID.php abmmhasan@users.noreply.github.com
 src/functions.php abmmhasan@users.noreply.github.com
+tests/ArchTest.php abmmhasan@users.noreply.github.com
+tests/SnowflakeTest.php abmmhasan@users.noreply.github.com
+tests/SonyflakeTest.php abmmhasan@users.noreply.github.com
+tests/TBSLTest.php abmmhasan@users.noreply.github.com
+tests/ULIDTest.php abmmhasan@users.noreply.github.com
+tests/UUIDTest.php abmmhasan@users.noreply.github.com
