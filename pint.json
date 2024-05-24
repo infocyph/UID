@@ -4,6 +4,7 @@
     "tests"
   ],
   "notPath": [
-    "rector.php"
+    "rector.php",
+    "test.php"
   ]
 }
