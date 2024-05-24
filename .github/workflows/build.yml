@@ -1,6 +1,12 @@
 name: "build"
 
-on: [ "pull_request", "push" ]
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: [ "main", "master", "develop" ]
 
 jobs:
   run:
@@ -25,10 +31,7 @@ jobs:
         run: composer validate --strict
 
       - name: Install dependencies
-        run: composer install  --no-interaction --optimize-autoloader --prefer-dist --no-progress
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Package Audit
         run: composer audit
