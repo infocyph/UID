@@ -1,4 +1,4 @@
-name: "build"
+name: "Security & Standards"
 
 on:
   schedule:
@@ -15,7 +15,9 @@ jobs:
       matrix:
         operating-system: [ ubuntu-latest ]
         php-versions: [ '8.2' , '8.3' ]
-    name: PHP ${{ matrix.php-versions }} Test on ${{ matrix.operating-system }}
+        dependency-version: [ prefer-lowest, prefer-stable ]
+
+    name: PHP ${{ matrix.php-versions }} - ${{ matrix.operating-system }} - ${{ matrix.dependency-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
