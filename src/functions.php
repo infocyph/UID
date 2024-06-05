@@ -108,7 +108,21 @@ if (!function_exists('Infocyph\UID\uuid8')) {
     }
 }
 
-if (!function_exists(\Infocyph\UID\ulid::class)) {
+if (!function_exists('Infocyph\UID\guid')) {
+    /**
+     * Generates a GUID (Globally Unique Identifier) string.
+     *
+     * @param bool $trim Whether to trim the curly braces from the GUID string. Default is true.
+     * @return string The generated GUID string.
+     * @throws Exception
+     */
+    function guid(bool $trim = true): string
+    {
+        return UUID::guid($trim);
+    }
+}
+
+if (!function_exists('Infocyph\UID\ulid')) {
     /**
      * Generates ULID.
      *
@@ -122,7 +136,7 @@ if (!function_exists(\Infocyph\UID\ulid::class)) {
     }
 }
 
-if (!function_exists(\Infocyph\UID\snowflake::class)) {
+if (!function_exists('Infocyph\UID\snowflake')) {
     /**
      * Generates Snowflake ID.
      *
@@ -137,7 +151,7 @@ if (!function_exists(\Infocyph\UID\snowflake::class)) {
     }
 }
 
-if (!function_exists(\Infocyph\UID\TBSL::class)) {
+if (!function_exists('Infocyph\UID\sonyflake')) {
     /**
      * Generates Sonyflake ID.
      *
@@ -147,11 +161,11 @@ if (!function_exists(\Infocyph\UID\TBSL::class)) {
      */
     function sonyflake(int $machineId = 0): string
     {
-        return TBSL::generate($machineId);
+        return Sonyflake::generate($machineId);
     }
 }
 
-if (!function_exists(\Infocyph\UID\tbsl::class)) {
+if (!function_exists('Infocyph\UID\tbsl')) {
     /**
      * Generates TBSL ID.
      *

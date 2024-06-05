@@ -10,7 +10,7 @@ test('UUID v1', function () {
         ->and($parsed['version'])->toBe(1)
         ->and($parsed['time'])->not()->toBeNull()
         ->and($parsed['node'])->toBeString()->not()->toBeNull()
-        ->and($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time() + 1);
+        ->and($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time());
 });
 
 $ns = UUID::v4();
@@ -53,7 +53,7 @@ test('UUID v6', function () {
         ->and($parsed['version'])->toBe(6)
         ->and($parsed['time'])->not()->toBeNull()
         ->and($parsed['node'])->toBeString()->not()->toBeNull()
-        ->and($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time() + 1);
+        ->and($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time());
 });
 
 test('UUID v7', function () {
@@ -64,7 +64,7 @@ test('UUID v7', function () {
         ->and($parsed['version'])->toBe(7)
         ->and($parsed['time'])->not()->toBeNull()
         ->and($parsed['node'])->toBeString()->not()->toBeNull()
-        ->and($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time() + 1);
+        ->and($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time());
 });
 
 test('UUID v8', function () {
@@ -75,6 +75,16 @@ test('UUID v8', function () {
         ->and($parsed['version'])->toBe(8)
         ->and($parsed['time'])->not()->toBeNull()
         ->and($parsed['node'])->toBeString()->not()->toBeNull()
-        ->and($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time() + 1);
+        ->and($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time());
+});
+
+test('GUID', function () {
+    $uid = UUID::guid();
+    expect($uid)->toBeString();
+    $parsed = UUID::parse($uid);
+    expect($parsed['isValid'])->toBeTrue()
+        ->and($parsed['version'])->toBe(4)
+        ->and($parsed['time'])->toBeNull()
+        ->and($parsed['node'])->toBeString()->not()->toBeNull();
 });
 
