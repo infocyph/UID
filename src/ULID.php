@@ -28,31 +28,31 @@ final class ULID
     {
         $time = (int)($dateTime ?? new DateTimeImmutable('now'))->format('Uv');
 
-        $isDuplicate = $time === static::$lastGenTime;
-        static::$lastGenTime = $time;
+        $isDuplicate = $time === self::$lastGenTime;
+        self::$lastGenTime = $time;
 
         // Generate time characters
         $timeChars = '';
-        for ($i = static::$timeLength - 1; $i >= 0; $i--) {
-            $mod = $time % static::$encodingLength;
-            $timeChars = static::$encodingChars[$mod] . $timeChars;
-            $time = ($time - $mod) / static::$encodingLength;
+        for ($i = self::$timeLength - 1; $i >= 0; $i--) {
+            $mod = $time % self::$encodingLength;
+            $timeChars = self::$encodingChars[$mod] . $timeChars;
+            $time = ($time - $mod) / self::$encodingLength;
         }
 
         // Generate random characters
         $randChars = '';
         if (!$isDuplicate) {
-            for ($i = 0; $i < static::$randomLength; $i++) {
-                static::$lastRandChars[$i] = random_int(0, 31);
+            for ($i = 0; $i < self::$randomLength; $i++) {
+                self::$lastRandChars[$i] = random_int(0, 31);
             }
         } else {
-            for ($i = static::$randomLength - 1; $i >= 0 && static::$lastRandChars[$i] === 31; $i--) {
-                static::$lastRandChars[$i] = 0;
+            for ($i = self::$randomLength - 1; $i >= 0 && self::$lastRandChars[$i] === 31; $i--) {
+                self::$lastRandChars[$i] = 0;
             }
-            static::$lastRandChars[$i]++;
+            self::$lastRandChars[$i]++;
         }
-        for ($i = 0; $i < static::$randomLength; $i++) {
-            $randChars .= static::$encodingChars[static::$lastRandChars[$i]];
+        for ($i = 0; $i < self::$randomLength; $i++) {
+            $randChars .= self::$encodingChars[self::$lastRandChars[$i]];
         }
 
         return $timeChars . $randChars;
@@ -67,19 +67,19 @@ final class ULID
      */
     public static function getTime(string $ulid): DateTimeImmutable
     {
-        if (!static::isValid($ulid)) {
+        if (!self::isValid($ulid)) {
             throw new ULIDException('Invalid ULID string');
         }
 
-        $timeChars = str_split(strrev(substr($ulid, 0, static::$timeLength)));
+        $timeChars = str_split(strrev(substr($ulid, 0, self::$timeLength)));
 
         $time = 0;
         foreach ($timeChars as $index => $char) {
-            $encodingIndex = strripos(static::$encodingChars, $char);
-            $time += ($encodingIndex * static::$encodingLength ** $index);
+            $encodingIndex = strripos(self::$encodingChars, $char);
+            $time += ($encodingIndex * self::$encodingLength ** $index);
         }
 
-        $time = str_split($time, static::$timeLength);
+        $time = str_split($time, self::$timeLength);
 
         if ($time[0] > (time() + (86400 * 365 * 10))) {
             throw new ULIDException('Invalid ULID string: timestamp too large');

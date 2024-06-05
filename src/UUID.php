@@ -173,6 +173,27 @@ final class UUID
     }
 
     /**
+     * Generates a GUID (Globally Unique Identifier) string.
+     *
+     * @param bool $trim Whether to trim the curly braces from the GUID string. Default is true.
+     * @return string The generated GUID string.
+     * @throws Exception
+     */
+    public static function guid(bool $trim = true): string
+    {
+        if (function_exists('com_create_guid') === true) {
+            $data = com_create_guid();
+            return $trim ? trim($data, '{}') : $data;
+        }
+
+        $data = random_bytes(16);
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+        $data = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+        return $trim ? $data : "\{$data\}";
+    }
+
+    /**
      * Generate unique node.
      *
      * @return string The generated node.
@@ -192,9 +213,11 @@ final class UUID
      */
     public static function parse(string $uuid): array
     {
+        $uuid = trim($uuid, '{}');
         $data = [
             'isValid' => self::isValid($uuid),
             'version' => null,
+            'variant' => null,
             'time' => null,
             'node' => null
         ];
@@ -204,10 +227,17 @@ final class UUID
         }
 
         $uuidData = explode('-', $uuid);
+        $variantN = hexdec($uuidData[3][0]);
         $data['version'] = (int)$uuidData[2][0];
         $data['time'] = in_array($data['version'], [1, 6, 7, 8]) ? self::getTime($uuidData, $data['version']) : null;
         $data['node'] = $uuidData[4];
-
+        $data['variant'] = match (true) {
+            $variantN <= 7 => 'NCS',
+            $variantN >= 8 && $variantN <= 11 => 'DCE 1.1, ISO/IEC 11578:1996',
+            $variantN === 12 || $variantN === 13 => 'Microsoft GUID',
+            $variantN === 14 => 'Reserved',
+            default => 'Unknown'
+        };
         return $data;
     }
 
@@ -235,7 +265,7 @@ final class UUID
      */
     private static function isValid(string $uuid): bool
     {
-        return (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-\d[0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
+        return (bool)preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-\d[0-9a-f]{3}-[089a-e][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
     }
 
     /**

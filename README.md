@@ -7,6 +7,7 @@
 ![Packagist Version](https://img.shields.io/packagist/v/infocyph/uid)
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/infocyph/uid)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
+![visitors](https://visitor-badge.laobi.icu/badge?page_id=infocyph.com)
 
 An AIO Unique ID generator written in PHP. Supports,
 - UUID (RFC 4122 + Unofficial/Draft)
@@ -172,6 +173,14 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 \Infocyph\UID\UUID::v8($node); // check additional section for, how to generate one
 ```
 
+#### GUID
+
+GUID generator, works in all platform. Generate:
+```php
+\Infocyph\UID\UUID::guid()
+```
+_Note: Sending false in only parameter will return the string enclosed with Braces_ 
+
 #### Additional
 
 - Generate node for further use (with version: 1, 6, 7, 8)
@@ -212,7 +221,7 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 // alternatively
 \Infocyph\UID\snowflake();
 ```
-- Parse Snowflake ID (get the timestamp, sequence, worker_id, datacenter_id from any Snowflake ID):
+- Parse Snowflake ID (get the timestamp, sequence, worker_id, datacenter_id):
 ```php
 // Parse Snowflake ID
 // returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
@@ -237,7 +246,7 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 // alternatively
 \Infocyph\UID\sonyflake();
 ```
-- Parse Sonyflake ID (get the timestamp, sequence, machine_id from any Snowflake ID):
+- Parse Sonyflake ID (get the timestamp, sequence, machine_id):
 
 ```php
 // Parse Sonyflake ID

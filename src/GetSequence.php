@@ -23,9 +23,7 @@ trait GetSequence
             touch(self::$fileLocation);
         }
         $handle = fopen(self::$fileLocation, "r+");
-        if (!flock($handle, LOCK_EX)) {
-            throw new FileLockException('Could not acquire lock on ' . self::$fileLocation);
-        }
+        flock($handle, LOCK_EX) || throw new FileLockException('Could not acquire lock on ' . self::$fileLocation);
         $line = fgetcsv($handle);
         $sequence = 0;
         if ($line && ($line[0] = (int)$line[0]) <= $dateTime) {
