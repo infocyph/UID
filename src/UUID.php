@@ -49,15 +49,13 @@ final class UUID
     public static function v1(string $node = null): string
     {
         [$unixTs, $subSec] = self::getUnixTimeSubSec();
-        $time = $unixTs . $subSec;
-        $time = str_pad(dechex((int)$time + self::$timeOffset), 16, '0', STR_PAD_LEFT);
-        $clockSeq = random_int(0, 0x3fff);
+        $time = str_pad(dechex((int)($unixTs . $subSec) + self::$timeOffset), 16, '0', STR_PAD_LEFT);
         return sprintf(
             '%08s-%04s-1%03s-%04x-%012s',
             substr($time, -8),
             substr($time, -12, 4),
             substr($time, -15, 3),
-            $clockSeq | 0x8000,
+            random_int(0, 0x3fff) & 0x3fff | 0x8000,
             $node ?? self::getNode()
         );
     }
@@ -323,8 +321,8 @@ final class UUID
     private static function getUnixTimeSubSec(int $version = 1): array
     {
         $timestamp = microtime();
-        $unixTs = (int)substr($timestamp, 11);
-        $subSec = (int)substr($timestamp, 2, 7);
+        $unixTs = substr($timestamp, 11);
+        $subSec = substr($timestamp, 2, 7);
         if ($version === 1) {
             return [$unixTs, $subSec];
         }
