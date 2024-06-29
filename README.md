@@ -7,9 +7,10 @@
 ![Packagist Version](https://img.shields.io/packagist/v/infocyph/uid)
 ![Packagist PHP Version Support](https://img.shields.io/packagist/php-v/infocyph/uid)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
-![visitors](https://visitor-badge.laobi.icu/badge?page_id=infocyph.com)
+[![]()](https://visitor-badge.laobi.icu/badge?page_id=infocyph.com)
 
 An AIO Unique ID generator written in PHP. Supports,
+
 - UUID (RFC 4122 + Unofficial/Draft)
 - ULID (ulid specification)
 - Snowflake ID (Twitter Snowflake)
@@ -31,11 +32,15 @@ An AIO Unique ID generator written in PHP. Supports,
         * [UUID v6](#uuid-v6-draft-basedunofficial-time-based-uuid)
         * [UUID v7](#uuid-v7-draft-basedunofficial-time-based-uuid)
         * [UUID v8](#uuid-v8-draft-basedunofficial-time-based-uuid-lexicographically-sortable)
+        * [GUID](#guid)
         * [Additional](#additional)
     * [ULID](#ulid-universally-unique-lexicographically-sortable-identifier)
     * [Snowflake ID](#snowflake-id)
     * [Sonyflake ID](#sonyflake-id)
     * [TBSL ID](#tbsl-time-based-keys-with-lexicographic-sorting-library-exclusive)
+    * [RandomId](#randomid)
+        * [NanoId](#nanoid-url-friendly-unique-random-id)
+        * [Cuid2](#cuid2-url-friendly-secure--collision-free)
 * [Benchmark](#benchmark)
 * [Support](#support)
 * [References](#references)
@@ -57,18 +62,22 @@ composer require infocyph/uid
 ### UUID (Universal Unique Identifier)
 
 The node specific UUID's `$node` parameter (1, 6, 7, 8) is optional. If not provided, it will be generated randomly.
-But, if you wanna track the source of the UUIDs, you should use it (pre-define the node per server & pass it accordingly).
+But, if you wanna track the source of the UUIDs, you should use it (pre-define the node per server & pass it
+accordingly).
 
 #### UUID v1: Time-based UUID.
 
 - Generate v1 UUID
+
 ```php
 // Get v1 UUID
 \Infocyph\UID\UUID::v1();
 // alternatively can also use
 \Infocyph\UID\uuid1();
 ```
+
 - Pass your pre-generated node (for node specific UUID)
+
 ```php
 \Infocyph\UID\UUID::v1($node); // check additional section for how to generate one
 ```
@@ -76,20 +85,25 @@ But, if you wanna track the source of the UUIDs, you should use it (pre-define t
 #### UUID v3: Namespace based UUID.
 
 - Generate v3 UUID
+
 ```php
 // Get v3 UUID
 \Infocyph\UID\UUID::v3('a pre-generated UUID', 'the string you wanna get UUID for');
 // alternatively can also use
 \Infocyph\UID\uuid3();
 ```
+
 - Get v3 UUID for predefined namespaces (RFC4122 #Appendix C)
+
 ```php
 /**
 * You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
 */
 \Infocyph\UID\UUID::v3('url', 'abmmhasan.github.io');
 ```
+
 - You can generate a UUID & use as namespace as well
+
 ```php
 \Infocyph\UID\UUID::v3('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
 ```
@@ -97,6 +111,7 @@ But, if you wanna track the source of the UUIDs, you should use it (pre-define t
 #### UUID v4: Random UUID.
 
 - Generate v4 UUID
+
 ```php
 // Get v4 UUID (completely random)
 \Infocyph\UID\UUID::v4();
@@ -107,20 +122,25 @@ But, if you wanna track the source of the UUIDs, you should use it (pre-define t
 #### UUID v5: Namespace based UUID.
 
 - Generate v5 UUID
+
 ```php
 // Get v5 UUID
 \Infocyph\UID\UUID::v5('a pre-generated UUID', 'the string you wanna get UUID for');
 // alternatively can also use
 \Infocyph\UID\uuid5();
 ```
+
 - Get v5 UUID for predefined namespaces (RFC4122 #Appendix C)
+
 ```php
 /**
 * You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
 */
 \Infocyph\UID\UUID::v5('url', 'abmmhasan.github.io');
 ```
+
 - You can generate a UUID & use as namespace as well
+
 ```php
 \Infocyph\UID\UUID::v5('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
 ```
@@ -128,13 +148,16 @@ But, if you wanna track the source of the UUIDs, you should use it (pre-define t
 #### UUID v6 (draft-based/unofficial): Time-based UUID.
 
 - Generate v6 UUID
+
 ```php
 // Get v6 UUID (Time based)
 \Infocyph\UID\UUID::v6();
 // alternatively can also use
 \Infocyph\UID\uuid6();
 ```
+
 - Get v6 UUID using predefined node:
+
 ```php
 \Infocyph\UID\UUID::v6($node); // check additional section for how to generate one
 ```
@@ -142,33 +165,42 @@ But, if you wanna track the source of the UUIDs, you should use it (pre-define t
 #### UUID v7 (draft-based/unofficial): Time-based UUID.
 
 - Generate v7 UUID
+
 ```php
 // Get v7 UUID for current time
 \Infocyph\UID\UUID::v7();
 // alternatively can also use
 \Infocyph\UID\uuid7();
 ```
+
 - Get v7 UUID using predefined node:
+
 ```php
 \Infocyph\UID\UUID::v7(null, $node); // check additional section for, how to generate one
 ```
+
 - Or if you wanna get v7 UUID using predefined time:
+
 ```php
 $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 \Infocyph\UID\UUID::v7($timeInterface);
 ```
+
 - You can combine both parameters together as well.
 
 #### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
 
 - Generate v8 UUID
+
 ```php
 // Get v8 UUID
 \Infocyph\UID\UUID::v8();
 // alternatively can also use
 \Infocyph\UID\uuid8();
 ```
+
 - Get v8 UUID using predefined node:
+
 ```php
 \Infocyph\UID\UUID::v8($node); // check additional section for, how to generate one
 ```
@@ -176,44 +208,59 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 #### GUID
 
 GUID generator, works in all platform. Generate:
+
 ```php
 \Infocyph\UID\UUID::guid()
 ```
-_Note: Sending false in only parameter will return the string enclosed with Braces_ 
+
+_Note: Sending false in only parameter will return the string enclosed with Braces_
 
 #### Additional
 
 - Generate node for further use (with version: 1, 6, 7, 8)
+
 ```php
 \Infocyph\UID\UUID::getNode();
 ```
+
 - Parse any UUID string:
+
 ```php
 \Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'time', 'node']
 ```
 
+
 ### ULID (Universally Unique Lexicographically Sortable Identifier)
 
 - Generating ULID is very simple,
+
 ```php
 \Infocyph\UID\ULID::generate();
 ```
+
 - Or if you wanna get ULID for specific time:
+
 ```php
 \Infocyph\UID\ULID::generate(new DateTimeImmutable('2020-01-01 00:00:00'));
 ```
+
 - Extract datetime from any ULID string:
+
 ```php
 \Infocyph\UID\ULID::getTime($ulid); // returns DateTimeInterface object
 ```
+
 - Validate any ULID string:
+
 ```php
 \Infocyph\UID\ULID::isValid($ulid); // true/false
 ```
 
 ### Snowflake ID
 
-- Generate a new Snowflake ID (You can also pass your pre-generated worker_id & datacenter_id for server/module detection):
+- Generate a new Snowflake ID (You can also pass your pre-generated worker_id & datacenter_id for server/module
+  detection):
+
 ```php
 // Get Snowflake ID
 // optionally you can set worker_id & datacenter_id, for server/module detection
@@ -221,13 +268,17 @@ _Note: Sending false in only parameter will return the string enclosed with Brac
 // alternatively
 \Infocyph\UID\snowflake();
 ```
+
 - Parse Snowflake ID (get the timestamp, sequence, worker_id, datacenter_id):
+
 ```php
 // Parse Snowflake ID
 // returns [time => DateTimeInterface object, sequence, worker_id, datacenter_id]
 \Infocyph\UID\Snowflake::parse($snowflake);
 ```
+
 - Specify start time for Snowflake ID (a Snowflake ID is unique upto 69 years from the start date):
+
 ```php
 // By default, the start time is set to `2020-01-01 00:00:00`, which is changeable
 // but if changed, this should always stay same as long as your project lives
@@ -246,6 +297,7 @@ _Note: Sending false in only parameter will return the string enclosed with Brac
 // alternatively
 \Infocyph\UID\sonyflake();
 ```
+
 - Parse Sonyflake ID (get the timestamp, sequence, machine_id):
 
 ```php
@@ -253,6 +305,7 @@ _Note: Sending false in only parameter will return the string enclosed with Brac
 // returns [time => DateTimeInterface object, sequence, machine_id]
 \Infocyph\UID\Sonyflake::parse($sonyflake);
 ```
+
 - Specify start time for Sonyflake ID (a Sonyflake ID is unique upto 174 years from the start date):
 
 ```php
@@ -273,11 +326,38 @@ _Note: Sending false in only parameter will return the string enclosed with Brac
 // alternatively
 \Infocyph\UID\tbsl();
 ```
+
 - Parse TBSL ID (get the timestamp, machine_id):
+
 ```php
 // Parse TBSL
 // returns [isValid, time => DateTimeInterface object, machine_id]
 \Infocyph\UID\TBSL::parse($tbsl);
+```
+
+### RandomId
+
+With this you can generate RandomIds. These are great for usage where you don't want a large length/formatted IDs like UUID4. 
+These IDs are unique & can't be backtracked.
+
+#### NanoID (URL friendly Unique Random ID)
+
+- Generate
+
+```php
+// By default, it will generate id of length 21.
+// You can pass in desired length
+\Infocyph\UID\RandomId::nanoId();
+```
+
+#### Cuid2 (URL friendly, secure & collision free)
+
+- Generate
+
+```php
+// By default, it will generate id of length 24.
+// You can pass in desired length in between 4 & 24
+\Infocyph\UID\RandomId::cuid2();
 ```
 
 ## Benchmark
@@ -292,13 +372,15 @@ _Note: Sending false in only parameter will return the string enclosed with Brac
 | UUID v6 (random node)      |                          0.00444 (ramsey/Uuid: 0.17469)                           |     
 | UUID v6 (fixed node)       |                          0.00164 (ramsey/Uuid: 0.17382)                           |     
 | UUID v7 (random node)      |                          0.00503 (ramsey/Uuid: 0.16278)                           |    
-| UUID v7 (fixed node)**     |                          0.00154 (ramsey/Uuid: 0.18753)                           |   
+| UUID v7 (fixed node)       |                          0.00154 (ramsey/Uuid: 0.18753)                           |   
 | UUID v8 (random node)      |                            0.00505 (ramsey/Uuid: N/A)                             |  
 | UUID v8 (fixed node)       | 0.00209 (ramsey/Uuid: 0.16029 _*predefined random node, not usable as signature_) |              
-| ULID                       |                    0.00506 (robinvdvleuten/php-ulid: 0.00508)                     |             
-| TBSL                       |                              0.0034 (library unique)                              |            
+| ULID                       |                    0.00506 (robinvdvleuten/php-ulid: 0.00508)                     |           
 | Snowflake                  |                     0.13951 (godruoyi/php-snowflake: 0.14856)                     |            
-| Sonyflake                  |                     0.13821 (godruoyi/php-snowflake: 0.14583)                     |
+| Sonyflake                  |                     0.13821 (godruoyi/php-snowflake: 0.14583)                     |             
+| TBSL                       |                                      0.0034                                       | 
+| NanoID                     |                                      0.00057                                      | 
+| Cuid2                      |                                      0.01817                                      | 
 
 ## Support
 
@@ -312,3 +394,5 @@ Having trouble? Create an issue!
 - Snowflake ID: https://github.com/twitter-archive/snowflake/tree/snowflake-2010
 - Sonyflake ID: https://github.com/sony/sonyflake
 - TBSL ID: https://github.com/infocyph/UID/blob/main/TBSL.md
+- NanoID: https://github.com/ai/nanoid
+- Cuid2: https://github.com/paralleldrive/cuid2
