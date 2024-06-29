@@ -59,179 +59,176 @@ composer require infocyph/uid
 
 ## Usage
 
-<details>
-    <summary>UUID</summary>
-    
-    ### UUID (Universal Unique Identifier)
-    
-    The node specific UUID's `$node` parameter (1, 6, 7, 8) is optional. If not provided, it will be generated randomly.
-    But, if you wanna track the source of the UUIDs, you should use it (pre-define the node per server & pass it
-    accordingly).
-    
-    #### UUID v1: Time-based UUID.
-    
-    - Generate v1 UUID
-    
-    ```php
-    // Get v1 UUID
-    \Infocyph\UID\UUID::v1();
-    // alternatively can also use
-    \Infocyph\UID\uuid1();
-    ```
-    
-    - Pass your pre-generated node (for node specific UUID)
-    
-    ```php
-    \Infocyph\UID\UUID::v1($node); // check additional section for how to generate one
-    ```
-    
-    #### UUID v3: Namespace based UUID.
-    
-    - Generate v3 UUID
-    
-    ```php
-    // Get v3 UUID
-    \Infocyph\UID\UUID::v3('a pre-generated UUID', 'the string you wanna get UUID for');
-    // alternatively can also use
-    \Infocyph\UID\uuid3();
-    ```
-    
-    - Get v3 UUID for predefined namespaces (RFC4122 #Appendix C)
-    
-    ```php
-    /**
-    * You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
-    */
-    \Infocyph\UID\UUID::v3('url', 'abmmhasan.github.io');
-    ```
-    
-    - You can generate a UUID & use as namespace as well
-    
-    ```php
-    \Infocyph\UID\UUID::v3('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
-    ```
-    
-    #### UUID v4: Random UUID.
-    
-    - Generate v4 UUID
-    
-    ```php
-    // Get v4 UUID (completely random)
-    \Infocyph\UID\UUID::v4();
-    // alternatively can also use
-    \Infocyph\UID\uuid4();
-    ```
-    
-    #### UUID v5: Namespace based UUID.
-    
-    - Generate v5 UUID
-    
-    ```php
-    // Get v5 UUID
-    \Infocyph\UID\UUID::v5('a pre-generated UUID', 'the string you wanna get UUID for');
-    // alternatively can also use
-    \Infocyph\UID\uuid5();
-    ```
-    
-    - Get v5 UUID for predefined namespaces (RFC4122 #Appendix C)
-    
-    ```php
-    /**
-    * You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
-    */
-    \Infocyph\UID\UUID::v5('url', 'abmmhasan.github.io');
-    ```
-    
-    - You can generate a UUID & use as namespace as well
-    
-    ```php
-    \Infocyph\UID\UUID::v5('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
-    ```
-    
-    #### UUID v6 (draft-based/unofficial): Time-based UUID.
-    
-    - Generate v6 UUID
-    
-    ```php
-    // Get v6 UUID (Time based)
-    \Infocyph\UID\UUID::v6();
-    // alternatively can also use
-    \Infocyph\UID\uuid6();
-    ```
-    
-    - Get v6 UUID using predefined node:
-    
-    ```php
-    \Infocyph\UID\UUID::v6($node); // check additional section for how to generate one
-    ```
-    
-    #### UUID v7 (draft-based/unofficial): Time-based UUID.
-    
-    - Generate v7 UUID
-    
-    ```php
-    // Get v7 UUID for current time
-    \Infocyph\UID\UUID::v7();
-    // alternatively can also use
-    \Infocyph\UID\uuid7();
-    ```
-    
-    - Get v7 UUID using predefined node:
-    
-    ```php
-    \Infocyph\UID\UUID::v7(null, $node); // check additional section for, how to generate one
-    ```
-    
-    - Or if you wanna get v7 UUID using predefined time:
-    
-    ```php
-    $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
-    \Infocyph\UID\UUID::v7($timeInterface);
-    ```
-    
-    - You can combine both parameters together as well.
-    
-    #### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
-    
-    - Generate v8 UUID
-    
-    ```php
-    // Get v8 UUID
-    \Infocyph\UID\UUID::v8();
-    // alternatively can also use
-    \Infocyph\UID\uuid8();
-    ```
-    
-    - Get v8 UUID using predefined node:
-    
-    ```php
-    \Infocyph\UID\UUID::v8($node); // check additional section for, how to generate one
-    ```
-    
-    #### GUID
-    
-    GUID generator, works in all platform. Generate:
-    
-    ```php
-    \Infocyph\UID\UUID::guid()
-    ```
-    
-    _Note: Sending false in only parameter will return the string enclosed with Braces_
-    
-    #### Additional
-    
-    - Generate node for further use (with version: 1, 6, 7, 8)
-    
-    ```php
-    \Infocyph\UID\UUID::getNode();
-    ```
-    
-    - Parse any UUID string:
-    
-    ```php
-    \Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'time', 'node']
-    ```
-</details>
+### UUID (Universal Unique Identifier)
+
+The node specific UUID's `$node` parameter (1, 6, 7, 8) is optional. If not provided, it will be generated randomly.
+But, if you wanna track the source of the UUIDs, you should use it (pre-define the node per server & pass it
+accordingly).
+
+#### UUID v1: Time-based UUID.
+
+- Generate v1 UUID
+
+```php
+// Get v1 UUID
+\Infocyph\UID\UUID::v1();
+// alternatively can also use
+\Infocyph\UID\uuid1();
+```
+
+- Pass your pre-generated node (for node specific UUID)
+
+```php
+\Infocyph\UID\UUID::v1($node); // check additional section for how to generate one
+```
+
+#### UUID v3: Namespace based UUID.
+
+- Generate v3 UUID
+
+```php
+// Get v3 UUID
+\Infocyph\UID\UUID::v3('a pre-generated UUID', 'the string you wanna get UUID for');
+// alternatively can also use
+\Infocyph\UID\uuid3();
+```
+
+- Get v3 UUID for predefined namespaces (RFC4122 #Appendix C)
+
+```php
+/**
+* You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
+*/
+\Infocyph\UID\UUID::v3('url', 'abmmhasan.github.io');
+```
+
+- You can generate a UUID & use as namespace as well
+
+```php
+\Infocyph\UID\UUID::v3('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
+```
+
+#### UUID v4: Random UUID.
+
+- Generate v4 UUID
+
+```php
+// Get v4 UUID (completely random)
+\Infocyph\UID\UUID::v4();
+// alternatively can also use
+\Infocyph\UID\uuid4();
+```
+
+#### UUID v5: Namespace based UUID.
+
+- Generate v5 UUID
+
+```php
+// Get v5 UUID
+\Infocyph\UID\UUID::v5('a pre-generated UUID', 'the string you wanna get UUID for');
+// alternatively can also use
+\Infocyph\UID\uuid5();
+```
+
+- Get v5 UUID for predefined namespaces (RFC4122 #Appendix C)
+
+```php
+/**
+* You can pass X500, URL, OID, DNS (check RFC4122 #Appendix C)
+*/
+\Infocyph\UID\UUID::v5('url', 'abmmhasan.github.io');
+```
+
+- You can generate a UUID & use as namespace as well
+
+```php
+\Infocyph\UID\UUID::v5('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
+```
+
+#### UUID v6 (draft-based/unofficial): Time-based UUID.
+
+- Generate v6 UUID
+
+```php
+// Get v6 UUID (Time based)
+\Infocyph\UID\UUID::v6();
+// alternatively can also use
+\Infocyph\UID\uuid6();
+```
+
+- Get v6 UUID using predefined node:
+
+```php
+\Infocyph\UID\UUID::v6($node); // check additional section for how to generate one
+```
+
+#### UUID v7 (draft-based/unofficial): Time-based UUID.
+
+- Generate v7 UUID
+
+```php
+// Get v7 UUID for current time
+\Infocyph\UID\UUID::v7();
+// alternatively can also use
+\Infocyph\UID\uuid7();
+```
+
+- Get v7 UUID using predefined node:
+
+```php
+\Infocyph\UID\UUID::v7(null, $node); // check additional section for, how to generate one
+```
+
+- Or if you wanna get v7 UUID using predefined time:
+
+```php
+$timeInterface = new DateTime(); // DateTime implements DateTimeInterface
+\Infocyph\UID\UUID::v7($timeInterface);
+```
+
+- You can combine both parameters together as well.
+
+#### UUID v8 (draft-based/unofficial): Time-based UUID. Lexicographically sortable.
+
+- Generate v8 UUID
+
+```php
+// Get v8 UUID
+\Infocyph\UID\UUID::v8();
+// alternatively can also use
+\Infocyph\UID\uuid8();
+```
+
+- Get v8 UUID using predefined node:
+
+```php
+\Infocyph\UID\UUID::v8($node); // check additional section for, how to generate one
+```
+
+#### GUID
+
+GUID generator, works in all platform. Generate:
+
+```php
+\Infocyph\UID\UUID::guid()
+```
+
+_Note: Sending false in only parameter will return the string enclosed with Braces_
+
+#### Additional
+
+- Generate node for further use (with version: 1, 6, 7, 8)
+
+```php
+\Infocyph\UID\UUID::getNode();
+```
+
+- Parse any UUID string:
+
+```php
+\Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'time', 'node']
+```
+
 
 ### ULID (Universally Unique Lexicographically Sortable Identifier)
 
