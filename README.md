@@ -9,13 +9,15 @@
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/infocyph/uid)
 [![]()](https://visitor-badge.laobi.icu/badge?page_id=infocyph.com)
 
-An AIO Unique ID generator written in PHP. Supports,
+An AIO Unique ID generator written in PHP. Supports (references available at the bottom),
 
-- UUID (RFC 4122 + Unofficial/Draft)
-- ULID (ulid specification)
-- Snowflake ID (Twitter Snowflake)
-- Sonyflake ID (Snowflake Inspired, ported from Golang)
-- TBSL (tbsl spec)
+- UUID
+- ULID
+- Snowflake ID
+- Sonyflake ID
+- TBSL
+- NanoId
+- Cuid2
 
 ## Table of contents
 
