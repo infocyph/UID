@@ -75,7 +75,7 @@ accordingly).
 // Get v1 UUID
 \Infocyph\UID\UUID::v1();
 // alternatively can also use
-\Infocyph\UID\uuid1();
+uuid1();
 ```
 
 - Pass your pre-generated node (for node specific UUID)
@@ -92,7 +92,7 @@ accordingly).
 // Get v3 UUID
 \Infocyph\UID\UUID::v3('a pre-generated UUID', 'the string you wanna get UUID for');
 // alternatively can also use
-\Infocyph\UID\uuid3();
+uuid3();
 ```
 
 - Get v3 UUID for predefined namespaces (RFC4122 #Appendix C)
@@ -118,7 +118,7 @@ accordingly).
 // Get v4 UUID (completely random)
 \Infocyph\UID\UUID::v4();
 // alternatively can also use
-\Infocyph\UID\uuid4();
+uuid4();
 ```
 
 #### UUID v5: Namespace based UUID.
@@ -129,7 +129,7 @@ accordingly).
 // Get v5 UUID
 \Infocyph\UID\UUID::v5('a pre-generated UUID', 'the string you wanna get UUID for');
 // alternatively can also use
-\Infocyph\UID\uuid5();
+uuid5();
 ```
 
 - Get v5 UUID for predefined namespaces (RFC4122 #Appendix C)
@@ -144,7 +144,7 @@ accordingly).
 - You can generate a UUID & use as namespace as well
 
 ```php
-\Infocyph\UID\UUID::v5('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
+UUID::v5('fa1700dd-828c-4d1b-8e6d-a6104807da90', 'abmmhasan.github.io');
 ```
 
 #### UUID v6 (draft-based/unofficial): Time-based UUID.
@@ -155,7 +155,7 @@ accordingly).
 // Get v6 UUID (Time based)
 \Infocyph\UID\UUID::v6();
 // alternatively can also use
-\Infocyph\UID\uuid6();
+uuid6();
 ```
 
 - Get v6 UUID using predefined node:
@@ -172,7 +172,7 @@ accordingly).
 // Get v7 UUID for current time
 \Infocyph\UID\UUID::v7();
 // alternatively can also use
-\Infocyph\UID\uuid7();
+uuid7();
 ```
 
 - Get v7 UUID using predefined node:
@@ -198,7 +198,7 @@ $timeInterface = new DateTime(); // DateTime implements DateTimeInterface
 // Get v8 UUID
 \Infocyph\UID\UUID::v8();
 // alternatively can also use
-\Infocyph\UID\uuid8();
+uuid8();
 ```
 
 - Get v8 UUID using predefined node:
@@ -268,7 +268,7 @@ _Note: Sending false in only parameter will return the string enclosed with Brac
 // optionally you can set worker_id & datacenter_id, for server/module detection
 \Infocyph\UID\Snowflake::generate();
 // alternatively
-\Infocyph\UID\snowflake();
+snowflake();
 ```
 
 - Parse Snowflake ID (get the timestamp, sequence, worker_id, datacenter_id):
@@ -326,7 +326,7 @@ _Note: Sending false in only parameter will return the string enclosed with Brac
 // optionally set machine_id, for server detection
 \Infocyph\UID\TBSL::generate();
 // alternatively
-\Infocyph\UID\tbsl();
+tbsl();
 ```
 
 - Parse TBSL ID (get the timestamp, machine_id):
