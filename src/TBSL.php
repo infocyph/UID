@@ -9,7 +9,7 @@ final class TBSL
 {
     use GetSequence;
 
-    private static int $maxSequenceLength = 10;
+    private static int $maxSequenceLength = 7;
 
     /**
      * Generates a unique identifier using the TBSL algorithm.

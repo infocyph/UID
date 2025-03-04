@@ -336,6 +336,11 @@ tbsl();
 // returns [isValid, time => DateTimeInterface object, machine_id]
 \Infocyph\UID\TBSL::parse($tbsl);
 ```
+- Getting unique sequence
+
+```php
+tbsl(0, true); // send true in 2nd parameter to enable sequence
+```
 
 ### RandomId
 
