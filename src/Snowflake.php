@@ -42,7 +42,8 @@ final class Snowflake
         while (($sequence = self::sequence(
             $currentTime,
             $datacenter . $workerId,
-            'snowflake'
+            'snowflake',
+            self::$maxSequenceLength
         )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
             ++$currentTime;
         }

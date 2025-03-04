@@ -31,7 +31,12 @@ final class Sonyflake
         }
         $now = (int)(new DateTimeImmutable('now'))->format('Uv');
         $elapsedTime = self::elapsedTime();
-        while (($sequence = self::sequence($now, $machineId, 'sonyflake')) > (-1 ^ (-1 << self::$maxSequenceLength))) {
+        while (($sequence = self::sequence(
+            $now,
+            $machineId,
+            'sonyflake',
+            self::$maxSequenceLength
+        )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
             $nextMillisecond = self::elapsedTime();
             while ($nextMillisecond === $elapsedTime) {
                 ++$nextMillisecond;
@@ -63,7 +68,7 @@ final class Sonyflake
                 '@'
                 . $time[0]
                 . '.'
-                . str_pad($time[1], 6, '0', STR_PAD_LEFT)
+                . str_pad($time[1], 6, '0', STR_PAD_LEFT),
             ),
             'sequence' => bindec(substr($id, -1 * self::$maxSequenceLength)),
             'machine_id' => bindec(substr($id, -1 * $length, self::$maxMachineIdLength)),

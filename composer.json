@@ -1,77 +1,77 @@
 {
-  "name": "infocyph/uid",
-  "description": "UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (library exclusive) generator!",
-  "type": "library",
-  "license": "MIT",
-  "keywords": [
-    "uuid",
-    "ulid",
-    "snowflake",
-    "sonyflake",
-    "tbsl",
-    "id",
-    "key",
-    "unique",
-    "rfc4122"
-  ],
-  "authors": [
-    {
-      "name": "abmmhasan",
-      "email": "abmmhasan@gmail.com"
-    }
-  ],
-  "autoload": {
-    "files": [
-      "src/functions.php"
+    "name": "infocyph/uid",
+    "description": "UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (library exclusive) generator!",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "uuid",
+        "ulid",
+        "snowflake",
+        "sonyflake",
+        "tbsl",
+        "id",
+        "key",
+        "unique",
+        "rfc4122"
     ],
-    "psr-4": {
-      "Infocyph\\UID\\": "src/"
-    }
-  },
-  "minimum-stability": "stable",
-  "prefer-stable": true,
-  "require": {
-    "php": ">=8.0",
-    "ext-bcmath": "*"
-  },
-  "config": {
-    "sort-packages": true,
-    "optimize-autoloader": true,
-    "allow-plugins": {
-      "pestphp/pest-plugin": true
-    }
-  },
-  "replace": {
-    "abmmhasan/uuid": "*"
-  },
-  "require-dev": {
-    "captainhook/captainhook": "^5.23",
-    "laravel/pint": "^1.16",
-    "pestphp/pest": "^2.34",
-    "rector/rector": "^1.1",
-    "symfony/var-dumper": "^7.0"
-  },
-  "scripts": {
-    "test:code": "pest --parallel --processes=10",
-    "test:refactor": "rector process --dry-run",
-    "test:lint": "pint --test",
-    "test:hook": [
-      "captainhook hook:post-checkout",
-      "captainhook hook:pre-commit",
-      "captainhook hook:post-commit",
-      "captainhook hook:post-merge",
-      "captainhook hook:post-rewrite",
-      "captainhook hook:pre-push"
+    "authors": [
+        {
+            "name": "abmmhasan",
+            "email": "abmmhasan@gmail.com"
+        }
     ],
-    "tests": [
-      "@test:code",
-      "@test:lint",
-      "@test:refactor"
-    ],
-    "git:hook": "captainhook install --only-enabled -nf",
-    "test": "pest",
-    "refactor": "rector process",
-    "lint": "pint",
-    "post-autoload-dump": "@git:hook"
-  }
+    "autoload": {
+        "files": [
+            "src/functions.php"
+        ],
+        "psr-4": {
+            "Infocyph\\UID\\": "src/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.0",
+        "ext-bcmath": "*"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "replace": {
+        "abmmhasan/uuid": "*"
+    },
+    "require-dev": {
+        "captainhook/captainhook": "^5.24",
+        "laravel/pint": "^1.20",
+        "pestphp/pest": "^3.7",
+        "rector/rector": "^2.0",
+        "symfony/var-dumper": "^7.2"
+    },
+    "scripts": {
+        "test:code": "pest --parallel --processes=10",
+        "test:refactor": "rector process --dry-run",
+        "test:lint": "pint --test",
+        "test:hook": [
+            "captainhook hook:post-checkout",
+            "captainhook hook:pre-commit",
+            "captainhook hook:post-commit",
+            "captainhook hook:post-merge",
+            "captainhook hook:post-rewrite",
+            "captainhook hook:pre-push"
+        ],
+        "tests": [
+            "@test:code",
+            "@test:lint",
+            "@test:refactor"
+        ],
+        "git:hook": "captainhook install --only-enabled -nf",
+        "test": "pest",
+        "refactor": "rector process",
+        "lint": "pint",
+        "post-autoload-dump": "@git:hook"
+    }
 }

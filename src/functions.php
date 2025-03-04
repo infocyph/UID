@@ -1,14 +1,15 @@
 <?php
 
-namespace Infocyph\UID;
-
-use DateTimeInterface;
-use Exception;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SnowflakeException;
 use Infocyph\UID\Exceptions\SonyflakeException;
+use Infocyph\UID\Snowflake;
+use Infocyph\UID\Sonyflake;
+use Infocyph\UID\TBSL;
+use Infocyph\UID\ULID;
+use Infocyph\UID\UUID;
 
-if (!function_exists('Infocyph\UID\uuid1')) {
+if (!function_exists('uuid1')) {
     /**
      * Generates a version 1 UUID
      *
@@ -22,14 +23,14 @@ if (!function_exists('Infocyph\UID\uuid1')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\uuid3')) {
+if (!function_exists('uuid3')) {
     /**
      * Generate a Version 3 UUID.
      *
      * @param string $namespace The namespace to use for the UUID generation.
      * @param string $string The string to generate the UUID from.
      * @return string The generated UUID.
-     * @throws Exception|Exceptions\UUIDException
+     * @throws Exception
      */
     function uuid3(string $namespace, string $string): string
     {
@@ -37,7 +38,7 @@ if (!function_exists('Infocyph\UID\uuid3')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\uuid4')) {
+if (!function_exists('uuid4')) {
     /**
      * Generates a version 4 UUID.
      *
@@ -50,14 +51,14 @@ if (!function_exists('Infocyph\UID\uuid4')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\uuid5')) {
+if (!function_exists('uuid5')) {
     /**
      * Generate a Version 5 UUID.
      *
      * @param string $namespace The namespace to use for the UUID generation.
      * @param string $string The string to generate the UUID from.
      * @return string The generated UUID.
-     * @throws Exception|Exceptions\UUIDException
+     * @throws Exception
      */
     function uuid5(string $namespace, string $string): string
     {
@@ -65,7 +66,7 @@ if (!function_exists('Infocyph\UID\uuid5')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\uuid6')) {
+if (!function_exists('uuid6')) {
     /**
      * Generates a Version 6 UUID.
      *
@@ -79,7 +80,7 @@ if (!function_exists('Infocyph\UID\uuid6')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\uuid7')) {
+if (!function_exists('uuid7')) {
     /**
      * Generates a version 7 UUID.
      *
@@ -94,7 +95,7 @@ if (!function_exists('Infocyph\UID\uuid7')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\uuid8')) {
+if (!function_exists('uuid8')) {
     /**
      * Generates a Version 8 UUID.
      *
@@ -108,7 +109,7 @@ if (!function_exists('Infocyph\UID\uuid8')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\guid')) {
+if (!function_exists('guid')) {
     /**
      * Generates a GUID (Globally Unique Identifier) string.
      *
@@ -122,7 +123,7 @@ if (!function_exists('Infocyph\UID\guid')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\ulid')) {
+if (!function_exists('ulid')) {
     /**
      * Generates ULID.
      *
@@ -136,7 +137,7 @@ if (!function_exists('Infocyph\UID\ulid')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\snowflake')) {
+if (!function_exists('snowflake')) {
     /**
      * Generates Snowflake ID.
      *
@@ -151,7 +152,7 @@ if (!function_exists('Infocyph\UID\snowflake')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\sonyflake')) {
+if (!function_exists('sonyflake')) {
     /**
      * Generates Sonyflake ID.
      *
@@ -165,16 +166,17 @@ if (!function_exists('Infocyph\UID\sonyflake')) {
     }
 }
 
-if (!function_exists('Infocyph\UID\tbsl')) {
+if (!function_exists('tbsl')) {
     /**
      * Generates TBSL ID.
      *
      * @param int $machineId
+     * @param bool $sequenced
      * @return string
      * @throws Exception
      */
-    function tbsl(int $machineId = 0): string
+    function tbsl(int $machineId = 0, bool $sequenced = false): string
     {
-        return TBSL::generate($machineId);
+        return TBSL::generate($machineId, $sequenced);
     }
 }
