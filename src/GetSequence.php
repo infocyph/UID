@@ -15,12 +15,12 @@ trait GetSequence
      * Generates a sequence number based on the current time.
      *
      * @param int $dateTime The current time.
-     * @param string $machineId The machine ID.
+     * @param int $machineId The machine ID.
      * @param string $type The type identifier.
      * @param int $maxSequenceLength The maximum length of the sequence number.
      * @return int The generated sequence number, or `0` if lock was not acquired.
      */
-    private static function sequence(int $dateTime, string $machineId, string $type, int $maxSequenceLength = 0): int
+    private static function sequence(int $dateTime, int $machineId, string $type, int $maxSequenceLength = 0): int
     {
         self::$fileLocation ??= sys_get_temp_dir() . DIRECTORY_SEPARATOR . "uid-$type-$machineId.seq";
 

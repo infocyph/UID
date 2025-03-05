@@ -31,7 +31,7 @@ final class TBSL
         return strtoupper(sprintf(
             '%015s%05s',
             $storeData,
-            substr(self::sequencedGenerate($machineId, $sequenced, (int)$timeSequence), -1, 5)
+            substr(self::sequencedGenerate($machineId, $sequenced, (int)$timeSequence), 0, 5)
         ));
     }
 
@@ -62,7 +62,7 @@ final class TBSL
     public static function parse(string $tbsl): array
     {
         $data = [
-            'isValid' => preg_match('/^[0-9A-F]{20}$/', $tbsl),
+            'isValid' => (bool)preg_match('/^[0-9A-F]{20}$/', $tbsl),
             'time' => null,
             'machineId' => null,
         ];
@@ -73,7 +73,7 @@ final class TBSL
 
         $storeData = base_convert(substr($tbsl, 0, 15), 16, 10);
         $data['time'] = new DateTimeImmutable('@' . substr($storeData, 0, 10) . '.' . substr($storeData, 10, 6));
-        $data['machineId'] = substr($storeData, -2);
+        $data['machineId'] = (int)substr($storeData, -2);
 
         return $data;
     }
