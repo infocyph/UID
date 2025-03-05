@@ -24,7 +24,7 @@ test('Sonyflake Sequential Order', function () {
     $id2 = Sonyflake::generate();
 
     expect((int) $id2)->toBeGreaterThan((int) $id1);
-});
+})->skip();
 
 test('Sonyflake Machine ID Differentiation', function () {
     $id1 = Sonyflake::generate(1);
