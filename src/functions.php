@@ -17,7 +17,7 @@ if (!function_exists('uuid1')) {
      * @return string The generated UUID.
      * @throws Exception
      */
-    function uuid1(string $node = null): string
+    function uuid1(?string $node = null): string
     {
         return UUID::v1($node);
     }
@@ -74,7 +74,7 @@ if (!function_exists('uuid6')) {
      * @return string
      * @throws Exception
      */
-    function uuid6(string $node = null): string
+    function uuid6(?string $node = null): string
     {
         return UUID::v6($node);
     }
@@ -89,7 +89,7 @@ if (!function_exists('uuid7')) {
      * @return string
      * @throws Exception
      */
-    function uuid7(?DateTimeInterface $dateTime = null, string $node = null): string
+    function uuid7(?DateTimeInterface $dateTime = null, ?string $node = null): string
     {
         return UUID::v7($dateTime, $node);
     }
@@ -103,7 +103,7 @@ if (!function_exists('uuid8')) {
      * @return string
      * @throws Exception
      */
-    function uuid8(string $node = null): string
+    function uuid8(?string $node = null): string
     {
         return UUID::v8($node);
     }
