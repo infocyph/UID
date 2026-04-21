@@ -4,18 +4,27 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Sequence;
 
+use Closure;
 use Infocyph\UID\Exceptions\FileLockException;
 use Psr\SimpleCache\CacheInterface;
 use Throwable;
 
 final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
 {
+    private ?Closure $synchronizer;
+
+    /**
+     * @param callable(string, callable():int):mixed|null $synchronizer
+     */
     public function __construct(
         private CacheInterface $cache,
         private string $prefix = 'uid:seq:',
         private int $waitTime = 100,
         private int $maxAttempts = 10,
-    ) {}
+        ?callable $synchronizer = null,
+    ) {
+        $this->synchronizer = $synchronizer ? $synchronizer(...) : null;
+    }
 
     /**
      * @throws FileLockException
@@ -23,23 +32,34 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
     public function next(string $type, int $machineId, int $timestamp): int
     {
         $key = $this->key($type, $machineId);
+
+        if ($this->synchronizer !== null) {
+            try {
+                $sequence = ($this->synchronizer)(
+                    $key,
+                    fn(): int => $this->nextFromCacheState($key, $timestamp),
+                );
+            } catch (FileLockException $exception) {
+                throw $exception;
+            } catch (Throwable $exception) {
+                throw new FileLockException(
+                    'Failed to read/write sequence state from PSR cache for key: ' . $key,
+                    0,
+                    $exception,
+                );
+            }
+
+            if (!is_int($sequence) || $sequence < 1) {
+                throw new FileLockException('Sequence synchronizer must return a positive integer');
+            }
+
+            return $sequence;
+        }
+
         $lock = $this->acquireLock($key);
 
         try {
-            $state = $this->cache->get($key);
-            $sequence = 1;
-            if (
-                is_array($state)
-                && ($state['timestamp'] ?? null) === $timestamp
-                && isset($state['sequence'])
-                && is_int($state['sequence'])
-            ) {
-                $sequence = $state['sequence'] + 1;
-            }
-
-            $this->cache->set($key, ['timestamp' => $timestamp, 'sequence' => $sequence]);
-
-            return $sequence;
+            return $this->nextFromCacheState($key, $timestamp);
         } catch (Throwable $exception) {
             throw new FileLockException(
                 'Failed to read/write sequence state from PSR cache for key: ' . $key,
@@ -79,5 +99,23 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
     private function key(string $type, int $machineId): string
     {
         return $this->prefix . $type . ':' . $machineId;
+    }
+
+    private function nextFromCacheState(string $key, int $timestamp): int
+    {
+        $state = $this->cache->get($key);
+        $sequence = 1;
+        if (
+            is_array($state)
+            && ($state['timestamp'] ?? null) === $timestamp
+            && isset($state['sequence'])
+            && is_int($state['sequence'])
+        ) {
+            $sequence = $state['sequence'] + 1;
+        }
+
+        $this->cache->set($key, ['timestamp' => $timestamp, 'sequence' => $sequence]);
+
+        return $sequence;
     }
 }

@@ -20,8 +20,6 @@ test('Monotonic overflow on fixed timestamp throws ULIDException', function () {
     $class = new ReflectionClass(ULID::class);
     $lastGenTime = $class->getProperty('lastGenTime');
     $lastRandChars = $class->getProperty('lastRandChars');
-    $lastGenTime->setAccessible(true);
-    $lastRandChars->setAccessible(true);
 
     $previousTime = $lastGenTime->getValue(null);
     $previousChars = $lastRandChars->getValue(null);

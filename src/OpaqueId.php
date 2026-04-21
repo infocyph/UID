@@ -6,6 +6,7 @@ namespace Infocyph\UID;
 
 use Exception;
 use Infocyph\UID\Support\BaseEncoder;
+use InvalidArgumentException;
 
 final class OpaqueId
 {
@@ -28,6 +29,10 @@ final class OpaqueId
      */
     public static function random(int $length = 12): string
     {
+        if ($length < 1) {
+            throw new InvalidArgumentException('length must be greater than 0');
+        }
+
         $bytes = random_bytes(max(8, $length));
 
         return substr(BaseEncoder::encodeBytes($bytes, 62), 0, $length);

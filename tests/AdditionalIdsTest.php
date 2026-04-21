@@ -36,6 +36,11 @@ test('Opaque and deterministic IDs', function () {
         ->and($det1)->toBe($det2);
 });
 
+test('Opaque ID rejects non-positive lengths', function () {
+    expect(fn () => OpaqueId::random(0))->toThrow(\InvalidArgumentException::class)
+        ->and(fn () => OpaqueId::random(-1))->toThrow(\InvalidArgumentException::class);
+});
+
 test('IdComparator sorts numeric and lexical values', function () {
     $sortedNumeric = IdComparator::sort(['10', '2', '1']);
     $sortedLexical = IdComparator::sort(['b', 'a', 'c']);

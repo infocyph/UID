@@ -138,6 +138,16 @@ final class TBSL
         return $bytes;
     }
 
+    /**
+     * @throws UIDException
+     */
+    private static function assertMachineId(int $machineId): void
+    {
+        if ($machineId < 0 || $machineId > 99) {
+            throw new UIDException('Invalid machine ID, must be between 0 and 99');
+        }
+    }
+
     private static function formatOutput(string $id, IdOutputType $outputType): int|string
     {
         return match ($outputType) {
@@ -157,6 +167,8 @@ final class TBSL
         IdOutputType $outputType,
         ?SequenceProviderInterface $sequenceProvider = null,
     ): int|string {
+        self::assertMachineId($machineId);
+
         [$micro, $seconds] = explode(' ', microtime());
         $timeSequence = (int) ($seconds . substr($micro, 2, 6));
 

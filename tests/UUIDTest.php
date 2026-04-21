@@ -88,6 +88,30 @@ test('UUID v8', function () {
         ->and($parsed['time']->getTimestamp())->toBeBetween($startedAt, $finishedAt);
 });
 
+test('UUID node must be exactly 12 hex characters when provided', function () {
+    expect(fn () => UUID::v1('zzzzzzzzzzzz'))->toThrow(\Infocyph\UID\Exceptions\UUIDException::class)
+        ->and(fn () => UUID::v6('0123456789abcdef'))->toThrow(\Infocyph\UID\Exceptions\UUIDException::class)
+        ->and(fn () => UUID::v7(null, 'nothex123456'))->toThrow(\Infocyph\UID\Exceptions\UUIDException::class)
+        ->and(fn () => UUID::v8('123'))->toThrow(\Infocyph\UID\Exceptions\UUIDException::class);
+});
+
+test('UUID node accepts uppercase hex input and normalizes output', function () {
+    $node = 'ABCDEF123456';
+    $normalizedNode = strtolower($node);
+
+    $ids = [
+        UUID::v1($node),
+        UUID::v6($node),
+        UUID::v7(null, $node),
+        UUID::v8($node),
+    ];
+
+    foreach ($ids as $id) {
+        expect(UUID::isValid($id))->toBeTrue()
+            ->and(str_ends_with($id, $normalizedNode))->toBeTrue();
+    }
+});
+
 test('GUID', function () {
     $uid = UUID::guid();
     expect($uid)->toBeString();

@@ -38,6 +38,11 @@ test('TBSL Machine ID Differentiation', function () {
     expect($parsed1['machineId'])->not->toBe($parsed2['machineId']);
 });
 
+test('TBSL rejects invalid machine IDs', function () {
+    expect(fn () => TBSL::generate(-1))->toThrow(\Infocyph\UID\Exceptions\UIDException::class)
+        ->and(fn () => TBSL::generate(100))->toThrow(\Infocyph\UID\Exceptions\UIDException::class);
+});
+
 test('TBSL bytes conversion roundtrip', function () {
     $id = TBSL::generate();
     $bytes = TBSL::toBytes($id);

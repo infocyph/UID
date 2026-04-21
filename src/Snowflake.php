@@ -155,6 +155,9 @@ final class Snowflake
     public static function setStartTimeStamp(string $timeString): void
     {
         $time = strtotime($timeString);
+        if ($time === false) {
+            throw new SnowflakeException('Invalid start time format');
+        }
         $current = time();
 
         if ($time > $current) {

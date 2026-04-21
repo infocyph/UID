@@ -148,6 +148,9 @@ final class Sonyflake
     public static function setStartTimeStamp(string $timeString): void
     {
         $time = strtotime($timeString);
+        if ($time === false) {
+            throw new SonyflakeException('Invalid start time format');
+        }
         $current = time();
 
         if ($time > $current) {

@@ -120,6 +120,11 @@ test('Snowflake validation helper', function () {
         ->and(Snowflake::isValid('0'))->toBeFalse();
 });
 
+test('Snowflake rejects invalid start timestamp format', function () {
+    expect(fn () => Snowflake::setStartTimeStamp('not-a-date'))
+        ->toThrow(\Infocyph\UID\Exceptions\SnowflakeException::class);
+});
+
 test('Snowflake bytes and base conversion roundtrip', function () {
     $id = Snowflake::generate();
     $bytes = Snowflake::toBytes($id);

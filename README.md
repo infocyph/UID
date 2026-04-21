@@ -365,7 +365,7 @@ These IDs are unique & can't be backtracked.
 
 ```php
 // By default, it will generate id of length 24.
-// You can pass in desired length in between 4 & 24
+// You can pass in desired length in between 4 & 32
 \Infocyph\UID\RandomId::cuid2();
 ```
 

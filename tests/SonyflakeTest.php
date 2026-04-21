@@ -92,6 +92,11 @@ test('Sonyflake validation helper', function () {
         ->and(Sonyflake::isValid('0'))->toBeFalse();
 });
 
+test('Sonyflake rejects invalid start timestamp format', function () {
+    expect(fn () => Sonyflake::setStartTimeStamp('not-a-date'))
+        ->toThrow(\Infocyph\UID\Exceptions\SonyflakeException::class);
+});
+
 test('Sonyflake bytes and base conversion roundtrip', function () {
     $id = Sonyflake::generate();
     $bytes = Sonyflake::toBytes($id);

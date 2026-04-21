@@ -319,7 +319,7 @@ final class UUID
             substr($time, -12, 4),
             substr($time, -15, 3),
             random_int(0, 0x3fff) & 0x3fff | 0x8000,
-            $node ?? self::getNode(),
+            $node === null ? self::getNode() : self::normalizeNode($node),
         );
     }
 
@@ -406,6 +406,7 @@ final class UUID
     {
         $unixTsMs = (int) ($dateTime ?? new DateTimeImmutable('now'))->format('Uv');
         $isExplicitTimestamp = $dateTime !== null;
+        $node = $node === null ? null : self::normalizeNode($node);
 
         if ($node === null) {
             [$unixTsMs, $tail] = self::nextV7DefaultState($unixTsMs, $isExplicitTimestamp);
@@ -434,9 +435,10 @@ final class UUID
         $unixTsMs = $unixTs * 1000 + intdiv($subSec, self::$secondIntervals78);
         $subSec = intdiv(($subSec % self::$secondIntervals78) << 14, self::$secondIntervals78);
         $subSecA = $subSec >> 2;
+        $subSecByte = ((ord(random_bytes(1)) & 0x0f) | (($subSec & 0x03) << 4)) & 0xff;
         $string = substr(str_pad(dechex($unixTsMs), 12, '0', STR_PAD_LEFT), -12)
             . '8' . str_pad(dechex($subSecA), 3, '0', STR_PAD_LEFT)
-            . bin2hex(chr(ord(random_bytes(1)) & 0x0f | ($subSec & 0x03) << 4))
+            . bin2hex(chr($subSecByte))
             . self::prepareNode(8, $node);
 
         return self::output(8, $string);
@@ -711,6 +713,18 @@ final class UUID
     }
 
     /**
+     * @throws UUIDException
+     */
+    private static function normalizeNode(string $node): string
+    {
+        if (!preg_match('/^[0-9a-f]{12}$/i', $node)) {
+            throw new UUIDException('UUID node must be exactly 12 hexadecimal characters');
+        }
+
+        return strtolower($node);
+    }
+
+    /**
      * Resolves the given namespace.
      *
      * @param string $namespace The namespace to be resolved.
@@ -760,11 +774,11 @@ final class UUID
      */
     private static function prepareNode(int $version, ?string $node = null): string
     {
-        if (!$node) {
+        if ($node === null) {
             return bin2hex(random_bytes(self::randomLengthFor($version) + 6));
         }
 
-        return bin2hex(random_bytes(self::randomLengthFor($version))) . $node;
+        return bin2hex(random_bytes(self::randomLengthFor($version))) . self::normalizeNode($node);
     }
 
     /**

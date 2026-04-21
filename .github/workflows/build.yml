@@ -2,7 +2,7 @@ name: "Security & Standards"
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: "0 0 * * 0"
   push:
     branches: [ "main", "master" ]
   pull_request:
@@ -27,7 +27,7 @@ jobs:
     runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
-        operating-system: [ ubuntu-latest ]
+        operating-system: [ "ubuntu-latest" ]
         php-versions: ${{ fromJson(needs.prepare.outputs.php_versions) }}
         dependency-version: ${{ fromJson(needs.prepare.outputs.dependency_versions) }}
 
@@ -54,16 +54,10 @@ jobs:
 
       - name: Test
         run: |
-          composer test:syntax
-          composer test:code
-          composer test:lint
-          composer test:sniff
-          composer test:refactor
           if [ "${{ matrix.dependency-version }}" != "prefer-lowest" ]; then
-            composer test:static
-          fi
-          if [ "${{ matrix.dependency-version }}" != "prefer-lowest" ]; then
-            composer test:security
+            composer ic:ci
+          else
+            composer ic:ci --prefer-lowest
           fi
 
   analyze:
@@ -92,19 +86,25 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-progress
 
-      - name: Composer Audit (Release Guard)
-        run: composer release:audit
+      - name: Composer Audit
+        run: composer ic:release:audit
 
       - name: Quality Gate (PHPStan)
-        run: composer test:static
+        run: composer ic:test:static
 
       - name: Security Gate (Psalm)
-        run: composer test:security
+        run: composer ic:test:security
 
       - name: Run PHPStan (Code Scanning)
         run: |
-          php ./vendor/bin/phpstan analyse --configuration=phpstan.neon.dist --memory-limit=1G --no-progress --error-format=json > phpstan-results.json || true
-          php .github/scripts/phpstan-sarif.php phpstan-results.json phpstan-results.sarif
+          VENDOR_DIR="$(composer config vendor-dir)"
+          PHPSTAN_CONFIG="$VENDOR_DIR/infocyph/phpforge/phpstan.neon.dist"
+          if [ -f "phpstan.neon.dist" ]; then
+            PHPSTAN_CONFIG="phpstan.neon.dist"
+          fi
+
+          php "$VENDOR_DIR/bin/phpstan" analyse --configuration="$PHPSTAN_CONFIG" --memory-limit=1G --no-progress --error-format=json > phpstan-results.json || true
+          composer ic:phpstan:sarif phpstan-results.json phpstan-results.sarif
         continue-on-error: true
 
       - name: Upload PHPStan Results
@@ -114,10 +114,15 @@ jobs:
           category: "phpstan-${{ matrix.php-versions }}"
         if: always() && hashFiles('phpstan-results.sarif') != ''
 
-      # Run Psalm (Deep Taint Analysis)
       - name: Run Psalm Security Scan
         run: |
-          php ./vendor/bin/psalm --config=psalm.xml --security-analysis --threads=1 --report=psalm-results.sarif || true
+          VENDOR_DIR="$(composer config vendor-dir)"
+          PSALM_CONFIG="$VENDOR_DIR/infocyph/phpforge/psalm.xml"
+          if [ -f "psalm.xml" ]; then
+            PSALM_CONFIG="psalm.xml"
+          fi
+
+          php "$VENDOR_DIR/bin/psalm" --config="$PSALM_CONFIG" --security-analysis --threads=1 --report=psalm-results.sarif || true
         continue-on-error: true
 
       - name: Upload Psalm Results
