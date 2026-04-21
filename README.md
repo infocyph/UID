@@ -51,13 +51,15 @@ An AIO Unique ID generator written in PHP. Supports (references available at the
 
 ## Prerequisites
 
-Language: PHP 8/+
+Language: PHP 8.2+
 
 ## Installation
 
 ```
 composer require infocyph/uid
 ```
+
+Global helper functions are available via Composer autoload.
 
 ## Usage
 
@@ -228,7 +230,7 @@ _Note: Sending false in only parameter will return the string enclosed with Brac
 - Parse any UUID string:
 
 ```php
-\Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'time', 'node']
+\Infocyph\UID\UUID::parse($uuid); // returns ['isValid', 'version', 'variant', 'time', 'node', 'tail']
 ```
 
 
@@ -369,6 +371,8 @@ These IDs are unique & can't be backtracked.
 
 ## Benchmark
 
+Additional hotspot benchmarks (same-ms bursts, parser speed, and provider overhead) are available in [`benchmarks/`](benchmarks/).
+
 | Type                       |                               Generation time (ms)                                |
 |:---------------------------|:---------------------------------------------------------------------------------:|
 | UUID v1 (random node)      |                          0.00411 (ramsey/Uuid: 0.18753)                           |
@@ -395,11 +399,13 @@ Having trouble? Create an issue!
 
 ## References
 
-- UUID (RFC4122): https://tools.ietf.org/html/rfc4122
-- UUID (Drafts/Proposals): https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis
+- UUID (RFC4122/RFC9562): https://datatracker.ietf.org/doc/html/rfc9562
 - ULID: https://github.com/ulid/spec
 - Snowflake ID: https://github.com/twitter-archive/snowflake/tree/snowflake-2010
 - Sonyflake ID: https://github.com/sony/sonyflake
 - TBSL ID: https://github.com/infocyph/UID/blob/main/TBSL.md
 - NanoID: https://github.com/ai/nanoid
 - Cuid2: https://github.com/paralleldrive/cuid2
+- Compatibility matrix: [docs/compatibility-matrix.md](docs/compatibility-matrix.md)
+- DB storage notes: [docs/db-storage.md](docs/db-storage.md)
+- Framework integration notes: [docs/framework-integration.md](docs/framework-integration.md)
