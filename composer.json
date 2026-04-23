@@ -44,6 +44,13 @@
     "config": {
         "sort-packages": true,
         "optimize-autoloader": true,
-        "classmap-authoritative": true
+        "classmap-authoritative": true,
+        "allow-plugins": {
+            "infocyph/phpforge": true,
+            "pestphp/pest-plugin": true
+        }
+    },
+    "require-dev": {
+        "infocyph/phpforge": "dev-main"
     }
 }

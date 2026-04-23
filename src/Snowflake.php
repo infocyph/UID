@@ -11,6 +11,7 @@ use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SnowflakeException;
+use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\OutputFormatter;
@@ -18,6 +19,11 @@ use Infocyph\UID\Support\OutputFormatter;
 final class Snowflake
 {
     use GetSequence;
+
+    /**
+     * @var array<string, array{timestamp:int, sequence:int}>
+     */
+    private static array $lastStateBySequenceKey = [];
 
     private static int $lastTimestamp = 0;
 
@@ -251,16 +257,46 @@ final class Snowflake
             $currentTime = self::waitUntil(self::$lastTimestamp);
         }
 
+        $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
         $sequenceKey = ($datacenter << self::$maxWorkIdLength) | $workerId;
-        while (($sequence = self::sequence(
-            $currentTime,
-            $sequenceKey,
-            'snowflake',
-            $sequenceProvider,
-        )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
-            ++$currentTime;
+        $stateKey = spl_object_id($resolvedSequenceProvider) . ':' . $sequenceKey;
+        $maxSequence = -1 ^ (-1 << self::$maxSequenceLength);
+
+        while (true) {
+            while (($sequence = self::sequence(
+                $currentTime,
+                $sequenceKey,
+                'snowflake',
+                $resolvedSequenceProvider,
+            )) > $maxSequence) {
+                ++$currentTime;
+            }
+
+            $lastState = self::$lastStateBySequenceKey[$stateKey] ?? null;
+
+            if ($lastState === null) {
+                break;
+            }
+
+            // Sequence backends can transiently return a smaller sequence for the same
+            // timestamp under contention. Move forward and retry to preserve monotonic IDs.
+            if (
+                $currentTime < $lastState['timestamp']
+                || ($currentTime === $lastState['timestamp'] && $sequence <= $lastState['sequence'])
+            ) {
+                $currentTime = $lastState['timestamp'] + 1;
+
+                continue;
+            }
+
+            break;
         }
+
         self::$lastTimestamp = $currentTime;
+        self::$lastStateBySequenceKey[$stateKey] = [
+            'timestamp' => $currentTime,
+            'sequence' => $sequence,
+        ];
 
         $workerLeftMoveLength = self::$maxSequenceLength;
         $datacenterLeftMoveLength = self::$maxWorkIdLength + $workerLeftMoveLength;
@@ -280,6 +316,11 @@ final class Snowflake
     private static function getStartTimeStamp(): int
     {
         return self::$startTime ??= (strtotime('2020-01-01 00:00:00') * 1000);
+    }
+
+    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
+    {
+        return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
     }
 
     private static function waitUntil(int $timestamp): int
