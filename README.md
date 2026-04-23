@@ -1,6 +1,6 @@
 # UID
 
-[![Security & Standards](https://github.com/infocyph/UID/actions/workflows/build.yml/badge.svg)](https://github.com/infocyph/UID/actions/workflows/build.yml)
+[![Security & Standards](https://github.com/infocyph/UID/actions/workflows/security-standards.yml/badge.svg)](https://github.com/infocyph/UID/actions/workflows/security-standards.yml)
 [![Documentation](https://img.shields.io/badge/Documentation-UID-blue?logo=readthedocs&logoColor=white)](https://docs.infocyph.com/projects/UID/)
 ![Packagist Downloads](https://img.shields.io/packagist/dt/infocyph/UID?color=green&link=https%3A%2F%2Fpackagist.org%2Fpackages%2Finfocyph%2FUID)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
