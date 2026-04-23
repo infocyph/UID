@@ -1,13 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
+use Infocyph\UID\DeterministicId;
+use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SnowflakeException;
 use Infocyph\UID\Exceptions\SonyflakeException;
+use Infocyph\UID\KSUID;
+use Infocyph\UID\OpaqueId;
+use Infocyph\UID\RandomId;
 use Infocyph\UID\Snowflake;
 use Infocyph\UID\Sonyflake;
 use Infocyph\UID\TBSL;
 use Infocyph\UID\ULID;
 use Infocyph\UID\UUID;
+use Infocyph\UID\XID;
 
 if (!function_exists('uuid1')) {
     /**
@@ -20,6 +28,30 @@ if (!function_exists('uuid1')) {
     function uuid1(?string $node = null): string
     {
         return UUID::v1($node);
+    }
+}
+
+if (!function_exists('ksuid')) {
+    /**
+     * Generates KSUID.
+     *
+     * @throws Exception
+     */
+    function ksuid(?DateTimeInterface $dateTime = null): string
+    {
+        return KSUID::generate($dateTime);
+    }
+}
+
+if (!function_exists('xid')) {
+    /**
+     * Generates XID.
+     *
+     * @throws Exception
+     */
+    function xid(): string
+    {
+        return XID::generate();
     }
 }
 
@@ -71,7 +103,6 @@ if (!function_exists('uuid6')) {
      * Generates a Version 6 UUID.
      *
      * @param string|null $node The node identifier. Defaults to null.
-     * @return string
      * @throws Exception
      */
     function uuid6(?string $node = null): string
@@ -86,7 +117,6 @@ if (!function_exists('uuid7')) {
      *
      * @param DateTimeInterface|null $dateTime An optional DateTimeInterface object to create the UUID.
      * @param string|null $node The node identifier. Defaults to null.
-     * @return string
      * @throws Exception
      */
     function uuid7(?DateTimeInterface $dateTime = null, ?string $node = null): string
@@ -100,12 +130,123 @@ if (!function_exists('uuid8')) {
      * Generates a Version 8 UUID.
      *
      * @param string|null $node The node identifier. Defaults to null.
-     * @return string
      * @throws Exception
      */
     function uuid8(?string $node = null): string
     {
         return UUID::v8($node);
+    }
+}
+
+if (!function_exists('uuid_nil')) {
+    /**
+     * Returns UUID NIL value.
+     */
+    function uuid_nil(): string
+    {
+        return UUID::nil();
+    }
+}
+
+if (!function_exists('uuid_max')) {
+    /**
+     * Returns UUID MAX value.
+     */
+    function uuid_max(): string
+    {
+        return UUID::max();
+    }
+}
+
+if (!function_exists('uuid_is_nil')) {
+    /**
+     * Checks whether the UUID is NIL.
+     */
+    function uuid_is_nil(string $uuid): bool
+    {
+        return UUID::isNil($uuid);
+    }
+}
+
+if (!function_exists('uuid_is_max')) {
+    /**
+     * Checks whether the UUID is MAX.
+     */
+    function uuid_is_max(string $uuid): bool
+    {
+        return UUID::isMax($uuid);
+    }
+}
+
+if (!function_exists('uuid_normalize')) {
+    /**
+     * Normalizes UUID to canonical lowercase format.
+     *
+     * @throws Exception
+     */
+    function uuid_normalize(string $uuid): string
+    {
+        return UUID::normalize($uuid);
+    }
+}
+
+if (!function_exists('uuid_compact')) {
+    /**
+     * Converts UUID to compact format.
+     *
+     * @throws Exception
+     */
+    function uuid_compact(string $uuid): string
+    {
+        return UUID::compact($uuid);
+    }
+}
+
+if (!function_exists('uuid_urn')) {
+    /**
+     * Converts UUID to URN format.
+     *
+     * @throws Exception
+     */
+    function uuid_urn(string $uuid): string
+    {
+        return UUID::toUrn($uuid);
+    }
+}
+
+if (!function_exists('uuid_braces')) {
+    /**
+     * Converts UUID to brace format.
+     *
+     * @throws Exception
+     */
+    function uuid_braces(string $uuid): string
+    {
+        return UUID::toBraces($uuid);
+    }
+}
+
+if (!function_exists('uuid_to_base')) {
+    /**
+     * Encodes UUID into base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function uuid_to_base(string $uuid, int $base): string
+    {
+        return UUID::toBase($uuid, $base);
+    }
+}
+
+if (!function_exists('uuid_from_base')) {
+    /**
+     * Decodes UUID from base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function uuid_from_base(string $encoded, int $base): string
+    {
+        return UUID::fromBase($encoded, $base);
     }
 }
 
@@ -127,8 +268,6 @@ if (!function_exists('ulid')) {
     /**
      * Generates ULID.
      *
-     * @param DateTimeInterface|null $dateTime
-     * @return string
      * @throws Exception
      */
     function ulid(?DateTimeInterface $dateTime = null): string
@@ -137,13 +276,58 @@ if (!function_exists('ulid')) {
     }
 }
 
+if (!function_exists('ulid_monotonic')) {
+    /**
+     * Generates monotonic ULID.
+     *
+     * @throws Exception
+     */
+    function ulid_monotonic(?DateTimeInterface $dateTime = null): string
+    {
+        return ULID::generate($dateTime, UlidGenerationMode::MONOTONIC);
+    }
+}
+
+if (!function_exists('ulid_random')) {
+    /**
+     * Generates strict-random ULID.
+     *
+     * @throws Exception
+     */
+    function ulid_random(?DateTimeInterface $dateTime = null): string
+    {
+        return ULID::generate($dateTime, UlidGenerationMode::RANDOM);
+    }
+}
+
+if (!function_exists('ulid_to_base')) {
+    /**
+     * Encodes ULID into base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function ulid_to_base(string $ulid, int $base): string
+    {
+        return ULID::toBase($ulid, $base);
+    }
+}
+
+if (!function_exists('ulid_from_base')) {
+    /**
+     * Decodes ULID from base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function ulid_from_base(string $encoded, int $base): string
+    {
+        return ULID::fromBase($encoded, $base);
+    }
+}
+
 if (!function_exists('snowflake')) {
     /**
      * Generates Snowflake ID.
      *
-     * @param int $datacenter
-     * @param int $workerId
-     * @return string
      * @throws SnowflakeException|FileLockException
      */
     function snowflake(int $datacenter = 0, int $workerId = 0): string
@@ -152,12 +336,44 @@ if (!function_exists('snowflake')) {
     }
 }
 
+if (!function_exists('snowflake_is_valid')) {
+    /**
+     * Checks whether Snowflake ID is valid.
+     */
+    function snowflake_is_valid(string $id): bool
+    {
+        return Snowflake::isValid($id);
+    }
+}
+
+if (!function_exists('snowflake_to_base')) {
+    /**
+     * Encodes Snowflake into base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function snowflake_to_base(string $id, int $base): string
+    {
+        return Snowflake::toBase($id, $base);
+    }
+}
+
+if (!function_exists('snowflake_from_base')) {
+    /**
+     * Decodes Snowflake from base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function snowflake_from_base(string $encoded, int $base): string
+    {
+        return Snowflake::fromBase($encoded, $base);
+    }
+}
+
 if (!function_exists('sonyflake')) {
     /**
      * Generates Sonyflake ID.
      *
-     * @param int $machineId
-     * @return string
      * @throws SonyflakeException|FileLockException
      */
     function sonyflake(int $machineId = 0): string
@@ -166,17 +382,148 @@ if (!function_exists('sonyflake')) {
     }
 }
 
+if (!function_exists('sonyflake_is_valid')) {
+    /**
+     * Checks whether Sonyflake ID is valid.
+     */
+    function sonyflake_is_valid(string $id): bool
+    {
+        return Sonyflake::isValid($id);
+    }
+}
+
+if (!function_exists('sonyflake_to_base')) {
+    /**
+     * Encodes Sonyflake into base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function sonyflake_to_base(string $id, int $base): string
+    {
+        return Sonyflake::toBase($id, $base);
+    }
+}
+
+if (!function_exists('sonyflake_from_base')) {
+    /**
+     * Decodes Sonyflake from base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function sonyflake_from_base(string $encoded, int $base): string
+    {
+        return Sonyflake::fromBase($encoded, $base);
+    }
+}
+
 if (!function_exists('tbsl')) {
     /**
      * Generates TBSL ID.
      *
-     * @param int $machineId
-     * @param bool $sequenced
-     * @return string
      * @throws Exception
      */
     function tbsl(int $machineId = 0, bool $sequenced = false): string
     {
         return TBSL::generate($machineId, $sequenced);
+    }
+}
+
+if (!function_exists('tbsl_is_valid')) {
+    /**
+     * Checks whether TBSL ID is valid.
+     */
+    function tbsl_is_valid(string $id): bool
+    {
+        return TBSL::isValid($id);
+    }
+}
+
+if (!function_exists('tbsl_to_base')) {
+    /**
+     * Encodes TBSL into base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function tbsl_to_base(string $id, int $base): string
+    {
+        return TBSL::toBase($id, $base);
+    }
+}
+
+if (!function_exists('tbsl_from_base')) {
+    /**
+     * Decodes TBSL from base16/base32/base36/base58/base62.
+     *
+     * @throws Exception
+     */
+    function tbsl_from_base(string $encoded, int $base): string
+    {
+        return TBSL::fromBase($encoded, $base);
+    }
+}
+
+if (!function_exists('nanoid')) {
+    /**
+     * Generates Nano ID.
+     *
+     * @throws Exception
+     */
+    function nanoid(int $size = 21): string
+    {
+        return RandomId::nanoId($size);
+    }
+}
+
+if (!function_exists('nanoid_is_valid')) {
+    /**
+     * Checks whether NanoID string is valid.
+     */
+    function nanoid_is_valid(string $id, ?int $size = null): bool
+    {
+        return RandomId::isNanoId($id, $size);
+    }
+}
+
+if (!function_exists('cuid2')) {
+    /**
+     * Generates CUID2.
+     *
+     * @throws Exception
+     */
+    function cuid2(int $maxLength = 24): string
+    {
+        return RandomId::cuid2($maxLength);
+    }
+}
+
+if (!function_exists('cuid2_is_valid')) {
+    /**
+     * Checks whether CUID2 string is valid.
+     */
+    function cuid2_is_valid(string $id): bool
+    {
+        return RandomId::isCuid2($id);
+    }
+}
+
+if (!function_exists('opaque_id')) {
+    /**
+     * Generates short opaque random ID.
+     *
+     * @throws Exception
+     */
+    function opaque_id(int $length = 12): string
+    {
+        return OpaqueId::random($length);
+    }
+}
+
+if (!function_exists('deterministic_id')) {
+    /**
+     * Generates deterministic ID from payload.
+     */
+    function deterministic_id(string $payload, int $length = 24, string $namespace = 'default'): string
+    {
+        return DeterministicId::fromPayload($payload, $length, $namespace);
     }
 }

@@ -15,11 +15,11 @@
                 "options": []
             },
             {
-                "action": "composer audit",
+                "action": "composer ic:release:audit",
                 "options": []
             },
             {
-                "action": "composer tests",
+                "action": "composer ic:tests",
                 "options": []
             }
         ]

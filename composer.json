@@ -1,6 +1,6 @@
 {
     "name": "infocyph/uid",
-    "description": "UUID (RFC 4122 + Unofficial/Draft), ULID, Snowflake ID, Sonyflake ID, TBSL (library exclusive) generator!",
+    "description": "UUID (RFC 9562), ULID, Snowflake ID, Sonyflake ID, and TBSL generator for PHP.",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -9,10 +9,13 @@
         "snowflake",
         "sonyflake",
         "tbsl",
+        "ksuid",
+        "xid",
         "id",
         "key",
         "unique",
-        "rfc4122"
+        "rfc4122",
+        "rfc9562"
     ],
     "authors": [
         {
@@ -28,50 +31,26 @@
             "Infocyph\\UID\\": "src/"
         }
     },
-    "minimum-stability": "stable",
-    "prefer-stable": true,
-    "require": {
-        "php": ">=8.0",
-        "ext-bcmath": "*"
-    },
-    "config": {
-        "sort-packages": true,
-        "optimize-autoloader": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
-    },
     "replace": {
         "abmmhasan/uuid": "*"
     },
-    "require-dev": {
-        "captainhook/captainhook": "^5.24",
-        "laravel/pint": "^1.20",
-        "pestphp/pest": "^3.7",
-        "rector/rector": "^2.0",
-        "symfony/var-dumper": "^7.2"
+    "require": {
+        "php": ">=8.2",
+        "ext-bcmath": "*",
+        "psr/simple-cache": "^3.0"
     },
-    "scripts": {
-        "test:code": "pest --parallel --processes=10",
-        "test:refactor": "rector process --dry-run",
-        "test:lint": "pint --test",
-        "test:hook": [
-            "captainhook hook:post-checkout",
-            "captainhook hook:pre-commit",
-            "captainhook hook:post-commit",
-            "captainhook hook:post-merge",
-            "captainhook hook:post-rewrite",
-            "captainhook hook:pre-push"
-        ],
-        "tests": [
-            "@test:code",
-            "@test:lint",
-            "@test:refactor"
-        ],
-        "git:hook": "captainhook install --only-enabled -nf",
-        "test": "pest",
-        "refactor": "rector process",
-        "lint": "pint",
-        "post-autoload-dump": "@git:hook"
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true,
+        "classmap-authoritative": true,
+        "allow-plugins": {
+            "infocyph/phpforge": true,
+            "pestphp/pest-plugin": true
+        }
+    },
+    "require-dev": {
+        "infocyph/phpforge": "dev-main"
     }
 }

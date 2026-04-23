@@ -1,7 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Infocyph\UID\Exceptions;
 
-class UUIDException extends \Exception
-{
-}
+class UUIDException extends UIDException {}

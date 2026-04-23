@@ -1,30 +1,36 @@
 <?php
 
+use Infocyph\UID\Configuration\SnowflakeConfig;
+use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Snowflake;
 
 test('Snowflake Basic Functionality', function () {
+    $startedAt = time() - 1;
     $sf = Snowflake::generate();
+    $finishedAt = time() + 1;
     $parsed = Snowflake::parse($sf);
 
-    expect($parsed['time']->getTimestamp())->toBeBetween(time() - 1, time())
+    expect($parsed['time']->getTimestamp())->toBeBetween($startedAt, $finishedAt)
         ->and($parsed['worker_id'])->toBe(0)
         ->and($parsed['datacenter_id'])->toBe(0);
 });
 
 test('Snowflake ID Uniqueness', function () {
-    $id1 = Snowflake::generate();
-    usleep(10);
-    $id2 = Snowflake::generate();
+    $ids = [];
+    for ($i = 0; $i < 100; $i++) {
+        $ids[] = Snowflake::generate();
+    }
 
-    expect($id1)->not->toBe($id2);
+    expect(count(array_unique($ids)))->toBe(count($ids));
 });
 
 test('Snowflake Sequential Order', function () {
-    $id1 = Snowflake::generate();
-    usleep(10);
-    $id2 = Snowflake::generate();
-
-    expect((int) $id2)->toBeGreaterThan((int) $id1);
+    $previous = (int) Snowflake::generate();
+    for ($i = 0; $i < 100; $i++) {
+        $current = (int) Snowflake::generate();
+        expect($current)->toBeGreaterThan($previous);
+        $previous = $current;
+    }
 });
 
 test('Snowflake Datacenter and Worker Differentiation', function () {
@@ -45,10 +51,95 @@ test('Snowflake Max Sequence Handling', function () {
     for ($i = 0; $i <= $maxSeq; $i++) {
         $id1 = Snowflake::generate();
     }
-    usleep(10);
     $id2 = Snowflake::generate();
 
     expect((int) $id2)->toBeGreaterThan((int) $id1);
 });
 
+test('Snowflake uses distinct sequence files per worker combination', function () {
+    $sequenceKeyA = (1 << 5) | 2;
+    $sequenceKeyB = (3 << 5) | 4;
 
+    $fileA = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "uid-snowflake-$sequenceKeyA.seq";
+    $fileB = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "uid-snowflake-$sequenceKeyB.seq";
+
+    if (file_exists($fileA)) {
+        unlink($fileA);
+    }
+    if (file_exists($fileB)) {
+        unlink($fileB);
+    }
+
+    Snowflake::generate(1, 2);
+    Snowflake::generate(3, 4);
+
+    expect(file_exists($fileA))->toBeTrue()
+        ->and(file_exists($fileB))->toBeTrue();
+
+    if (file_exists($fileA)) {
+        unlink($fileA);
+    }
+    if (file_exists($fileB)) {
+        unlink($fileB);
+    }
+});
+
+test('Snowflake sequence key does not collide for ambiguous decimal concatenations', function () {
+    $sequenceKeyA = (1 << 5) | 23;
+    $sequenceKeyB = (12 << 5) | 3;
+
+    $fileA = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "uid-snowflake-$sequenceKeyA.seq";
+    $fileB = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "uid-snowflake-$sequenceKeyB.seq";
+
+    if (file_exists($fileA)) {
+        unlink($fileA);
+    }
+    if (file_exists($fileB)) {
+        unlink($fileB);
+    }
+
+    Snowflake::generate(1, 23);
+    Snowflake::generate(12, 3);
+
+    expect(file_exists($fileA))->toBeTrue()
+        ->and(file_exists($fileB))->toBeTrue();
+
+    if (file_exists($fileA)) {
+        unlink($fileA);
+    }
+    if (file_exists($fileB)) {
+        unlink($fileB);
+    }
+});
+
+test('Snowflake validation helper', function () {
+    $id = Snowflake::generate();
+
+    expect(Snowflake::isValid($id))->toBeTrue()
+        ->and(Snowflake::isValid('abc'))->toBeFalse()
+        ->and(Snowflake::isValid('0'))->toBeFalse();
+});
+
+test('Snowflake rejects invalid start timestamp format', function () {
+    expect(fn () => Snowflake::setStartTimeStamp('not-a-date'))
+        ->toThrow(\Infocyph\UID\Exceptions\SnowflakeException::class);
+});
+
+test('Snowflake bytes and base conversion roundtrip', function () {
+    $id = Snowflake::generate();
+    $bytes = Snowflake::toBytes($id);
+    $encoded = Snowflake::toBase($id, 36);
+
+    expect(strlen($bytes))->toBe(8)
+        ->and(Snowflake::fromBytes($bytes))->toBe($id)
+        ->and(Snowflake::fromBase($encoded, 36))->toBe($id);
+});
+
+test('Snowflake config supports output modes', function () {
+    $intId = Snowflake::generateWithConfig(new SnowflakeConfig(outputType: IdOutputType::INT));
+    $binaryId = Snowflake::generateWithConfig(new SnowflakeConfig(outputType: IdOutputType::BINARY));
+
+    expect($intId)->toBeInt()
+        ->and($binaryId)->toBeString()
+        ->and(strlen($binaryId))->toBe(8);
+});
