@@ -68,6 +68,9 @@ $base58 = UUID::toBase($uuid, 58);
 $decoded = UUID::fromBase($base58, 58);
 ```
 
+The shared byte-level encoder is available as
+`Infocyph\UID\Support\BaseEncoder` for bases `16`, `32`, `36`, `58`, and `62`.
+
 ## References
 
 - UUID: https://datatracker.ietf.org/doc/html/rfc9562

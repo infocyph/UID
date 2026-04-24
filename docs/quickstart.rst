@@ -67,6 +67,8 @@ Binary and Base Conversion
    $base58 = Id::uuidToBase($uuid, 58);
    $uuidAgain = Id::uuidFromBase($base58, 58);
 
+   $tbslBase62 = tbsl_to_base(Id::tbsl(), 62);
+
 Configuration-Based Generators
 ------------------------------
 

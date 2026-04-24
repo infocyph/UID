@@ -38,6 +38,7 @@ It supports:
    :caption: Advanced
 
    sequence-providers
+   base-encoding
    value-objects
    helpers
    db-storage
