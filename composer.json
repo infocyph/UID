@@ -1,8 +1,8 @@
 {
     "name": "infocyph/uid",
     "description": "UUID (RFC 9562), ULID, Snowflake ID, Sonyflake ID, and TBSL generator for PHP.",
-    "type": "library",
     "license": "MIT",
+    "type": "library",
     "keywords": [
         "uuid",
         "ulid",
@@ -23,34 +23,35 @@
             "email": "abmmhasan@gmail.com"
         }
     ],
-    "autoload": {
-        "files": [
-            "src/functions.php"
-        ],
-        "psr-4": {
-            "Infocyph\\UID\\": "src/"
-        }
-    },
-    "replace": {
-        "abmmhasan/uuid": "*"
-    },
     "require": {
         "php": ">=8.2",
         "ext-bcmath": "*",
         "psr/simple-cache": "^3.0"
     },
-    "minimum-stability": "stable",
-    "prefer-stable": true,
-    "config": {
-        "sort-packages": true,
-        "optimize-autoloader": true,
-        "classmap-authoritative": true,
-        "allow-plugins": {
-            "infocyph/phpforge": true,
-            "pestphp/pest-plugin": true
-        }
-    },
     "require-dev": {
         "infocyph/phpforge": "dev-main"
+    },
+    "replace": {
+        "abmmhasan/uuid": "*"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "Infocyph\\UID\\": "src/"
+        },
+        "files": [
+            "src/functions.php"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "ergebnis/composer-normalize": true,
+            "infocyph/phpforge": true,
+            "pestphp/pest-plugin": true
+        },
+        "classmap-authoritative": true,
+        "optimize-autoloader": true,
+        "sort-packages": true
     }
 }
