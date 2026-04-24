@@ -7,9 +7,10 @@ namespace Infocyph\UID;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
+use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\Support\BaseEncoder;
 
-final class KSUID
+final class KSUID implements IdAlgorithmInterface
 {
     private static int $epoch = 1_400_000_000;
 

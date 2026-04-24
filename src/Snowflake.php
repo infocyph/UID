@@ -14,6 +14,7 @@ use Infocyph\UID\Exceptions\SnowflakeException;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
+use Infocyph\UID\Support\GetSequence;
 use Infocyph\UID\Support\OutputFormatter;
 
 final class Snowflake

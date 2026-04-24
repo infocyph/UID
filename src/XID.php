@@ -6,9 +6,10 @@ namespace Infocyph\UID;
 
 use DateTimeImmutable;
 use Exception;
+use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\Support\BaseEncoder;
 
-final class XID
+final class XID implements IdAlgorithmInterface
 {
     private static ?int $counter = null;
 

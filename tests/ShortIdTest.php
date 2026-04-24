@@ -1,9 +1,11 @@
 <?php
 
-use Infocyph\UID\RandomId;
+use Infocyph\UID\Contracts\IdAlgorithmInterface;
+use Infocyph\UID\CUID2;
+use Infocyph\UID\NanoID;
 
 test('CUID2', function () {
-    $string = RandomId::cuid2();
+    $string = CUID2::generate();
     expect($string)
         ->toBeString()
         ->not()->toBeEmpty()
@@ -12,13 +14,18 @@ test('CUID2', function () {
 });
 
 test('CUID2 custom length', function () {
-    $string = RandomId::cuid2(32);
+    $string = CUID2::generate(32);
     expect($string)->toHaveLength(32)->toMatch('/^[0-9a-z]+$/');
 });
 
 test('nanoId', function () {
-    $string = RandomId::nanoId();
+    $string = NanoID::generate();
     expect($string)->toBeString()->not()->toBeEmpty()->toHaveLength(21);
+});
+
+test('NanoID and CUID2 follow the algorithm interface', function () {
+    expect(is_subclass_of(NanoID::class, IdAlgorithmInterface::class))->toBeTrue()
+        ->and(is_subclass_of(CUID2::class, IdAlgorithmInterface::class))->toBeTrue();
 });
 
 test('global helper functions for NanoID and CUID2', function () {
@@ -27,17 +34,17 @@ test('global helper functions for NanoID and CUID2', function () {
 });
 
 test('NanoID and CUID2 validation and parse', function () {
-    $nano = RandomId::nanoId(12);
-    $cuid = RandomId::cuid2(24);
+    $nano = NanoID::generate(12);
+    $cuid = CUID2::generate(24);
 
-    $nanoParsed = RandomId::parseNanoId($nano, 12);
-    $cuidParsed = RandomId::parseCuid2($cuid);
+    $nanoParsed = NanoID::parse($nano, 12);
+    $cuidParsed = CUID2::parse($cuid);
 
-    expect(RandomId::isNanoId($nano, 12))->toBeTrue()
+    expect(NanoID::isValid($nano, 12))->toBeTrue()
         ->and($nanoParsed['isValid'])->toBeTrue()
         ->and($nanoParsed['length'])->toBe(12)
         ->and($nanoParsed['alphabet'])->toBe('base64url')
-        ->and(RandomId::isCuid2($cuid))->toBeTrue()
+        ->and(CUID2::isValid($cuid))->toBeTrue()
         ->and($cuidParsed['isValid'])->toBeTrue()
         ->and($cuidParsed['length'])->toBe(24)
         ->and(nanoid_is_valid($nano, 12))->toBeTrue()

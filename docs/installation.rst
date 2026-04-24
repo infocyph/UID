@@ -28,6 +28,12 @@ If you prefer explicit static APIs only, call the namespaced classes directly:
 - ``Infocyph\\UID\\Snowflake``
 - ``Infocyph\\UID\\Sonyflake``
 - ``Infocyph\\UID\\TBSL``
+- ``Infocyph\\UID\\NanoID``
+- ``Infocyph\\UID\\CUID2``
+- ``Infocyph\\UID\\KSUID``
+- ``Infocyph\\UID\\XID``
+- ``Infocyph\\UID\\OpaqueId``
+- ``Infocyph\\UID\\DeterministicId``
 
 Read the Docs Build
 -------------------

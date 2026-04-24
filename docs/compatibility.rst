@@ -19,6 +19,16 @@ Non-UUID Families
 - NanoID and CUID2: URL-safe random IDs.
 - KSUID and XID: sortable short ID families.
 
+Algorithm Interface
+-------------------
+
+``NanoID``, ``CUID2``, ``KSUID``, and ``XID`` implement
+``Infocyph\\UID\\Contracts\\IdAlgorithmInterface`` with:
+
+- ``generate()``
+- ``isValid()``
+- ``parse()``
+
 Binary and Alternate Encodings
 ------------------------------
 

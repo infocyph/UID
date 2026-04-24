@@ -1,5 +1,6 @@
 <?php
 
+use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\DeterministicId;
 use Infocyph\UID\IdComparator;
 use Infocyph\UID\KSUID;
@@ -24,6 +25,11 @@ test('XID generation and parsing', function () {
         ->and($id)->toHaveLength(20)
         ->and($parsed['isValid'])->toBeTrue()
         ->and($parsed['time'])->not()->toBeNull();
+});
+
+test('KSUID and XID follow the algorithm interface', function () {
+    expect(is_subclass_of(KSUID::class, IdAlgorithmInterface::class))->toBeTrue()
+        ->and(is_subclass_of(XID::class, IdAlgorithmInterface::class))->toBeTrue();
 });
 
 test('Opaque and deterministic IDs', function () {

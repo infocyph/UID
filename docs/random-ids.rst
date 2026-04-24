@@ -4,26 +4,33 @@ Random and Short IDs
 NanoID and CUID2
 ----------------
 
-Class: ``Infocyph\\UID\\RandomId``
+Classes:
+
+- ``Infocyph\\UID\\NanoID``
+- ``Infocyph\\UID\\CUID2``
 
 .. code-block:: php
 
    <?php
 
-   use Infocyph\UID\RandomId;
+   use Infocyph\UID\CUID2;
+   use Infocyph\UID\NanoID;
 
-   $nano = RandomId::nanoId(21);
-   $isNano = RandomId::isNanoId($nano, 21);
-   $nanoInfo = RandomId::parseNanoId($nano, 21);
+   $nano = NanoID::generate(21);
+   $isNano = NanoID::isValid($nano, 21);
+   $nanoInfo = NanoID::parse($nano, 21);
 
-   $cuid2 = RandomId::cuid2(24);
-   $isCuid2 = RandomId::isCuid2($cuid2);
-   $cuid2Info = RandomId::parseCuid2($cuid2);
+   $cuid2 = CUID2::generate(24);
+   $isCuid2 = CUID2::isValid($cuid2);
+   $cuid2Info = CUID2::parse($cuid2);
 
 Validation/parsing outputs:
 
-- ``parseNanoId()``: ``['isValid', 'length', 'alphabet']``
-- ``parseCuid2()``: ``['isValid', 'length']``
+- ``NanoID::parse()``: ``['isValid', 'length', 'alphabet']``
+- ``CUID2::parse()``: ``['isValid', 'length']``
+
+``NanoID``, ``CUID2``, ``KSUID``, and ``XID`` implement
+``Infocyph\\UID\\Contracts\\IdAlgorithmInterface``.
 
 KSUID
 -----

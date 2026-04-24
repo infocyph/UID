@@ -12,6 +12,7 @@ use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Exceptions\UIDException;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
+use Infocyph\UID\Support\GetSequence;
 
 final class TBSL
 {
