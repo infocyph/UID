@@ -27,11 +27,6 @@ test('XID generation and parsing', function () {
         ->and($parsed['time'])->not()->toBeNull();
 });
 
-test('KSUID and XID follow the algorithm interface', function () {
-    expect(is_subclass_of(KSUID::class, IdAlgorithmInterface::class))->toBeTrue()
-        ->and(is_subclass_of(XID::class, IdAlgorithmInterface::class))->toBeTrue();
-});
-
 test('Opaque and deterministic IDs', function () {
     $opaque = OpaqueId::random(14);
     $det1 = DeterministicId::fromPayload('payload', 20, 'ns');

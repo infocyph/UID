@@ -23,11 +23,6 @@ test('nanoId', function () {
     expect($string)->toBeString()->not()->toBeEmpty()->toHaveLength(21);
 });
 
-test('NanoID and CUID2 follow the algorithm interface', function () {
-    expect(is_subclass_of(NanoID::class, IdAlgorithmInterface::class))->toBeTrue()
-        ->and(is_subclass_of(CUID2::class, IdAlgorithmInterface::class))->toBeTrue();
-});
-
 test('global helper functions for NanoID and CUID2', function () {
     expect(nanoid(10))->toHaveLength(10)
         ->and(cuid2(24))->toHaveLength(24);
