@@ -5,9 +5,9 @@
 Security fixes are provided for the latest major release line.
 
 | Version | Supported |
-| --- | --- |
-| `3.0.x` | ✅ |
-| `< 3.0` | ❌ |
+|---------| --- |
+| `4.x`   | ✅ |
+| `< 4.0` | ❌ |
 
 ## Reporting a Vulnerability
 
