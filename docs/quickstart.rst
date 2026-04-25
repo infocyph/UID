@@ -18,6 +18,22 @@ Using the ``Id`` Facade
    $nano = Id::nanoId(21);
    $cuid2 = Id::cuid2(24);
 
+Using Algorithm Classes
+-----------------------
+
+.. code-block:: php
+
+   <?php
+
+   use Infocyph\UID\CUID2;
+   use Infocyph\UID\NanoID;
+
+   $nano = NanoID::generate(21);
+   $cuid2 = CUID2::generate(24);
+
+   NanoID::isValid($nano, 21);      // bool
+   CUID2::isValid($cuid2);          // bool
+
 Validation and Parsing
 ----------------------
 
@@ -50,6 +66,8 @@ Binary and Base Conversion
 
    $base58 = Id::uuidToBase($uuid, 58);
    $uuidAgain = Id::uuidFromBase($base58, 58);
+
+   $tbslBase62 = tbsl_to_base(Id::tbsl(), 62);
 
 Configuration-Based Generators
 ------------------------------

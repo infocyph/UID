@@ -23,12 +23,12 @@ final class Id
      */
     public static function cuid2(int $maxLength = 24): string
     {
-        return RandomId::cuid2($maxLength);
+        return CUID2::generate($maxLength);
     }
 
     public static function cuid2IsValid(string $id): bool
     {
-        return RandomId::isCuid2($id);
+        return CUID2::isValid($id);
     }
 
     /**
@@ -36,7 +36,7 @@ final class Id
      */
     public static function cuid2Parse(string $id): array
     {
-        return RandomId::parseCuid2($id);
+        return CUID2::parse($id);
     }
 
     public static function deterministic(string $payload, int $length = 24, string $namespace = 'default'): string
@@ -57,12 +57,12 @@ final class Id
      */
     public static function nanoId(int $size = 21): string
     {
-        return RandomId::nanoId($size);
+        return NanoID::generate($size);
     }
 
     public static function nanoIdIsValid(string $id, ?int $size = null): bool
     {
-        return RandomId::isNanoId($id, $size);
+        return NanoID::isValid($id, $size);
     }
 
     /**
@@ -70,7 +70,7 @@ final class Id
      */
     public static function nanoIdParse(string $id, ?int $size = null): array
     {
-        return RandomId::parseNanoId($id, $size);
+        return NanoID::parse($id, $size);
     }
 
     /**

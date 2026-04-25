@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Infocyph\UID;
+namespace Infocyph\UID\Support;
 
 use Infocyph\UID\Sequence\CallbackSequenceProvider;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;

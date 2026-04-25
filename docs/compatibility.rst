@@ -19,12 +19,24 @@ Non-UUID Families
 - NanoID and CUID2: URL-safe random IDs.
 - KSUID and XID: sortable short ID families.
 
+Algorithm Interface
+-------------------
+
+``NanoID``, ``CUID2``, ``KSUID``, and ``XID`` implement
+``Infocyph\\UID\\Contracts\\IdAlgorithmInterface`` with:
+
+- ``generate()``
+- ``isValid()``
+- ``parse()``
+
 Binary and Alternate Encodings
 ------------------------------
 
 - UUID / ULID / TBSL: ``toBytes()`` / ``fromBytes()``.
 - UUID / ULID / Snowflake / Sonyflake / TBSL: ``toBase()`` / ``fromBase()``.
 - KSUID / XID: ``toBytes()`` / ``fromBytes()``.
+- Shared byte-level encoder: ``Infocyph\\UID\\Support\\BaseEncoder``.
+- Supported bases: ``16``, ``32``, ``36``, ``58``, ``62``.
 
 Runtime Requirements
 --------------------

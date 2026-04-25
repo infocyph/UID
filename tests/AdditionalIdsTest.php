@@ -1,5 +1,6 @@
 <?php
 
+use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\DeterministicId;
 use Infocyph\UID\IdComparator;
 use Infocyph\UID\KSUID;

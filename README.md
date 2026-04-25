@@ -40,14 +40,16 @@ Global helper functions are autoloaded via `src/functions.php`.
 <?php
 
 use Infocyph\UID\Id;
+use Infocyph\UID\CUID2;
+use Infocyph\UID\NanoID;
 
 $uuid = Id::uuid();      // default UUID strategy (v7)
 $ulid = Id::ulid();
 $snowflake = Id::snowflake();
 $sonyflake = Id::sonyflake();
 $tbsl = Id::tbsl();
-$nanoid = Id::nanoId(21);
-$cuid2 = Id::cuid2(24);
+$nanoid = NanoID::generate(21);
+$cuid2 = CUID2::generate(24);
 ```
 
 ```php
@@ -65,6 +67,9 @@ $roundTrip = UUID::fromBytes($bytes);
 $base58 = UUID::toBase($uuid, 58);
 $decoded = UUID::fromBase($base58, 58);
 ```
+
+The shared byte-level encoder is available as
+`Infocyph\UID\Support\BaseEncoder` for bases `16`, `32`, `36`, `58`, and `62`.
 
 ## References
 

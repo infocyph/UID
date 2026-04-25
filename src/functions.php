@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
+use Infocyph\UID\CUID2;
 use Infocyph\UID\DeterministicId;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SnowflakeException;
 use Infocyph\UID\Exceptions\SonyflakeException;
 use Infocyph\UID\KSUID;
+use Infocyph\UID\NanoID;
 use Infocyph\UID\OpaqueId;
-use Infocyph\UID\RandomId;
 use Infocyph\UID\Snowflake;
 use Infocyph\UID\Sonyflake;
 use Infocyph\UID\TBSL;
@@ -470,7 +471,7 @@ if (!function_exists('nanoid')) {
      */
     function nanoid(int $size = 21): string
     {
-        return RandomId::nanoId($size);
+        return NanoID::generate($size);
     }
 }
 
@@ -480,7 +481,7 @@ if (!function_exists('nanoid_is_valid')) {
      */
     function nanoid_is_valid(string $id, ?int $size = null): bool
     {
-        return RandomId::isNanoId($id, $size);
+        return NanoID::isValid($id, $size);
     }
 }
 
@@ -492,7 +493,7 @@ if (!function_exists('cuid2')) {
      */
     function cuid2(int $maxLength = 24): string
     {
-        return RandomId::cuid2($maxLength);
+        return CUID2::generate($maxLength);
     }
 }
 
@@ -502,7 +503,7 @@ if (!function_exists('cuid2_is_valid')) {
      */
     function cuid2_is_valid(string $id): bool
     {
-        return RandomId::isCuid2($id);
+        return CUID2::isValid($id);
     }
 }
 
