@@ -5,38 +5,13 @@ declare(strict_types=1);
 namespace Infocyph\UID\Value;
 
 use DateTimeImmutable;
-use Infocyph\UID\Contracts\IdValueInterface;
-use Infocyph\UID\IdComparator;
 use Infocyph\UID\Sonyflake;
 
-final readonly class SonyflakeValue implements IdValueInterface
+/**
+ * @extends AbstractParsedIdValue<array{time: DateTimeImmutable, sequence: int, machine_id: int}>
+ */
+final readonly class SonyflakeValue extends AbstractParsedIdValue
 {
-    /**
-     * @var array{time: DateTimeImmutable, sequence: int, machine_id: int}
-     */
-    private array $parsed;
-
-    private string $value;
-
-    public function __construct(string $value)
-    {
-        Sonyflake::isValid($value) || throw new \InvalidArgumentException('Invalid Sonyflake ID string');
-        $this->value = $value;
-        $this->parsed = Sonyflake::parse($value);
-    }
-
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function compare(IdValueInterface|string $other): int
-    {
-        $otherValue = $other instanceof IdValueInterface ? $other->toString() : $other;
-
-        return IdComparator::compare($this->value, $otherValue);
-    }
-
     public function getMachineId(): int
     {
         return $this->parsed['machine_id'];
@@ -47,18 +22,18 @@ final readonly class SonyflakeValue implements IdValueInterface
         return $this->parsed['time'];
     }
 
-    public function getVersion(): ?int
+    protected function invalidMessage(): string
     {
-        return null;
+        return 'Invalid Sonyflake ID string';
     }
 
-    public function isSortable(): bool
+    protected function parser(): callable
     {
-        return true;
+        return Sonyflake::parse(...);
     }
 
-    public function toString(): string
+    protected function validator(): callable
     {
-        return $this->value;
+        return Sonyflake::isValid(...);
     }
 }

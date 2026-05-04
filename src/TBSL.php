@@ -12,7 +12,9 @@ use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Exceptions\UIDException;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
+use Infocyph\UID\Support\DecimalBytes;
 use Infocyph\UID\Support\GetSequence;
+use Infocyph\UID\Support\UnsignedDecimal;
 
 final class TBSL
 {
@@ -194,15 +196,11 @@ final class TBSL
 
     private static function hexToDecimal(string $hex): int
     {
-        $decimal = '0';
-        foreach (str_split(strtolower($hex)) as $char) {
-            $decimal = bcadd(
-                bcmul($decimal, '16'),
-                (string) hexdec($char),
-            );
-        }
+        $bytes = hex2bin(strtolower($hex));
+        $bytes !== false || throw new UIDException('Unable to convert TBSL hex to bytes');
+        $decimal = DecimalBytes::fromBytes($bytes);
 
-        if (bccomp($decimal, (string) PHP_INT_MAX) === 1) {
+        if (UnsignedDecimal::compare($decimal, (string) PHP_INT_MAX) === 1) {
             throw new UIDException('TBSL integer output exceeds PHP_INT_MAX; use string or binary output');
         }
 

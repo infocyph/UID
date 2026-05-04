@@ -5,37 +5,13 @@ declare(strict_types=1);
 namespace Infocyph\UID\Value;
 
 use DateTimeImmutable;
-use Infocyph\UID\Contracts\IdValueInterface;
 use Infocyph\UID\TBSL;
 
-final readonly class TbslValue implements IdValueInterface
+/**
+ * @extends AbstractParsedIdValue<array{isValid: bool, time: DateTimeImmutable|null, machineId: int|null}>
+ */
+final readonly class TbslValue extends AbstractParsedIdValue
 {
-    /**
-     * @var array{isValid: bool, time: DateTimeImmutable|null, machineId: int|null}
-     */
-    private array $parsed;
-
-    private string $value;
-
-    public function __construct(string $value)
-    {
-        TBSL::isValid($value) || throw new \InvalidArgumentException('Invalid TBSL string');
-        $this->value = $value;
-        $this->parsed = TBSL::parse($value);
-    }
-
-    public function __toString(): string
-    {
-        return $this->toString();
-    }
-
-    public function compare(IdValueInterface|string $other): int
-    {
-        $otherValue = $other instanceof IdValueInterface ? $other->toString() : $other;
-
-        return strcmp($this->value, $otherValue);
-    }
-
     public function getMachineId(): ?int
     {
         return $this->parsed['machineId'];
@@ -46,18 +22,18 @@ final readonly class TbslValue implements IdValueInterface
         return $this->parsed['time'];
     }
 
-    public function getVersion(): ?int
+    protected function invalidMessage(): string
     {
-        return null;
+        return 'Invalid TBSL string';
     }
 
-    public function isSortable(): bool
+    protected function parser(): callable
     {
-        return true;
+        return TBSL::parse(...);
     }
 
-    public function toString(): string
+    protected function validator(): callable
     {
-        return $this->value;
+        return TBSL::isValid(...);
     }
 }

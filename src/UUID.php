@@ -332,13 +332,7 @@ final class UUID
      */
     public static function v3(string $namespace, string $string): string
     {
-        $namespace = self::nsResolve($namespace);
-        if (!$namespace) {
-            throw new UUIDException('Invalid NameSpace!');
-        }
-        $hash = md5(hex2bin($namespace) . $string);
-
-        return self::output(3, $hash);
+        return self::nameBased($namespace, $string, 3, 'md5');
     }
 
     /**
@@ -363,13 +357,7 @@ final class UUID
      */
     public static function v5(string $namespace, string $string): string
     {
-        $namespace = self::nsResolve($namespace);
-        if (!$namespace) {
-            throw new UUIDException('Invalid NameSpace!');
-        }
-        $hash = sha1(hex2bin($namespace) . $string);
-
-        return self::output(5, $hash);
+        return self::nameBased($namespace, $string, 5, 'sha1');
     }
 
     /**
@@ -598,6 +586,24 @@ final class UUID
         }
 
         return null;
+    }
+
+    /**
+     * @throws UUIDException
+     */
+    private static function nameBased(string $namespace, string $string, int $version, string $algorithm): string
+    {
+        $resolvedNamespace = self::nsResolve($namespace);
+        if (!$resolvedNamespace) {
+            throw new UUIDException('Invalid NameSpace!');
+        }
+
+        $binaryNamespace = hex2bin($resolvedNamespace);
+        if ($binaryNamespace === false) {
+            throw new UUIDException('Invalid NameSpace!');
+        }
+
+        return self::output($version, hash($algorithm, $binaryNamespace . $string));
     }
 
     /**

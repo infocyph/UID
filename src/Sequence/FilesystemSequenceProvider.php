@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Infocyph\UID\Sequence;
 
 use Infocyph\UID\Exceptions\FileLockException;
+use Infocyph\UID\Support\FileLock;
 
 final readonly class FilesystemSequenceProvider implements SequenceProviderInterface
 {
@@ -40,21 +41,13 @@ final readonly class FilesystemSequenceProvider implements SequenceProviderInter
      */
     private function acquireLock(string $fileLocation)
     {
-        ($handle = fopen($fileLocation, 'c+')) || throw new FileLockException(
+        return FileLock::acquire(
+            $fileLocation,
+            $this->waitTime,
+            $this->maxAttempts,
             'Failed to open sequence file: ' . $fileLocation,
+            'Unable to acquire sequence lock: ' . $fileLocation,
         );
-
-        for ($attempts = 0; $attempts < $this->maxAttempts; $attempts++) {
-            if (flock($handle, LOCK_EX | LOCK_NB)) {
-                return $handle;
-            }
-
-            usleep($this->waitTime);
-        }
-
-        fclose($handle);
-
-        throw new FileLockException('Unable to acquire sequence lock: ' . $fileLocation);
     }
 
     private function sequenceFileLocation(string $type, int $machineId): string

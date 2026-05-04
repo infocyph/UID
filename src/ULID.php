@@ -10,6 +10,7 @@ use Exception;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Exceptions\ULIDException;
 use Infocyph\UID\Support\BaseEncoder;
+use Infocyph\UID\Support\DecimalBytes;
 
 final class ULID
 {
@@ -51,12 +52,7 @@ final class ULID
             throw new ULIDException('ULID binary data must be exactly 16 bytes');
         }
 
-        $decimal = '0';
-        $hexChars = str_split(bin2hex($bytes));
-        foreach ($hexChars as $char) {
-            $value = hexdec($char);
-            $decimal = bcadd(bcmul($decimal, '16'), (string) $value);
-        }
+        $decimal = DecimalBytes::fromBytes($bytes);
 
         $encoded = str_repeat('0', 26);
         $chars = str_split($encoded);
@@ -186,19 +182,11 @@ final class ULID
             throw new ULIDException('Invalid ULID string');
         }
 
-        $decimal = self::decodeToDecimal($ulid);
-        $hex = '';
-        while ($decimal !== '0') {
-            $remainder = (int) bcmod($decimal, '16');
-            $hex = dechex($remainder) . $hex;
-            $decimal = bcdiv($decimal, '16', 0);
+        try {
+            return DecimalBytes::toFixedBytes(self::decodeToDecimal($ulid), 16);
+        } catch (\InvalidArgumentException $exception) {
+            throw new ULIDException('Unable to convert ULID to bytes', 0, $exception);
         }
-
-        $hex = str_pad($hex, 32, '0', STR_PAD_LEFT);
-        $bytes = hex2bin($hex);
-        $bytes !== false || throw new ULIDException('Unable to convert ULID to bytes');
-
-        return $bytes;
     }
 
     /**

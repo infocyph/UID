@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Infocyph\UID;
 
 use Infocyph\UID\Contracts\IdValueInterface;
+use Infocyph\UID\Support\UnsignedDecimal;
 
 final class IdComparator
 {
@@ -17,7 +18,7 @@ final class IdComparator
         $rightString = $right instanceof IdValueInterface ? $right->toString() : $right;
 
         if (preg_match('/^\d+$/', $leftString) && preg_match('/^\d+$/', $rightString)) {
-            return self::compareUnsignedDecimals($leftString, $rightString);
+            return UnsignedDecimal::compare($leftString, $rightString);
         }
 
         return strcmp($leftString, $rightString);
@@ -34,20 +35,5 @@ final class IdComparator
         usort($ids, self::compare(...));
 
         return $ids;
-    }
-
-    private static function compareUnsignedDecimals(string $left, string $right): int
-    {
-        $left = ltrim($left, '0');
-        $right = ltrim($right, '0');
-        $left = $left === '' ? '0' : $left;
-        $right = $right === '' ? '0' : $right;
-
-        $lengthComparison = strlen($left) <=> strlen($right);
-        if ($lengthComparison !== 0) {
-            return $lengthComparison;
-        }
-
-        return strcmp($left, $right);
     }
 }

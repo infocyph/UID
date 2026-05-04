@@ -14,7 +14,9 @@ use Infocyph\UID\Exceptions\SnowflakeException;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
+use Infocyph\UID\Support\EpochGuard;
 use Infocyph\UID\Support\GetSequence;
+use Infocyph\UID\Support\NumericIdCodec;
 use Infocyph\UID\Support\OutputFormatter;
 
 final class Snowflake
@@ -46,7 +48,7 @@ final class Snowflake
     public static function fromBase(string $encoded, int $base): string
     {
         try {
-            return self::fromBytes(BaseEncoder::decodeToBytes($encoded, $base, 8));
+            return NumericIdCodec::decimalFromBase($encoded, $base, 8);
         } catch (\InvalidArgumentException $exception) {
             throw new SnowflakeException($exception->getMessage(), 0, $exception);
         }
@@ -59,16 +61,11 @@ final class Snowflake
      */
     public static function fromBytes(string $bytes): string
     {
-        if (strlen($bytes) !== 8) {
-            throw new SnowflakeException('Snowflake binary data must be exactly 8 bytes');
+        try {
+            return NumericIdCodec::decimalFromBytes($bytes, 8);
+        } catch (\InvalidArgumentException $exception) {
+            throw new SnowflakeException('Snowflake binary data must be exactly 8 bytes', 0, $exception);
         }
-
-        $decimal = '0';
-        foreach (str_split(bin2hex($bytes)) as $char) {
-            $decimal = bcadd(bcmul($decimal, '16'), (string) hexdec($char));
-        }
-
-        return $decimal;
     }
 
     /**
@@ -98,11 +95,12 @@ final class Snowflake
     public static function generateWithConfig(SnowflakeConfig $config): int|string
     {
         [$datacenterId, $workerId] = $config->resolveNode();
+        $customEpoch = $config->resolveCustomEpochMs();
 
         return self::generateInternal(
             $datacenterId,
             $workerId,
-            $config->resolveCustomEpochMs() ?? self::getStartTimeStamp(),
+            $customEpoch ?? self::getStartTimeStamp(),
             $config->clockBackwardPolicy,
             $config->outputType,
             $config->sequenceProvider,
@@ -114,7 +112,7 @@ final class Snowflake
      */
     public static function isValid(string $id): bool
     {
-        return preg_match('/^\d+$/', $id) === 1 && $id !== '0';
+        return $id !== '' && $id !== '0' && ctype_digit($id);
     }
 
     /**
@@ -126,7 +124,10 @@ final class Snowflake
      */
     public static function parse(string $id): array
     {
-        return self::parseWithEpoch($id, self::getStartTimeStamp());
+        return self::parseWithEpoch(
+            id: $id,
+            startTimestamp: self::getStartTimeStamp(),
+        );
     }
 
     /**
@@ -137,19 +138,20 @@ final class Snowflake
      */
     public static function parseWithEpoch(string $id, int $startTimestamp): array
     {
-        $id = decbin((int) $id);
-        $time = str_split((string) (bindec(substr($id, 0, -22)) + $startTimestamp), 10);
+        $binaryId = decbin((int) $id);
+        $timestamp = (int) bindec(substr($binaryId, 0, -22)) + $startTimestamp;
+        [$seconds, $fraction] = self::timestampParts($timestamp);
 
         return [
             'time' => new DateTimeImmutable(
                 '@'
-                . $time[0]
+                . $seconds
                 . '.'
-                . str_pad($time[1], 6, '0', STR_PAD_LEFT),
+                . str_pad($fraction, 6, '0', STR_PAD_LEFT),
             ),
-            'sequence' => (int) bindec(substr($id, -12)),
-            'worker_id' => (int) bindec(substr($id, -17, 5)),
-            'datacenter_id' => (int) bindec(substr($id, -22, 5)),
+            'sequence' => (int) bindec(substr($binaryId, -12)),
+            'worker_id' => (int) bindec(substr($binaryId, -17, 5)),
+            'datacenter_id' => (int) bindec(substr($binaryId, -22, 5)),
         ];
     }
 
@@ -161,15 +163,17 @@ final class Snowflake
      */
     public static function setStartTimeStamp(string $timeString): void
     {
-        $time = strtotime($timeString);
-        if ($time === false) {
-            throw new SnowflakeException('Invalid start time format');
+        try {
+            $resolved = EpochGuard::resolveStartTime(
+                $timeString,
+                'Invalid start time format',
+                'The start time cannot be in the future',
+            );
+        } catch (\InvalidArgumentException $exception) {
+            throw new SnowflakeException($exception->getMessage(), 0, $exception);
         }
-        $current = time();
-
-        if ($time > $current) {
-            throw new SnowflakeException('The start time cannot be in the future');
-        }
+        $time = $resolved['time'];
+        $current = $resolved['current'];
 
         if (($current - $time) > (-1 ^ (-1 << self::$maxTimestampLength))) {
             throw new SnowflakeException(
@@ -200,23 +204,16 @@ final class Snowflake
      */
     public static function toBytes(string $id): string
     {
-        if (!self::isValid($id)) {
-            throw new SnowflakeException('Invalid Snowflake ID string');
+        try {
+            return NumericIdCodec::bytesFromDecimal(
+                $id,
+                8,
+                self::isValid(...),
+                'Invalid Snowflake ID string',
+            );
+        } catch (\InvalidArgumentException $exception) {
+            throw new SnowflakeException('Unable to convert Snowflake ID to bytes', 0, $exception);
         }
-
-        $hex = '';
-        $value = $id;
-        while ($value !== '0') {
-            $remainder = (int) bcmod($value, '16');
-            $hex = dechex($remainder) . $hex;
-            $value = bcdiv($value, '16', 0);
-        }
-
-        $hex = str_pad($hex, 16, '0', STR_PAD_LEFT);
-        $bytes = hex2bin($hex);
-        $bytes !== false || throw new SnowflakeException('Unable to convert Snowflake ID to bytes');
-
-        return $bytes;
     }
 
     /**
@@ -322,6 +319,17 @@ final class Snowflake
     private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
     {
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
+    }
+
+    /**
+     * @return array{0:string,1:string}
+     */
+    private static function timestampParts(int $timestamp): array
+    {
+        $time = str_split((string) $timestamp, 10);
+        $time[1] ??= '0';
+
+        return [$time[0], $time[1]];
     }
 
     private static function waitUntil(int $timestamp): int

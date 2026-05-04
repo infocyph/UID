@@ -25,40 +25,16 @@ final class OutputFormatter
         };
     }
 
-    private static function compareUnsignedDecimals(string $left, string $right): int
-    {
-        $left = ltrim($left, '0');
-        $right = ltrim($right, '0');
-        $left = $left === '' ? '0' : $left;
-        $right = $right === '' ? '0' : $right;
-
-        $lengthComparison = strlen($left) <=> strlen($right);
-        if ($lengthComparison !== 0) {
-            return $lengthComparison;
-        }
-
-        return strcmp($left, $right);
-    }
-
     /**
      * @throws UIDException
      */
     private static function toBinary64(string $decimal): string
     {
-        $hex = '';
-        $value = $decimal;
-
-        while ($value !== '0') {
-            $remainder = (int) bcmod($value, '16');
-            $hex = dechex($remainder) . $hex;
-            $value = bcdiv($value, '16', 0);
+        try {
+            return DecimalBytes::toFixedBytes($decimal, 8);
+        } catch (\InvalidArgumentException $exception) {
+            throw new UIDException('Unable to convert numeric ID to binary', 0, $exception);
         }
-
-        $hex = str_pad($hex, 16, '0', STR_PAD_LEFT);
-        $binary = hex2bin($hex);
-        $binary !== false || throw new UIDException('Unable to convert numeric ID to binary');
-
-        return $binary;
     }
 
     /**
@@ -66,7 +42,7 @@ final class OutputFormatter
      */
     private static function toInt(string $decimal): int
     {
-        if (self::compareUnsignedDecimals($decimal, (string) PHP_INT_MAX) === 1) {
+        if (UnsignedDecimal::compare($decimal, (string) PHP_INT_MAX) === 1) {
             throw new UIDException('Numeric ID exceeds PHP_INT_MAX; use string or binary output');
         }
 

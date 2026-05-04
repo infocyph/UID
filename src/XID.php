@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Exception;
 use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\Support\BaseEncoder;
+use Infocyph\UID\Support\BinaryUnpack;
 
 final class XID implements IdAlgorithmInterface
 {
@@ -63,23 +64,11 @@ final class XID implements IdAlgorithmInterface
         }
 
         $bytes = self::toBytes($xid);
-        $unpackedTimestamp = unpack('N', substr($bytes, 0, 4));
-        ($unpackedTimestamp !== false) || throw new Exception('Unable to parse XID timestamp');
-        $timestamp = $unpackedTimestamp[1] ?? null;
-        is_int($timestamp) || throw new Exception('Unable to parse XID timestamp');
+        $timestamp = BinaryUnpack::u32(substr($bytes, 0, 4), 'Unable to parse XID timestamp');
         $data['time'] = new DateTimeImmutable('@' . $timestamp);
         $data['machine'] = bin2hex(substr($bytes, 4, 3));
-        $unpackedPid = unpack('n', substr($bytes, 7, 2));
-        ($unpackedPid !== false) || throw new Exception('Unable to parse XID pid');
-        $pid = $unpackedPid[1] ?? null;
-        is_int($pid) || throw new Exception('Unable to parse XID pid');
-        $data['pid'] = $pid;
-        $counterBytes = substr($bytes, 9, 3);
-        $unpackedCounter = unpack('N', chr(0) . $counterBytes);
-        ($unpackedCounter !== false) || throw new Exception('Unable to parse XID counter');
-        $counter = $unpackedCounter[1] ?? null;
-        is_int($counter) || throw new Exception('Unable to parse XID counter');
-        $data['counter'] = $counter;
+        $data['pid'] = BinaryUnpack::u16(substr($bytes, 7, 2), 'Unable to parse XID pid');
+        $data['counter'] = BinaryUnpack::u24(substr($bytes, 9, 3), 'Unable to parse XID counter');
 
         return $data;
     }
