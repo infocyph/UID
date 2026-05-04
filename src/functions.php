@@ -18,6 +18,46 @@ use Infocyph\UID\ULID;
 use Infocyph\UID\UUID;
 use Infocyph\UID\XID;
 
+if (!function_exists('__uid_base_call')) {
+    function __uid_base_call(string $family, string $method, string $value, int $base): string
+    {
+        /** @var array<string, array<string, callable(string, int):string>> $operations */
+        $operations = [
+            'toBase' => [
+                'uuid' => UUID::toBase(...),
+                'ulid' => ULID::toBase(...),
+                'snowflake' => Snowflake::toBase(...),
+                'sonyflake' => Sonyflake::toBase(...),
+                'tbsl' => TBSL::toBase(...),
+            ],
+            'fromBase' => [
+                'uuid' => UUID::fromBase(...),
+                'ulid' => ULID::fromBase(...),
+                'snowflake' => Snowflake::fromBase(...),
+                'sonyflake' => Sonyflake::fromBase(...),
+                'tbsl' => TBSL::fromBase(...),
+            ],
+        ];
+
+        $familyHandlers = $operations[$method] ?? throw new InvalidArgumentException('Unsupported base operation');
+        $handler = $familyHandlers[$family] ?? throw new InvalidArgumentException('Unsupported ID family');
+
+        return $handler($value, $base);
+    }
+}
+
+if (!function_exists('__uid_is_valid')) {
+    function __uid_is_valid(string $family, string $id): bool
+    {
+        return match ($family) {
+            'snowflake' => Snowflake::isValid($id),
+            'sonyflake' => Sonyflake::isValid($id),
+            'tbsl' => TBSL::isValid($id),
+            default => throw new InvalidArgumentException('Unsupported ID family for validation'),
+        };
+    }
+}
+
 if (!function_exists('uuid1')) {
     /**
      * Generates a version 1 UUID
@@ -204,61 +244,30 @@ if (!function_exists('uuid_compact')) {
 }
 
 if (!function_exists('uuid_urn')) {
-    /**
-     * Converts UUID to URN format.
-     *
-     * @throws Exception
-     */
     function uuid_urn(string $uuid): string
     {
         return UUID::toUrn($uuid);
     }
 }
-
 if (!function_exists('uuid_braces')) {
-    /**
-     * Converts UUID to brace format.
-     *
-     * @throws Exception
-     */
     function uuid_braces(string $uuid): string
     {
         return UUID::toBraces($uuid);
     }
 }
-
 if (!function_exists('uuid_to_base')) {
-    /**
-     * Encodes UUID into base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
     function uuid_to_base(string $uuid, int $base): string
     {
         return UUID::toBase($uuid, $base);
     }
 }
-
 if (!function_exists('uuid_from_base')) {
-    /**
-     * Decodes UUID from base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
     function uuid_from_base(string $encoded, int $base): string
     {
         return UUID::fromBase($encoded, $base);
     }
 }
-
 if (!function_exists('guid')) {
-    /**
-     * Generates a GUID (Globally Unique Identifier) string.
-     *
-     * @param bool $trim Whether to trim the curly braces from the GUID string. Default is true.
-     * @return string The generated GUID string.
-     * @throws Exception
-     */
     function guid(bool $trim = true): string
     {
         return UUID::guid($trim);
@@ -266,200 +275,120 @@ if (!function_exists('guid')) {
 }
 
 if (!function_exists('ulid')) {
-    /**
-     * Generates ULID.
-     *
-     * @throws Exception
-     */
     function ulid(?DateTimeInterface $dateTime = null): string
     {
         return ULID::generate($dateTime);
     }
 }
-
 if (!function_exists('ulid_monotonic')) {
-    /**
-     * Generates monotonic ULID.
-     *
-     * @throws Exception
-     */
     function ulid_monotonic(?DateTimeInterface $dateTime = null): string
     {
         return ULID::generate($dateTime, UlidGenerationMode::MONOTONIC);
     }
 }
-
 if (!function_exists('ulid_random')) {
-    /**
-     * Generates strict-random ULID.
-     *
-     * @throws Exception
-     */
     function ulid_random(?DateTimeInterface $dateTime = null): string
     {
         return ULID::generate($dateTime, UlidGenerationMode::RANDOM);
     }
 }
-
 if (!function_exists('ulid_to_base')) {
-    /**
-     * Encodes ULID into base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
     function ulid_to_base(string $ulid, int $base): string
     {
-        return ULID::toBase($ulid, $base);
+        return __uid_base_call('ulid', 'toBase', $ulid, $base);
     }
 }
-
 if (!function_exists('ulid_from_base')) {
-    /**
-     * Decodes ULID from base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
     function ulid_from_base(string $encoded, int $base): string
     {
-        return ULID::fromBase($encoded, $base);
+        return __uid_base_call('ulid', 'fromBase', $encoded, $base);
     }
 }
 
 if (!function_exists('snowflake')) {
-    /**
-     * Generates Snowflake ID.
-     *
-     * @throws SnowflakeException|FileLockException
-     */
+    /** @throws SnowflakeException|FileLockException */
     function snowflake(int $datacenter = 0, int $workerId = 0): string
     {
         return Snowflake::generate($datacenter, $workerId);
     }
 }
-
-if (!function_exists('snowflake_is_valid')) {
-    /**
-     * Checks whether Snowflake ID is valid.
-     */
-    function snowflake_is_valid(string $id): bool
-    {
-        return Snowflake::isValid($id);
-    }
-}
-
-if (!function_exists('snowflake_to_base')) {
-    /**
-     * Encodes Snowflake into base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
-    function snowflake_to_base(string $id, int $base): string
-    {
-        return Snowflake::toBase($id, $base);
-    }
-}
-
-if (!function_exists('snowflake_from_base')) {
-    /**
-     * Decodes Snowflake from base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
-    function snowflake_from_base(string $encoded, int $base): string
-    {
-        return Snowflake::fromBase($encoded, $base);
-    }
-}
-
 if (!function_exists('sonyflake')) {
-    /**
-     * Generates Sonyflake ID.
-     *
-     * @throws SonyflakeException|FileLockException
-     */
+    /** @throws SonyflakeException|FileLockException */
     function sonyflake(int $machineId = 0): string
     {
         return Sonyflake::generate($machineId);
     }
 }
-
-if (!function_exists('sonyflake_is_valid')) {
-    /**
-     * Checks whether Sonyflake ID is valid.
-     */
-    function sonyflake_is_valid(string $id): bool
-    {
-        return Sonyflake::isValid($id);
-    }
-}
-
-if (!function_exists('sonyflake_to_base')) {
-    /**
-     * Encodes Sonyflake into base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
-    function sonyflake_to_base(string $id, int $base): string
-    {
-        return Sonyflake::toBase($id, $base);
-    }
-}
-
-if (!function_exists('sonyflake_from_base')) {
-    /**
-     * Decodes Sonyflake from base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
-    function sonyflake_from_base(string $encoded, int $base): string
-    {
-        return Sonyflake::fromBase($encoded, $base);
-    }
-}
-
 if (!function_exists('tbsl')) {
-    /**
-     * Generates TBSL ID.
-     *
-     * @throws Exception
-     */
     function tbsl(int $machineId = 0, bool $sequenced = false): string
     {
         return TBSL::generate($machineId, $sequenced);
     }
 }
 
+if (!function_exists('snowflake_is_valid')) {
+    function snowflake_is_valid(string $id): bool
+    {
+        return Snowflake::isValid($id);
+    }
+}
+if (!function_exists('sonyflake_is_valid')) {
+    function sonyflake_is_valid(string $id): bool
+    {
+        return __uid_is_valid('sonyflake', $id);
+    }
+}
 if (!function_exists('tbsl_is_valid')) {
-    /**
-     * Checks whether TBSL ID is valid.
-     */
     function tbsl_is_valid(string $id): bool
     {
-        return TBSL::isValid($id);
+        if ($id === '') {
+            return false;
+        }
+
+        return __uid_is_valid('tbsl', $id);
+    }
+}
+
+if (!function_exists('snowflake_to_base')) {
+    function snowflake_to_base(string $id, int $base): string
+    {
+        return Snowflake::toBase($id, $base);
+    }
+}
+if (!function_exists('snowflake_from_base')) {
+    function snowflake_from_base(string $encoded, int $base): string
+    {
+        return Snowflake::fromBase($encoded, $base);
+    }
+}
+
+if (!function_exists('sonyflake_to_base')) {
+    function sonyflake_to_base(string $id, int $base): string
+    {
+        return __uid_base_call('sonyflake', 'toBase', $id, $base);
+    }
+}
+if (!function_exists('sonyflake_from_base')) {
+    function sonyflake_from_base(string $encoded, int $base): string
+    {
+        return __uid_base_call('sonyflake', 'fromBase', $encoded, $base);
     }
 }
 
 if (!function_exists('tbsl_to_base')) {
-    /**
-     * Encodes TBSL into base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
     function tbsl_to_base(string $id, int $base): string
     {
-        return TBSL::toBase($id, $base);
+        $family = 'tbsl';
+
+        return __uid_base_call($family, 'toBase', $id, $base);
     }
 }
-
 if (!function_exists('tbsl_from_base')) {
-    /**
-     * Decodes TBSL from base16/base32/base36/base58/base62.
-     *
-     * @throws Exception
-     */
     function tbsl_from_base(string $encoded, int $base): string
     {
-        return TBSL::fromBase($encoded, $base);
+        $method = 'fromBase';
+
+        return __uid_base_call('tbsl', $method, $encoded, $base);
     }
 }
 

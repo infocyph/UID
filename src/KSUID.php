@@ -9,6 +9,7 @@ use DateTimeInterface;
 use Exception;
 use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\Support\BaseEncoder;
+use Infocyph\UID\Support\BinaryUnpack;
 
 final class KSUID implements IdAlgorithmInterface
 {
@@ -60,11 +61,7 @@ final class KSUID implements IdAlgorithmInterface
         }
 
         $bytes = self::toBytes($ksuid);
-        $unpackedTimestamp = unpack('N', substr($bytes, 0, 4));
-        ($unpackedTimestamp !== false) || throw new Exception('Unable to parse KSUID timestamp');
-        $timestampValue = $unpackedTimestamp[1] ?? null;
-        is_int($timestampValue) || throw new Exception('Unable to parse KSUID timestamp');
-        $timestamp = $timestampValue + self::$epoch;
+        $timestamp = BinaryUnpack::u32(substr($bytes, 0, 4), 'Unable to parse KSUID timestamp') + self::$epoch;
         $data['time'] = new DateTimeImmutable('@' . $timestamp);
         $data['payload'] = bin2hex(substr($bytes, 4));
 

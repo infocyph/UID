@@ -12,6 +12,8 @@ use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class SonyflakeConfig
 {
+    use ResolvesCustomEpoch;
+
     private ?Closure $machineIdResolver;
 
     /**
@@ -26,25 +28,6 @@ final readonly class SonyflakeConfig
         public IdOutputType $outputType = IdOutputType::STRING,
     ) {
         $this->machineIdResolver = $machineIdResolver ? $machineIdResolver(...) : null;
-    }
-
-    public function resolveCustomEpochMs(): ?int
-    {
-        if ($this->customEpoch === null) {
-            return null;
-        }
-
-        if ($this->customEpoch instanceof DateTimeInterface) {
-            return (int) $this->customEpoch->format('Uv');
-        }
-
-        if (is_int($this->customEpoch)) {
-            return $this->customEpoch;
-        }
-
-        $epoch = strtotime($this->customEpoch);
-
-        return $epoch === false ? null : $epoch * 1000;
     }
 
     public function resolveMachineId(): int

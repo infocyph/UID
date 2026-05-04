@@ -6,6 +6,7 @@ namespace Infocyph\UID\Sequence;
 
 use Closure;
 use Infocyph\UID\Exceptions\FileLockException;
+use Infocyph\UID\Support\FileLock;
 use Psr\SimpleCache\CacheInterface;
 use Throwable;
 
@@ -79,21 +80,14 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
     private function acquireLock(string $key)
     {
         $lockFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uid-cache-lock-' . md5($key) . '.lck';
-        ($handle = fopen($lockFile, 'c+')) || throw new FileLockException(
+
+        return FileLock::acquire(
+            $lockFile,
+            $this->waitTime,
+            $this->maxAttempts,
             'Unable to open sequence cache lock file: ' . $lockFile,
+            'Unable to acquire sequence cache lock for key: ' . $key,
         );
-
-        for ($attempt = 0; $attempt < $this->maxAttempts; $attempt++) {
-            if (flock($handle, LOCK_EX | LOCK_NB)) {
-                return $handle;
-            }
-
-            usleep($this->waitTime);
-        }
-
-        fclose($handle);
-
-        throw new FileLockException('Unable to acquire sequence cache lock for key: ' . $key);
     }
 
     private function key(string $type, int $machineId): string

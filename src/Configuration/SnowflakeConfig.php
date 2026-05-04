@@ -12,6 +12,8 @@ use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class SnowflakeConfig
 {
+    use ResolvesCustomEpoch;
+
     private ?Closure $nodeResolver;
 
     /**
@@ -28,25 +30,6 @@ final readonly class SnowflakeConfig
         public IdOutputType $outputType = IdOutputType::STRING,
     ) {
         $this->nodeResolver = $nodeResolver ? $nodeResolver(...) : null;
-    }
-
-    public function resolveCustomEpochMs(): ?int
-    {
-        if ($this->customEpoch === null) {
-            return null;
-        }
-
-        if ($this->customEpoch instanceof DateTimeInterface) {
-            return (int) $this->customEpoch->format('Uv');
-        }
-
-        if (is_int($this->customEpoch)) {
-            return $this->customEpoch;
-        }
-
-        $epoch = strtotime($this->customEpoch);
-
-        return $epoch === false ? null : $epoch * 1000;
     }
 
     /**

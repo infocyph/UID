@@ -13,7 +13,9 @@ use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SonyflakeException;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
+use Infocyph\UID\Support\EpochGuard;
 use Infocyph\UID\Support\GetSequence;
+use Infocyph\UID\Support\NumericIdCodec;
 use Infocyph\UID\Support\OutputFormatter;
 
 final class Sonyflake
@@ -37,11 +39,10 @@ final class Sonyflake
      */
     public static function fromBase(string $encoded, int $base): string
     {
-        try {
-            return self::fromBytes(BaseEncoder::decodeToBytes($encoded, $base, 8));
-        } catch (\InvalidArgumentException $exception) {
-            throw new SonyflakeException($exception->getMessage(), 0, $exception);
-        }
+        return self::decodeNumeric(
+            fn(): string => NumericIdCodec::decimalFromBase($encoded, $base, 8),
+            null,
+        );
     }
 
     /**
@@ -51,16 +52,10 @@ final class Sonyflake
      */
     public static function fromBytes(string $bytes): string
     {
-        if (strlen($bytes) !== 8) {
-            throw new SonyflakeException('Sonyflake binary data must be exactly 8 bytes');
-        }
-
-        $decimal = '0';
-        foreach (str_split(bin2hex($bytes)) as $char) {
-            $decimal = bcadd(bcmul($decimal, '16'), (string) hexdec($char));
-        }
-
-        return $decimal;
+        return self::decodeNumeric(
+            fn(): string => NumericIdCodec::decimalFromBytes($bytes, 8),
+            'Sonyflake binary data must be exactly 8 bytes',
+        );
     }
 
     /**
@@ -124,19 +119,17 @@ final class Sonyflake
      */
     public static function parseWithEpoch(string $id, int $startTimestamp): array
     {
-        $id = decbin((int) $id);
-        $length = self::$maxMachineIdLength + self::$maxSequenceLength;
-        $time = str_split((string) (bindec(substr($id, 0, strlen($id) - $length)) * 10 + $startTimestamp), 10);
+        $parts = self::extractParts($id, $startTimestamp);
 
         return [
             'time' => new DateTimeImmutable(
                 '@'
-                . $time[0]
+                . $parts['seconds']
                 . '.'
-                . str_pad($time[1], 6, '0', STR_PAD_LEFT),
+                . str_pad($parts['fraction'], 6, '0', STR_PAD_LEFT),
             ),
-            'sequence' => (int) bindec(substr($id, -1 * self::$maxSequenceLength)),
-            'machine_id' => (int) bindec(substr($id, -1 * $length, self::$maxMachineIdLength)),
+            'sequence' => $parts['sequence'],
+            'machine_id' => $parts['machine_id'],
         ];
     }
 
@@ -148,15 +141,17 @@ final class Sonyflake
      */
     public static function setStartTimeStamp(string $timeString): void
     {
-        $time = strtotime($timeString);
-        if ($time === false) {
-            throw new SonyflakeException('Invalid start time format');
+        try {
+            $resolved = EpochGuard::resolveStartTime(
+                $timeString,
+                'Invalid start time format',
+                'The start time cannot be in the future',
+            );
+        } catch (\InvalidArgumentException $exception) {
+            throw new SonyflakeException($exception->getMessage(), 0, $exception);
         }
-        $current = time();
-
-        if ($time > $current) {
-            throw new SonyflakeException('The start time cannot be in the future');
-        }
+        $time = $resolved['time'];
+        $current = $resolved['current'];
 
         self::ensureEffectiveRuntime(floor(($current - $time) / 10) | 0);
         self::$startTime = $time * 1000;
@@ -179,23 +174,28 @@ final class Sonyflake
      */
     public static function toBytes(string $id): string
     {
-        if (!self::isValid($id)) {
-            throw new SonyflakeException('Invalid Sonyflake ID string');
+        return self::decodeNumeric(
+            fn(): string => NumericIdCodec::bytesFromDecimal(
+                $id,
+                8,
+                self::isValid(...),
+                'Invalid Sonyflake ID string',
+            ),
+            'Unable to convert Sonyflake ID to bytes',
+        );
+    }
+
+    /**
+     * @param callable():string $operation
+     * @throws SonyflakeException
+     */
+    private static function decodeNumeric(callable $operation, ?string $customMessage): string
+    {
+        try {
+            return $operation();
+        } catch (\InvalidArgumentException $exception) {
+            throw new SonyflakeException($customMessage ?? $exception->getMessage(), 0, $exception);
         }
-
-        $hex = '';
-        $value = $id;
-        while ($value !== '0') {
-            $remainder = (int) bcmod($value, '16');
-            $hex = dechex($remainder) . $hex;
-            $value = bcdiv($value, '16', 0);
-        }
-
-        $hex = str_pad($hex, 16, '0', STR_PAD_LEFT);
-        $bytes = hex2bin($hex);
-        $bytes !== false || throw new SonyflakeException('Unable to convert Sonyflake ID to bytes');
-
-        return $bytes;
     }
 
     /**
@@ -217,6 +217,25 @@ final class Sonyflake
         if ($elapsedTime > (-1 ^ (-1 << self::$maxTimestampLength))) {
             throw new SonyflakeException('Exceeding the maximum life cycle of the algorithm');
         }
+    }
+
+    /**
+     * @return array{seconds:string,fraction:string,sequence:int,machine_id:int}
+     */
+    private static function extractParts(string $id, int $startTimestamp): array
+    {
+        $binary = decbin((int) $id);
+        $tailBitLength = self::$maxMachineIdLength + self::$maxSequenceLength;
+        $elapsed = bindec(substr($binary, 0, strlen($binary) - $tailBitLength));
+        $timestamp = (string) ($startTimestamp + ($elapsed * 10));
+        $timeParts = str_split($timestamp, 10);
+
+        return [
+            'seconds' => $timeParts[0],
+            'fraction' => $timeParts[1] ?? '0',
+            'sequence' => (int) bindec(substr($binary, -1 * self::$maxSequenceLength)),
+            'machine_id' => (int) bindec(substr($binary, -1 * $tailBitLength, self::$maxMachineIdLength)),
+        ];
     }
 
     /**
