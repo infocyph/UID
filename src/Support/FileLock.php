@@ -19,6 +19,9 @@ final class FileLock
         string $openErrorMessage,
         string $lockErrorMessage,
     ) {
+        $waitTime = max(100, $waitTime);
+        $maxAttempts = max(1, $maxAttempts);
+
         ($handle = fopen($path, 'c+')) || throw new FileLockException($openErrorMessage);
 
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {

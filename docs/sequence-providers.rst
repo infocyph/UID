@@ -19,10 +19,13 @@ Each algorithm class using ``GetSequence`` provides these static methods:
 
 - ``setSequenceProvider(SequenceProviderInterface $provider)``
 - ``resetSequenceProvider()``
-- ``useFilesystemSequenceProvider(?string $baseDirectory = null, int $waitTime = 100, int $maxAttempts = 10)``
+- ``useFilesystemSequenceProvider(?string $baseDirectory = null, int $waitTime = 1000, int $maxAttempts = 1000)``
 - ``useInMemorySequenceProvider()``
-- ``useSimpleCacheSequenceProvider(CacheInterface $cache, string $prefix = 'uid:seq:', int $waitTime = 100, int $maxAttempts = 10)``
+- ``useSimpleCacheSequenceProvider(CacheInterface $cache, string $prefix = 'uid:seq:', int $waitTime = 1000, int $maxAttempts = 1000)``
 - ``useSequenceCallback(callable $callback)``
+
+Defaults are tuned for better contention tolerance in parallel workloads.
+If you prefer faster fail behavior, set lower ``waitTime``/``maxAttempts`` explicitly.
 
 Example: Process-Local In-Memory
 --------------------------------
@@ -80,4 +83,4 @@ Implement:
 
    public function next(string $type, int $machineId, int $timestamp): int;
 
-The return value must be a non-negative integer sequence.
+The return value should be a positive integer sequence.
