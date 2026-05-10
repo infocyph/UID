@@ -13,8 +13,8 @@ final readonly class FilesystemSequenceProvider implements SequenceProviderInter
 
     public function __construct(
         ?string $baseDirectory = null,
-        private int $waitTime = 100,
-        private int $maxAttempts = 10,
+        private int $waitTime = 1_000,
+        private int $maxAttempts = 1_000,
     ) {
         $this->baseDirectory = $baseDirectory ?: sys_get_temp_dir();
     }

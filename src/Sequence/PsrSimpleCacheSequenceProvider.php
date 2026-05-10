@@ -20,8 +20,8 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
     public function __construct(
         private CacheInterface $cache,
         private string $prefix = 'uid:seq:',
-        private int $waitTime = 100,
-        private int $maxAttempts = 10,
+        private int $waitTime = 1_000,
+        private int $maxAttempts = 1_000,
         ?callable $synchronizer = null,
     ) {
         $this->synchronizer = $synchronizer ? $synchronizer(...) : null;
