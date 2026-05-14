@@ -51,6 +51,19 @@ Snowflake/Sonyflake/TBSL Helpers
 - ``tbsl_to_base(string $id, int $base)``
 - ``tbsl_from_base(string $encoded, int $base)``
 
+Randflake Helpers
+-----------------
+
+- ``randflake(int $nodeId, int $leaseStart, int $leaseEnd, string $secret)``
+- ``randflake_string(int $nodeId, int $leaseStart, int $leaseEnd, string $secret)``
+- ``randflake_is_valid(string $id)``
+- ``randflake_to_base(string $id, int $base)``
+- ``randflake_from_base(string $encoded, int $base)``
+- ``randflake_parse(string $id, string $secret)``
+- ``randflake_parse_string(string $id, string $secret)``
+- ``randflake_inspect(string $id, string $secret)``
+- ``randflake_inspect_string(string $id, string $secret)``
+
 Short/Random/Opaque Helpers
 ---------------------------
 

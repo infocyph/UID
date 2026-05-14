@@ -16,7 +16,7 @@ use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\EpochGuard;
 use Infocyph\UID\Support\GetSequence;
-use Infocyph\UID\Support\NumericIdCodec;
+use Infocyph\UID\Support\NumericConversion;
 use Infocyph\UID\Support\OutputFormatter;
 
 final class Snowflake
@@ -47,11 +47,7 @@ final class Snowflake
      */
     public static function fromBase(string $encoded, int $base): string
     {
-        try {
-            return NumericIdCodec::decimalFromBase($encoded, $base, 8);
-        } catch (\InvalidArgumentException $exception) {
-            throw new SnowflakeException($exception->getMessage(), 0, $exception);
-        }
+        return self::decodeNumericBase($encoded, $base);
     }
 
     /**
@@ -61,11 +57,7 @@ final class Snowflake
      */
     public static function fromBytes(string $bytes): string
     {
-        try {
-            return NumericIdCodec::decimalFromBytes($bytes, 8);
-        } catch (\InvalidArgumentException $exception) {
-            throw new SnowflakeException('Snowflake binary data must be exactly 8 bytes', 0, $exception);
-        }
+        return self::decodeNumericBytes($bytes);
     }
 
     /**
@@ -204,16 +196,7 @@ final class Snowflake
      */
     public static function toBytes(string $id): string
     {
-        try {
-            return NumericIdCodec::bytesFromDecimal(
-                $id,
-                8,
-                self::isValid(...),
-                'Invalid Snowflake ID string',
-            );
-        } catch (\InvalidArgumentException $exception) {
-            throw new SnowflakeException('Unable to convert Snowflake ID to bytes', 0, $exception);
-        }
+        return self::encodeNumericBytes($id);
     }
 
     /**
@@ -231,6 +214,38 @@ final class Snowflake
         if ($workerId > $maxWorkId || $workerId < 0) {
             throw new SnowflakeException("Invalid worker ID, must be between 0 ~ $maxWorkId.");
         }
+    }
+
+    private static function decodeNumericBase(string $encoded, int $base): string
+    {
+        return NumericConversion::decimalFromBase(
+            $encoded,
+            $base,
+            8,
+            static fn(string $message, \InvalidArgumentException $exception): SnowflakeException => new SnowflakeException($message, 0, $exception),
+        );
+    }
+
+    private static function decodeNumericBytes(string $bytes): string
+    {
+        return NumericConversion::decimalFromBytes(
+            $bytes,
+            8,
+            'Snowflake binary data must be exactly 8 bytes',
+            static fn(string $message, \InvalidArgumentException $exception): SnowflakeException => new SnowflakeException($message, 0, $exception),
+        );
+    }
+
+    private static function encodeNumericBytes(string $id): string
+    {
+        return NumericConversion::bytesFromDecimal(
+            $id,
+            8,
+            self::isValid(...),
+            'Invalid Snowflake ID string',
+            'Unable to convert Snowflake ID to bytes',
+            static fn(string $message, \InvalidArgumentException $exception): SnowflakeException => new SnowflakeException($message, 0, $exception),
+        );
     }
 
     /**

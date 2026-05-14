@@ -15,6 +15,7 @@ All-in-one unique ID toolkit for PHP.
 - UUID (`v1`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`)
 - ULID (monotonic and random modes)
 - Snowflake, Sonyflake, TBSL
+- Randflake (encrypted 64-bit IDs with lease-bound node windows)
 - NanoID, CUID2, KSUID, XID
 - Opaque and deterministic IDs
 - Value objects and comparator utilities
@@ -48,6 +49,12 @@ $ulid = Id::ulid();
 $snowflake = Id::snowflake();
 $sonyflake = Id::sonyflake();
 $tbsl = Id::tbsl();
+$randflake = \Infocyph\UID\Randflake::generate(
+    nodeId: 42,
+    leaseStart: time() - 5,
+    leaseEnd: time() + 300,
+    secret: 'super-secret-key',
+);
 $nanoid = NanoID::generate(21);
 $cuid2 = CUID2::generate(24);
 ```
@@ -77,6 +84,7 @@ The shared byte-level encoder is available as
 - ULID: https://github.com/ulid/spec
 - Snowflake: https://github.com/twitter-archive/snowflake/tree/snowflake-2010
 - Sonyflake: https://github.com/sony/sonyflake
+- Randflake: https://github.com/gosuda/randflake
 - NanoID: https://github.com/ai/nanoid
 - CUID2: https://github.com/paralleldrive/cuid2
 - TBSL note: https://github.com/infocyph/UID/blob/main/TBSL.md

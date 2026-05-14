@@ -3,6 +3,7 @@
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Configuration\TBSLConfig;
+use Infocyph\UID\Configuration\RandflakeConfig;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Id;
@@ -23,6 +24,13 @@ test('Id factory basic methods', function () {
     $snowflake = Id::snowflake();
     $sonyflake = Id::sonyflake();
     $tbsl = Id::tbsl();
+    $now = time();
+    $randflake = Id::randflake(new RandflakeConfig(
+        nodeId: 1,
+        leaseStart: $now - 5,
+        leaseEnd: $now + 300,
+        secret: 'super-secret-key',
+    ));
 
     expect($ksuid)->toBeString()->toHaveLength(27)
         ->and($xid)->toBeString()->toHaveLength(20)
@@ -36,7 +44,8 @@ test('Id factory basic methods', function () {
         ->and($ulid)->toBeString()->toHaveLength(26)
         ->and((string)$snowflake)->toBeString()->not()->toBeEmpty()
         ->and((string)$sonyflake)->toBeString()->not()->toBeEmpty()
-        ->and((string)$tbsl)->toBeString()->toHaveLength(20);
+        ->and((string)$tbsl)->toBeString()->toHaveLength(20)
+        ->and((string)$randflake)->toBeString()->not()->toBeEmpty();
 });
 
 test('Id factory value objects', function () {
@@ -64,9 +73,19 @@ test('configuration objects apply output modes', function () {
     $snowflake = Id::snowflake(new SnowflakeConfig(outputType: IdOutputType::INT));
     $sonyflake = Id::sonyflake(new SonyflakeConfig(outputType: IdOutputType::INT));
     $tbsl = Id::tbsl(new TBSLConfig(outputType: IdOutputType::BINARY));
+    $now = time();
+    $randflake = Id::randflake(new RandflakeConfig(
+        nodeId: 1,
+        leaseStart: $now - 5,
+        leaseEnd: $now + 300,
+        secret: 'super-secret-key',
+        outputType: IdOutputType::BINARY,
+    ));
 
     expect($snowflake)->toBeInt()
         ->and($sonyflake)->toBeInt()
         ->and($tbsl)->toBeString()
-        ->and(strlen($tbsl))->toBe(10);
+        ->and(strlen($tbsl))->toBe(10)
+        ->and($randflake)->toBeString()
+        ->and(strlen($randflake))->toBe(8);
 });

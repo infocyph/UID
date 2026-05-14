@@ -16,6 +16,8 @@ Core Generation Methods
 - ``Id::snowflake()``
 - ``Id::sonyflake()``
 - ``Id::tbsl()``
+- ``Id::randflake(RandflakeConfig $config)``
+- ``Id::randflakeString(RandflakeConfig $config)``
 - ``Id::nanoId()``
 - ``Id::cuid2()``
 - ``Id::ksuid()``
