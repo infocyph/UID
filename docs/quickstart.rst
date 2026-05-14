@@ -15,6 +15,7 @@ Using the ``Id`` Facade
    $snowflake = Id::snowflake();
    $sonyflake = Id::sonyflake();
    $tbsl = Id::tbsl();
+   $randflake = \Infocyph\UID\Randflake::generate(42, time() - 5, time() + 300, 'super-secret-key');
    $nano = Id::nanoId(21);
    $cuid2 = Id::cuid2(24);
 

@@ -1,7 +1,7 @@
 Sequence Providers
 ==================
 
-UID supports pluggable sequence backends for Snowflake, Sonyflake, and sequenced TBSL.
+UID supports pluggable sequence backends for Snowflake, Sonyflake, Randflake, and sequenced TBSL.
 
 Supported Providers
 -------------------

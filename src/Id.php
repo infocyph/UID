@@ -6,9 +6,11 @@ namespace Infocyph\UID;
 
 use DateTimeInterface;
 use Exception;
+use Infocyph\UID\Configuration\RandflakeConfig;
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Configuration\TBSLConfig;
+use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Value\SnowflakeValue;
 use Infocyph\UID\Value\SonyflakeValue;
@@ -79,6 +81,33 @@ final class Id
     public static function opaque(int $length = 12): string
     {
         return OpaqueId::random($length);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public static function randflake(RandflakeConfig $config): int|string
+    {
+        return Randflake::generateWithConfig($config);
+    }
+
+    /**
+     * @throws Exception
+     */
+    public static function randflakeString(RandflakeConfig $config): string
+    {
+        $id = Randflake::generateWithConfig(
+            new RandflakeConfig(
+                nodeId: $config->nodeId,
+                leaseStart: $config->leaseStart,
+                leaseEnd: $config->leaseEnd,
+                secret: $config->secret,
+                sequenceProvider: $config->sequenceProvider,
+                outputType: IdOutputType::STRING,
+            ),
+        );
+
+        return Randflake::encodeString((string) $id);
     }
 
     /**

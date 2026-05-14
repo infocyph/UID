@@ -9,6 +9,7 @@ It supports:
 - ULID
 - Snowflake
 - Sonyflake
+- Randflake
 - TBSL
 - NanoID and CUID2
 - KSUID and XID
@@ -30,6 +31,7 @@ It supports:
    ulid
    snowflake
    sonyflake
+   randflake
    tbsl
    random-ids
 

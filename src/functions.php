@@ -11,6 +11,7 @@ use Infocyph\UID\Exceptions\SonyflakeException;
 use Infocyph\UID\KSUID;
 use Infocyph\UID\NanoID;
 use Infocyph\UID\OpaqueId;
+use Infocyph\UID\Randflake;
 use Infocyph\UID\Snowflake;
 use Infocyph\UID\Sonyflake;
 use Infocyph\UID\TBSL;
@@ -26,6 +27,7 @@ if (!function_exists('__uid_base_call')) {
             'toBase' => [
                 'uuid' => UUID::toBase(...),
                 'ulid' => ULID::toBase(...),
+                'randflake' => Randflake::toBase(...),
                 'snowflake' => Snowflake::toBase(...),
                 'sonyflake' => Sonyflake::toBase(...),
                 'tbsl' => TBSL::toBase(...),
@@ -33,6 +35,7 @@ if (!function_exists('__uid_base_call')) {
             'fromBase' => [
                 'uuid' => UUID::fromBase(...),
                 'ulid' => ULID::fromBase(...),
+                'randflake' => Randflake::fromBase(...),
                 'snowflake' => Snowflake::fromBase(...),
                 'sonyflake' => Sonyflake::fromBase(...),
                 'tbsl' => TBSL::fromBase(...),
@@ -51,6 +54,7 @@ if (!function_exists('__uid_is_valid')) {
     {
         return match ($family) {
             'snowflake' => Snowflake::isValid($id),
+            'randflake' => Randflake::isValid($id),
             'sonyflake' => Sonyflake::isValid($id),
             'tbsl' => TBSL::isValid($id),
             default => throw new InvalidArgumentException('Unsupported ID family for validation'),
@@ -312,6 +316,71 @@ if (!function_exists('snowflake')) {
         return Snowflake::generate($datacenter, $workerId);
     }
 }
+
+if (!function_exists('randflake')) {
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException|\Infocyph\UID\Exceptions\FileLockException
+     */
+    function randflake(int $nodeId, int $leaseStart, int $leaseEnd, string $secret): string
+    {
+        return Randflake::generate($nodeId, $leaseStart, $leaseEnd, $secret);
+    }
+}
+
+if (!function_exists('randflake_string')) {
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException|\Infocyph\UID\Exceptions\FileLockException
+     */
+    function randflake_string(int $nodeId, int $leaseStart, int $leaseEnd, string $secret): string
+    {
+        return Randflake::generateString($nodeId, $leaseStart, $leaseEnd, $secret);
+    }
+}
+
+if (!function_exists('randflake_parse')) {
+    /**
+     * @return array{time: DateTimeImmutable, node_id: int, sequence: int}
+     * @throws Exception
+     */
+    function randflake_parse(string $id, string $secret): array
+    {
+        return Randflake::parse($id, $secret);
+    }
+}
+
+if (!function_exists('randflake_parse_string')) {
+    /**
+     * @return array{time: DateTimeImmutable, node_id: int, sequence: int}
+     * @throws Exception
+     */
+    function randflake_parse_string(string $id, string $secret): array
+    {
+        return Randflake::parseString($id, $secret);
+    }
+}
+
+if (!function_exists('randflake_inspect')) {
+    /**
+     * @return array{timestamp: int, node_id: int, sequence: int}
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     */
+    function randflake_inspect(string $id, string $secret): array
+    {
+        return Randflake::inspect($id, $secret);
+    }
+}
+
+if (!function_exists('randflake_inspect_string')) {
+    /**
+     * @return array{timestamp: int, node_id: int, sequence: int}
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     */
+    function randflake_inspect_string(string $id, string $secret): array
+    {
+        return Randflake::inspectString($id, $secret);
+    }
+}
+
 if (!function_exists('sonyflake')) {
     /** @throws SonyflakeException|FileLockException */
     function sonyflake(int $machineId = 0): string
@@ -326,10 +395,33 @@ if (!function_exists('tbsl')) {
     }
 }
 
+if (!function_exists('tbsl_to_base')) {
+    function tbsl_to_base(string $id, int $base): string
+    {
+        $family = 'tbsl';
+
+        return __uid_base_call($family, 'toBase', $id, $base);
+    }
+}
+if (!function_exists('tbsl_from_base')) {
+    function tbsl_from_base(string $encoded, int $base): string
+    {
+        $method = 'fromBase';
+
+        return __uid_base_call('tbsl', $method, $encoded, $base);
+    }
+}
+
 if (!function_exists('snowflake_is_valid')) {
     function snowflake_is_valid(string $id): bool
     {
         return Snowflake::isValid($id);
+    }
+}
+if (!function_exists('randflake_is_valid')) {
+    function randflake_is_valid(string $id): bool
+    {
+        return __uid_is_valid('randflake', $id);
     }
 }
 if (!function_exists('sonyflake_is_valid')) {
@@ -352,43 +444,43 @@ if (!function_exists('tbsl_is_valid')) {
 if (!function_exists('snowflake_to_base')) {
     function snowflake_to_base(string $id, int $base): string
     {
-        return Snowflake::toBase($id, $base);
+        $family = 'snowflake';
+
+        return __uid_base_call($family, 'toBase', $id, $base);
     }
 }
 if (!function_exists('snowflake_from_base')) {
     function snowflake_from_base(string $encoded, int $base): string
     {
-        return Snowflake::fromBase($encoded, $base);
+        $method = 'fromBase';
+
+        return __uid_base_call('snowflake', $method, $encoded, $base);
+    }
+}
+
+if (!function_exists('randflake_to_base')) {
+    function randflake_to_base(string $id, int $base): string
+    {
+        return Randflake::toBase($id, $base);
+    }
+}
+if (!function_exists('randflake_from_base')) {
+    function randflake_from_base(string $encoded, int $base): string
+    {
+        return Randflake::fromBase($encoded, $base);
     }
 }
 
 if (!function_exists('sonyflake_to_base')) {
     function sonyflake_to_base(string $id, int $base): string
     {
-        return __uid_base_call('sonyflake', 'toBase', $id, $base);
+        return Sonyflake::toBase($id, $base);
     }
 }
 if (!function_exists('sonyflake_from_base')) {
     function sonyflake_from_base(string $encoded, int $base): string
     {
-        return __uid_base_call('sonyflake', 'fromBase', $encoded, $base);
-    }
-}
-
-if (!function_exists('tbsl_to_base')) {
-    function tbsl_to_base(string $id, int $base): string
-    {
-        $family = 'tbsl';
-
-        return __uid_base_call($family, 'toBase', $id, $base);
-    }
-}
-if (!function_exists('tbsl_from_base')) {
-    function tbsl_from_base(string $encoded, int $base): string
-    {
-        $method = 'fromBase';
-
-        return __uid_base_call('tbsl', $method, $encoded, $base);
+        return Sonyflake::fromBase($encoded, $base);
     }
 }
 
