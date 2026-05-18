@@ -2,19 +2,14 @@
 
 ## Supported Versions
 
-Security fixes are provided for the latest major release line.
-
-| Version | Supported |
-|---------| --- |
-| `4.x`   | ✅ |
-| `< 4.0` | ❌ |
+The project currently supports security updates for the latest release.
 
 ## Reporting a Vulnerability
 
 Please report vulnerabilities privately.
 
 1. Use GitHub private vulnerability reporting for this repository (`Security` -> `Advisories` -> `Report a vulnerability`).
-2. If private reporting is unavailable, email: `infocyph@gmail.com`.
+2. If private reporting is unavailable, contact maintainers through a private channel.
 3. Do not open a public issue for security vulnerabilities.
 
 Please include:
@@ -27,28 +22,28 @@ Please include:
 
 ## Response Process
 
-- Initial acknowledgment target: within 3 business days
-- Triage target: within 7 business days
+- Initial acknowledgment: best effort, typically within a few days
+- Triage: best effort, based on maintainer availability
 - Fix and release timeline depends on severity and exploitability
 
 If a report is accepted, a patched release will be prepared and published. Credit will be provided unless you request otherwise.
 
-## Disclosure Policy
+## Protected by PHPForge
 
-This project follows coordinated disclosure:
+This project is protected by [PHPForge](https://github.com/infocyph/PHPForge), an automated quality and security tooling layer for Infocyph PHP projects.
 
-- Keep details private until a fix is released
-- Publish advisory/release notes after remediation
-- Share CVE information when applicable
+PHPForge helps keep the project reliable by running checks for:
 
-## Scope
+- Code style and standards
+- Tests and syntax validation
+- Static analysis and type safety
+- Security and taint analysis
+- Dependency vulnerability audit
+- Architecture boundary validation
+- Duplicate-code detection
+- API snapshot and comment-policy checks
+- Refactor safety checks
+- Benchmark and release-readiness checks
+- Git hooks and CI workflow protection
 
-In scope:
-
-- Vulnerabilities in code under `src/`
-- Supply-chain risks introduced by direct dependencies
-
-Out of scope:
-
-- Issues only affecting unsupported versions
-- Local-only misconfiguration without a library defect
+These automated gates strengthen code quality, reduce security risk and help prevent regressions before merge or release.

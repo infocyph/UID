@@ -88,3 +88,20 @@ The shared byte-level encoder is available as
 - NanoID: https://github.com/ai/nanoid
 - CUID2: https://github.com/paralleldrive/cuid2
 - TBSL note: https://github.com/infocyph/UID/blob/main/TBSL.md
+
+## Security
+
+Protected by [PHPForge](https://github.com/infocyph/PHPForge) — an automated quality and security gate for PHP projects.
+
+---
+
+<div align="center">
+  <sub><strong>Made with ❤️ for the PHP community</strong></sub><br />
+  <sub><a href="LICENSE">MIT Licensed</a></sub><br />
+  <a href="https://docs.infocyph.com/projects/UID">Documentation</a> •
+  <a href="SECURITY.md">Security</a> •
+  <a href="CODE_OF_CONDUCT.md">Code of Conduct</a> •
+  <a href="CONTRIBUTING.md">Contributing</a> •
+  <a href="https://github.com/infocyph/UID/issues">Report Bug</a> •
+  <a href="https://github.com/infocyph/UID/issues">Request Feature</a>
+</div>
