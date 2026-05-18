@@ -398,17 +398,13 @@ if (!function_exists('tbsl')) {
 if (!function_exists('tbsl_to_base')) {
     function tbsl_to_base(string $id, int $base): string
     {
-        $family = 'tbsl';
-
-        return __uid_base_call($family, 'toBase', $id, $base);
+        return TBSL::toBase($id, $base);
     }
 }
 if (!function_exists('tbsl_from_base')) {
     function tbsl_from_base(string $encoded, int $base): string
     {
-        $method = 'fromBase';
-
-        return __uid_base_call('tbsl', $method, $encoded, $base);
+        return TBSL::fromBase($encoded, $base);
     }
 }
 
@@ -444,17 +440,23 @@ if (!function_exists('tbsl_is_valid')) {
 if (!function_exists('snowflake_to_base')) {
     function snowflake_to_base(string $id, int $base): string
     {
-        $family = 'snowflake';
-
-        return __uid_base_call($family, 'toBase', $id, $base);
+        return __uid_base_call(
+            family: 'snowflake',
+            method: 'toBase',
+            value: $id,
+            base: $base,
+        );
     }
 }
 if (!function_exists('snowflake_from_base')) {
     function snowflake_from_base(string $encoded, int $base): string
     {
-        $method = 'fromBase';
-
-        return __uid_base_call('snowflake', $method, $encoded, $base);
+        return __uid_base_call(
+            family: 'snowflake',
+            method: 'fromBase',
+            value: $encoded,
+            base: $base,
+        );
     }
 }
 
@@ -474,13 +476,17 @@ if (!function_exists('randflake_from_base')) {
 if (!function_exists('sonyflake_to_base')) {
     function sonyflake_to_base(string $id, int $base): string
     {
-        return Sonyflake::toBase($id, $base);
+        $family = 'sonyflake';
+
+        return __uid_base_call($family, 'toBase', $id, $base);
     }
 }
 if (!function_exists('sonyflake_from_base')) {
     function sonyflake_from_base(string $encoded, int $base): string
     {
-        return Sonyflake::fromBase($encoded, $base);
+        $method = 'fromBase';
+
+        return __uid_base_call('sonyflake', $method, $encoded, $base);
     }
 }
 
