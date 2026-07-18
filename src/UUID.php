@@ -231,7 +231,7 @@ final class UUID
         }
         $variantN = hexdec($uuidData[3][0]);
         $data['version'] = (int) $uuidData[2][0];
-        $data['time'] = in_array($data['version'], [1, 6, 7, 8]) ? self::getTime($uuidData, $data['version']) : null;
+        $data['time'] = in_array($data['version'], [1, 6, 7, 8], true) ? self::getTime($uuidData, $data['version']) : null;
         $data['tail'] = $uuidData[4];
         $data['node'] = in_array($data['version'], [7, 8], true) ? null : $uuidData[4];
         $data['variant'] = match (true) {
