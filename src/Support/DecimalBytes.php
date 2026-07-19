@@ -40,7 +40,12 @@ final class DecimalBytes
 
         $bytes = '';
         while ($value !== '0') {
-            $bytes = chr((int) bcmod($value, '256')) . $bytes;
+            $remainder = (int) bcmod($value, '256');
+            if ($remainder < 0 || $remainder > 255) {
+                throw new \LogicException('Decimal byte remainder is outside the byte range');
+            }
+
+            $bytes = chr($remainder) . $bytes;
             $value = bcdiv($value, '256', 0);
         }
 
