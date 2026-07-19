@@ -6,13 +6,18 @@ Class: ``Infocyph\\UID\\Randflake``
 Overview
 --------
 
-Randflake is a lease-bound 64-bit ID family with encrypted payload fields.
+Randflake is a lease-bound 64-bit ID family whose payload fields are obscured by
+a reversible keyed permutation.
 
-Layout before encryption:
+Layout before permutation:
 
 - 30 bits timestamp (seconds from epoch offset ``1730000000``)
 - 17 bits node ID
 - 17 bits sequence
+
+The permutation is not authenticated encryption: it does not prove integrity,
+authorize access, or replace a standard encryption protocol. Treat Randflake
+values as identifiers and enforce authorization independently.
 
 Generation
 ----------

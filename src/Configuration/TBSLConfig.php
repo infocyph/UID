@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Configuration;
 
-use Closure;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class TBSLConfig
 {
-    private ?Closure $machineIdResolver;
+    use ResolvesMachineId;
 
     /**
-     * @param callable():int|null $machineIdResolver
+     * @param callable():mixed|null $machineIdResolver
      */
     public function __construct(
         public int $machineId = 0,
@@ -25,14 +24,5 @@ final readonly class TBSLConfig
         public IdOutputType $outputType = IdOutputType::STRING,
     ) {
         $this->machineIdResolver = $machineIdResolver ? $machineIdResolver(...) : null;
-    }
-
-    public function resolveMachineId(): int
-    {
-        if ($this->machineIdResolver === null) {
-            return $this->machineId;
-        }
-
-        return (int) ($this->machineIdResolver)();
     }
 }

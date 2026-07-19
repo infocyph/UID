@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\Configuration\TBSLConfig;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\TBSL;
@@ -70,4 +72,22 @@ test('TBSL config supports output mode', function () {
 
     expect($binary)->toBeString()
         ->and(strlen($binary))->toBe(10);
+});
+
+test('TBSL advances time when a sequence exceeds its 20-bit field', function () {
+    $firstTimestamp = null;
+
+    TBSL::useSequenceCallback(function (string $type, int $machineId, int $timestamp) use (&$firstTimestamp): int {
+        unset($type, $machineId);
+        $firstTimestamp ??= $timestamp;
+
+        return $timestamp === $firstTimestamp ? 0x100000 : 1;
+    });
+
+    try {
+        $id = TBSL::generate(0, true);
+        expect(substr($id, -5))->toBe('00001');
+    } finally {
+        TBSL::resetSequenceProvider();
+    }
 });

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\UUID;
 
 test('UUID v1', function () {
@@ -195,4 +197,18 @@ test('UUID single-file API covers generate, parse, and byte conversion', functio
     expect(UUID::isValid($uuid))->toBeTrue()
         ->and($parsed['version'])->toBe(7)
         ->and(UUID::fromBytes($bytes))->toBe(strtolower($uuid));
+});
+
+test('UUID validation rejects reserved versions and non-RFC variants', function () {
+    expect(UUID::isValid('00000000-0000-9000-8000-000000000000'))->toBeFalse()
+        ->and(UUID::isValid('00000000-0000-4000-c000-000000000000'))->toBeFalse()
+        ->and(UUID::isValid(UUID::nil()))->toBeTrue()
+        ->and(UUID::isValid(UUID::max()))->toBeTrue();
+});
+
+test('UUID v7 rejects timestamps outside its unsigned 48-bit field', function () {
+    expect(fn () => UUID::v7(new DateTimeImmutable('@-1')))
+        ->toThrow(\Infocyph\UID\Exceptions\UUIDException::class)
+        ->and(fn () => UUID::v7(new DateTimeImmutable('@281474976711')))
+        ->toThrow(\Infocyph\UID\Exceptions\UUIDException::class);
 });

@@ -65,7 +65,7 @@ trait GetSequence
      */
     public static function useSimpleCacheSequenceProvider(
         CacheInterface $cache,
-        string $prefix = 'uid:seq:',
+        string $prefix = 'uid.seq.',
         int $waitTime = 1_000,
         int $maxAttempts = 1_000,
     ): void {

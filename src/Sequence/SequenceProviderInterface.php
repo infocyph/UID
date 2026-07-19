@@ -7,7 +7,7 @@ namespace Infocyph\UID\Sequence;
 interface SequenceProviderInterface
 {
     /**
-     * Returns the next sequence for a given type/machine/timestamp key.
+     * Returns the next positive sequence for a given type/machine/timestamp key.
      */
     public function next(string $type, int $machineId, int $timestamp): int;
 }

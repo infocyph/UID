@@ -13,7 +13,11 @@ use Infocyph\UID\Support\BinaryUnpack;
 
 final class KSUID implements IdAlgorithmInterface
 {
-    private static int $epoch = 1_400_000_000;
+    private const EPOCH = 1_400_000_000;
+
+    private const MAX_ENCODED = 'aWgEPTl1tmebfsQzFP4bxwgy80V';
+
+    private const MAX_TIMESTAMP_OFFSET = 0xffffffff;
 
     /**
      * @throws Exception
@@ -34,8 +38,10 @@ final class KSUID implements IdAlgorithmInterface
      */
     public static function generate(?DateTimeInterface $dateTime = null): string
     {
-        $timestamp = ($dateTime ?? new DateTimeImmutable('now'))->getTimestamp() - self::$epoch;
-        $timestamp = max(0, $timestamp);
+        $timestamp = ($dateTime?->getTimestamp() ?? time()) - self::EPOCH;
+        if ($timestamp < 0 || $timestamp > self::MAX_TIMESTAMP_OFFSET) {
+            throw new \InvalidArgumentException('KSUID timestamp is outside its unsigned 32-bit lifetime');
+        }
 
         $timeBytes = pack('N', $timestamp);
         $payload = random_bytes(16);
@@ -46,7 +52,8 @@ final class KSUID implements IdAlgorithmInterface
 
     public static function isValid(string $ksuid): bool
     {
-        return preg_match('/^[0-9A-Za-z]{27}$/', $ksuid) === 1;
+        return preg_match('/^[0-9A-Za-z]{27}$/D', $ksuid) === 1
+            && strcmp($ksuid, self::MAX_ENCODED) <= 0;
     }
 
     /**
@@ -61,7 +68,7 @@ final class KSUID implements IdAlgorithmInterface
         }
 
         $bytes = self::toBytes($ksuid);
-        $timestamp = BinaryUnpack::u32(substr($bytes, 0, 4), 'Unable to parse KSUID timestamp') + self::$epoch;
+        $timestamp = BinaryUnpack::u32(substr($bytes, 0, 4), 'Unable to parse KSUID timestamp') + self::EPOCH;
         $data['time'] = new DateTimeImmutable('@' . $timestamp);
         $data['payload'] = bin2hex(substr($bytes, 4));
 

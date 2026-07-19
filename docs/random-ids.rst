@@ -24,6 +24,9 @@ Classes:
    $isCuid2 = CUID2::isValid($cuid2);
    $cuid2Info = CUID2::parse($cuid2);
 
+CUID2 lengths are ``2..32`` and canonical values always begin with a lowercase
+letter.
+
 Validation/parsing outputs:
 
 - ``NanoID::parse()``: ``['isValid', 'length', 'alphabet']``
@@ -82,6 +85,9 @@ Class: ``Infocyph\\UID\\OpaqueId``
 - ``OpaqueId::random($length)`` for short public IDs
 - ``OpaqueId::fromInt($value, $salt)`` and ``OpaqueId::toInt($token, $salt)`` for reversible obfuscation
 
+The reversible integer form is obfuscation only. It is not encryption,
+authentication, or authorization; always enforce access control independently.
+
 .. code-block:: php
 
    <?php
@@ -97,7 +103,10 @@ Deterministic IDs
 Class: ``Infocyph\\UID\\DeterministicId``
 
 ``DeterministicId::fromPayload($payload, $length = 24, $namespace = 'default')``
-creates deterministic Base62 output from payload + namespace.
+creates deterministic Base62 output from payload + namespace. Lengths are
+``1..43``; shorter outputs have a correspondingly higher collision probability.
+The namespace delimiter ``|`` is reserved so namespace/payload pairs remain
+unambiguous.
 
 .. code-block:: php
 

@@ -23,6 +23,9 @@ final readonly class UuidValue implements IdValueInterface
     {
         $this->value = UUID::normalize($value);
         $this->parsed = UUID::parse($this->value);
+        if (!$this->parsed['isValid']) {
+            throw new \InvalidArgumentException('Invalid UUID string');
+        }
     }
 
     public function __toString(): string

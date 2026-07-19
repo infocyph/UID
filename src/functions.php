@@ -22,30 +22,21 @@ use Infocyph\UID\XID;
 if (!function_exists('__uid_base_call')) {
     function __uid_base_call(string $family, string $method, string $value, int $base): string
     {
-        /** @var array<string, array<string, callable(string, int):string>> $operations */
-        $operations = [
-            'toBase' => [
-                'uuid' => UUID::toBase(...),
-                'ulid' => ULID::toBase(...),
-                'randflake' => Randflake::toBase(...),
-                'snowflake' => Snowflake::toBase(...),
-                'sonyflake' => Sonyflake::toBase(...),
-                'tbsl' => TBSL::toBase(...),
-            ],
-            'fromBase' => [
-                'uuid' => UUID::fromBase(...),
-                'ulid' => ULID::fromBase(...),
-                'randflake' => Randflake::fromBase(...),
-                'snowflake' => Snowflake::fromBase(...),
-                'sonyflake' => Sonyflake::fromBase(...),
-                'tbsl' => TBSL::fromBase(...),
-            ],
-        ];
-
-        $familyHandlers = $operations[$method] ?? throw new InvalidArgumentException('Unsupported base operation');
-        $handler = $familyHandlers[$family] ?? throw new InvalidArgumentException('Unsupported ID family');
-
-        return $handler($value, $base);
+        return match ($method . ':' . $family) {
+            'toBase:uuid' => UUID::toBase($value, $base),
+            'toBase:ulid' => ULID::toBase($value, $base),
+            'toBase:randflake' => Randflake::toBase($value, $base),
+            'toBase:snowflake' => Snowflake::toBase($value, $base),
+            'toBase:sonyflake' => Sonyflake::toBase($value, $base),
+            'toBase:tbsl' => TBSL::toBase($value, $base),
+            'fromBase:uuid' => UUID::fromBase($value, $base),
+            'fromBase:ulid' => ULID::fromBase($value, $base),
+            'fromBase:randflake' => Randflake::fromBase($value, $base),
+            'fromBase:snowflake' => Snowflake::fromBase($value, $base),
+            'fromBase:sonyflake' => Sonyflake::fromBase($value, $base),
+            'fromBase:tbsl' => TBSL::fromBase($value, $base),
+            default => throw new InvalidArgumentException('Unsupported base operation or ID family'),
+        };
     }
 }
 
@@ -417,23 +408,19 @@ if (!function_exists('snowflake_is_valid')) {
 if (!function_exists('randflake_is_valid')) {
     function randflake_is_valid(string $id): bool
     {
-        return __uid_is_valid('randflake', $id);
+        return Randflake::isValid($id);
     }
 }
 if (!function_exists('sonyflake_is_valid')) {
     function sonyflake_is_valid(string $id): bool
     {
-        return __uid_is_valid('sonyflake', $id);
+        return Sonyflake::isValid($id);
     }
 }
 if (!function_exists('tbsl_is_valid')) {
     function tbsl_is_valid(string $id): bool
     {
-        if ($id === '') {
-            return false;
-        }
-
-        return __uid_is_valid('tbsl', $id);
+        return TBSL::isValid($id);
     }
 }
 
@@ -476,17 +463,13 @@ if (!function_exists('randflake_from_base')) {
 if (!function_exists('sonyflake_to_base')) {
     function sonyflake_to_base(string $id, int $base): string
     {
-        $family = 'sonyflake';
-
-        return __uid_base_call($family, 'toBase', $id, $base);
+        return Sonyflake::toBase($id, $base);
     }
 }
 if (!function_exists('sonyflake_from_base')) {
     function sonyflake_from_base(string $encoded, int $base): string
     {
-        $method = 'fromBase';
-
-        return __uid_base_call('sonyflake', $method, $encoded, $base);
+        return Sonyflake::fromBase($encoded, $base);
     }
 }
 

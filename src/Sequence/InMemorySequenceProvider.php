@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Sequence;
 
+use Infocyph\UID\Exceptions\FileLockException;
+use Infocyph\UID\Exceptions\SequenceTimestampException;
+
 final class InMemorySequenceProvider implements SequenceProviderInterface
 {
     /**
@@ -17,8 +20,18 @@ final class InMemorySequenceProvider implements SequenceProviderInterface
         $last = $this->state[$key] ?? null;
 
         $sequence = 1;
-        if ($last !== null && $last['timestamp'] === $timestamp) {
-            $sequence = $last['sequence'] + 1;
+        if ($last !== null) {
+            if ($last['timestamp'] > $timestamp) {
+                throw new SequenceTimestampException($last['timestamp'], $timestamp);
+            }
+
+            if ($last['timestamp'] === $timestamp) {
+                if ($last['sequence'] === PHP_INT_MAX) {
+                    throw new FileLockException('Sequence value exhausted');
+                }
+
+                $sequence = $last['sequence'] + 1;
+            }
         }
 
         $this->state[$key] = [

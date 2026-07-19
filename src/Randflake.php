@@ -10,6 +10,7 @@ use Infocyph\UID\Configuration\RandflakeConfig;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\RandflakeException;
+use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
@@ -17,6 +18,7 @@ use Infocyph\UID\Support\DecimalBytes;
 use Infocyph\UID\Support\GetSequence;
 use Infocyph\UID\Support\NumericConversion;
 use Infocyph\UID\Support\OutputFormatter;
+use Infocyph\UID\Support\UnsignedDecimal;
 
 final class Randflake
 {
@@ -38,10 +40,8 @@ final class Randflake
 
     public const TIMESTAMP_BITS = 30;
 
-    /**
-     * @var array<string, int>
-     */
-    private static array $lastTimestampByNode = [];
+    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<int, int>>|null */
+    private static ?\WeakMap $lastTimestampByProvider = null;
 
     /**
      * @throws RandflakeException
@@ -169,7 +169,9 @@ final class Randflake
 
     public static function isValid(string $id): bool
     {
-        return $id !== '' && ctype_digit($id);
+        return $id !== ''
+            && ctype_digit($id)
+            && UnsignedDecimal::compare($id, '18446744073709551615') <= 0;
     }
 
     /**
@@ -242,7 +244,8 @@ final class Randflake
         $secret = self::validateSecret($secret);
 
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
-        $stateKey = spl_object_id($resolvedSequenceProvider) . ':' . $nodeId;
+        self::$lastTimestampByProvider ??= new \WeakMap();
+        $providerState = self::$lastTimestampByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
         $now = time();
         if ($now < $leaseStart || $now > $leaseEnd) {
             throw new RandflakeException('randflake: invalid lease, lease expired or not started yet');
@@ -252,19 +255,37 @@ final class Randflake
             throw new RandflakeException('randflake: the randflake id is dead after 34 years of lifetime');
         }
 
-        $lastTimestamp = self::$lastTimestampByNode[$stateKey] ?? null;
+        $lastTimestamp = $providerState[$nodeId] ?? null;
         if ($lastTimestamp !== null && $now < $lastTimestamp) {
             throw new RandflakeException('randflake: timestamp consistency violation, the current time is less than the last time');
         }
 
-        $sequence = self::sequence($now, $nodeId, 'randflake', $resolvedSequenceProvider) - 1;
+        try {
+            $sequenceValue = self::sequence($now, $nodeId, 'randflake', $resolvedSequenceProvider);
+        } catch (SequenceTimestampException $exception) {
+            $now = time();
+            if ($now < $exception->lastTimestamp) {
+                throw new RandflakeException(
+                    'randflake: timestamp consistency violation, the current time is less than the persisted time',
+                    0,
+                    $exception,
+                );
+            }
+
+            $sequenceValue = self::sequence($now, $nodeId, 'randflake', $resolvedSequenceProvider);
+        }
+        if ($sequenceValue < 1) {
+            throw new RandflakeException('randflake: sequence provider must return a positive integer');
+        }
+
+        $sequence = $sequenceValue - 1;
         if ($sequence > self::MAX_SEQUENCE) {
             throw new RandflakeException(
                 "randflake: resource exhausted (generator can't handle current throughput, try using multiple randflake instances)",
             );
         }
 
-        self::$lastTimestampByNode[$stateKey] = $now;
+        $providerState[$nodeId] = $now;
 
         $plain = self::packPayload($now, $nodeId, $sequence);
         $cipher = self::permute($plain, $secret, false);
