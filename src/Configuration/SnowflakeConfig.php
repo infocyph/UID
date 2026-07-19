@@ -17,7 +17,7 @@ final readonly class SnowflakeConfig
     private ?Closure $nodeResolver;
 
     /**
-     * @param callable():array{0:int,1:int}|null $nodeResolver
+     * @param callable():mixed|null $nodeResolver
      * @param DateTimeInterface|int|string|null $customEpoch Epoch in ms (int), parseable date string, or DateTime.
      */
     public function __construct(
@@ -33,7 +33,7 @@ final readonly class SnowflakeConfig
     }
 
     /**
-     * @return array{0:int,1:int}
+     * @return array{0:int, 1:int}
      */
     public function resolveNode(): array
     {
@@ -41,9 +41,16 @@ final readonly class SnowflakeConfig
             return [$this->datacenterId, $this->workerId];
         }
 
-        /** @var array{0:int,1:int} $resolved */
         $resolved = ($this->nodeResolver)();
+        if (
+            !is_array($resolved)
+            || !isset($resolved[0], $resolved[1])
+            || !is_int($resolved[0])
+            || !is_int($resolved[1])
+        ) {
+            throw new \UnexpectedValueException('Snowflake node resolver must return two integer IDs');
+        }
 
-        return $resolved;
+        return [$resolved[0], $resolved[1]];
     }
 }

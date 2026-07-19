@@ -49,7 +49,7 @@ final class XID implements IdAlgorithmInterface
 
     public static function isValid(string $xid): bool
     {
-        return preg_match('/^[0-9a-v]{20}$/', $xid) === 1;
+        return preg_match('/^[01][0-9a-v]{19}$/D', $xid) === 1;
     }
 
     /**

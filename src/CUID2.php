@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace Infocyph\UID;
 
-use DateTimeImmutable;
 use Exception;
 use Infocyph\UID\Contracts\IdAlgorithmInterface;
+use Infocyph\UID\Support\BaseEncoder;
 use InvalidArgumentException;
 
 final class CUID2 implements IdAlgorithmInterface
 {
-    private static string $alphabet = '0123456789abcdefghijklmnopqrstuvwxyz';
+    private const INITIAL_COUNTER_MAX = 476_782_367;
+
+    private const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 
     private static int $counter;
+
+    private static ?string $fingerprint = null;
 
     /**
      * Generates a CUID2 string with a specified maximum length.
@@ -22,19 +26,23 @@ final class CUID2 implements IdAlgorithmInterface
      */
     public static function generate(int $length = 24): string
     {
-        ($length < 4 || $length > 32) && throw new InvalidArgumentException(
-            'length must be between 4 and 32',
+        ($length < 2 || $length > 32) && throw new InvalidArgumentException(
+            'length must be between 2 and 32',
         );
 
-        self::$counter ??= random_int(0, PHP_INT_MAX);
-        $hash = hash_init('sha3-512');
-        hash_update($hash, (new DateTimeImmutable('now'))->format('Uv'));
-        hash_update($hash, (string) self::$counter++);
-        hash_update($hash, bin2hex(random_bytes($length)));
-        hash_update($hash, self::fingerprint());
-        $encoded = self::hexToBase36(hash_final($hash));
+        self::$counter ??= random_int(0, self::INITIAL_COUNTER_MAX);
+        $time = (string) (int) floor(microtime(true) * 1000);
+        $counter = (string) self::$counter++;
+        $salt = random_bytes($length);
+        $fingerprint = self::fingerprint();
+        $hashInput = pack('N', strlen($time)) . $time
+            . pack('N', strlen($counter)) . $counter
+            . pack('N', strlen($salt)) . $salt
+            . pack('N', strlen($fingerprint)) . $fingerprint;
+        $encoded = BaseEncoder::encodeBytes(hash('sha3-512', $hashInput, true), 36);
+        $firstLetter = self::LETTERS[random_int(0, 25)];
 
-        return substr(str_pad($encoded, $length, '0'), 0, $length);
+        return $firstLetter . substr($encoded, 1, $length - 1);
     }
 
     /**
@@ -46,7 +54,7 @@ final class CUID2 implements IdAlgorithmInterface
             return false;
         }
 
-        return preg_match('/^[0-9a-z]{4,32}$/', $id) === 1;
+        return preg_match('/^[a-z][0-9a-z]{1,31}$/D', $id) === 1;
     }
 
     /**
@@ -69,40 +77,20 @@ final class CUID2 implements IdAlgorithmInterface
      */
     private static function fingerprint(): string
     {
-        $hash = hash_init('sha3-512');
-        hash_update($hash, gethostname() ?: substr(str_shuffle('abcdefghjkmnpqrstvwxyz0123456789'), 0, 32));
-        hash_update($hash, (string) random_int(1, 32768));
-        hash_update($hash, bin2hex(random_bytes(32)));
-
-        return hash_final($hash);
-    }
-
-    /**
-     * Converts a base16 string to base36 using BCMath for large integer safety.
-     */
-    private static function hexToBase36(string $hex): string
-    {
-        $hex = strtolower(ltrim($hex, '0'));
-        if ($hex === '') {
-            return '0';
+        if (self::$fingerprint !== null) {
+            return self::$fingerprint;
         }
 
-        $decimal = '0';
-        $hexChars = '0123456789abcdef';
-        foreach (str_split($hex) as $char) {
-            ($value = strpos($hexChars, $char)) !== false || throw new InvalidArgumentException(
-                'Invalid hexadecimal string provided',
-            );
-            $decimal = bcadd(bcmul($decimal, '16'), (string) $value);
-        }
+        $host = gethostname();
+        $source = ($host === false ? '' : $host)
+            . "\0"
+            . getmypid()
+            . random_bytes(32);
 
-        $encoded = '';
-        while (bccomp($decimal, '0') === 1) {
-            $remainder = (int) bcmod($decimal, '36');
-            $encoded = self::$alphabet[$remainder] . $encoded;
-            $decimal = bcdiv($decimal, '36', 0);
-        }
-
-        return $encoded;
+        return self::$fingerprint = substr(
+            BaseEncoder::encodeBytes(hash('sha3-512', $source, true), 36),
+            0,
+            32,
+        );
     }
 }

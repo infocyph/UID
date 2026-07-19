@@ -4,6 +4,7 @@ ULID
 Class: ``Infocyph\\UID\\ULID``
 
 ULID uses Crockford Base32 and produces 26-character sortable identifiers.
+Timestamps must fit the protocol's unsigned 48-bit millisecond field.
 
 Generation Modes
 ----------------

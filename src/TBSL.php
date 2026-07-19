@@ -9,6 +9,7 @@ use Exception;
 use Infocyph\UID\Configuration\TBSLConfig;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Enums\IdOutputType;
+use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\UIDException;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
@@ -107,7 +108,12 @@ final class TBSL
             return $data;
         }
 
-        $storeData = base_convert(substr($tbsl, 0, 15), 16, 10);
+        $storeBytes = hex2bin('0' . substr($tbsl, 0, 15));
+        $storeBytes !== false || throw new Exception('Unable to parse TBSL timestamp');
+        $storeParts = unpack('Jvalue', $storeBytes);
+        $storeValue = $storeParts['value'] ?? null;
+        is_int($storeValue) || throw new Exception('Unable to parse TBSL timestamp');
+        $storeData = str_pad((string) $storeValue, 18, '0', STR_PAD_LEFT);
         $data['time'] = new DateTimeImmutable('@' . substr($storeData, 0, 10) . '.' . substr($storeData, 10, 6));
         $data['machineId'] = (int) substr($storeData, -2);
 
@@ -182,13 +188,25 @@ final class TBSL
 
             $timeSequence = self::waitUntilNextTimeSequence(self::$lastTimeSequence);
         }
+        [$timeSequence, $tail] = self::resolveTail(
+            $machineId,
+            $sequenced,
+            $timeSequence,
+            $clockBackwardPolicy,
+            $sequenceProvider,
+        );
         self::$lastTimeSequence = $timeSequence;
 
-        $storeData = base_convert($timeSequence . sprintf('%02d', $machineId), 10, 16);
+        $storeValue = (int) ($timeSequence . sprintf('%02d', $machineId));
+        $storeData = ltrim(bin2hex(pack('J', $storeValue)), '0');
+        if (strlen($storeData) > 15) {
+            throw new UIDException('TBSL timestamp exceeds its 60-bit field');
+        }
+
         $id = strtoupper(sprintf(
             '%015s%05s',
             $storeData,
-            substr(self::sequencedGenerate($machineId, $sequenced, $timeSequence, $sequenceProvider), 0, 5),
+            $tail,
         ));
 
         return self::formatOutput($id, $outputType);
@@ -213,19 +231,47 @@ final class TBSL
      * @param int $machineId Machine identifier.
      * @param bool $enableSequence Whether to enable sequence.
      * @param int $timeSequence The timestamp sequence.
-     * @return string Hexadecimal sequence.
+     * @return array{0:int, 1:string}
      * @throws Exception
      */
-    private static function sequencedGenerate(
+    private static function resolveTail(
         int $machineId,
         bool $enableSequence,
         int $timeSequence,
+        ClockBackwardPolicy $clockBackwardPolicy,
         ?SequenceProviderInterface $sequenceProvider = null,
-    ): string {
-        return match ($enableSequence) {
-            true => dechex(self::sequence($timeSequence, $machineId, 'tbsl', $sequenceProvider)),
-            default => bin2hex(random_bytes(3)),
-        };
+    ): array {
+        if (!$enableSequence) {
+            return [$timeSequence, substr(bin2hex(random_bytes(3)), 0, 5)];
+        }
+
+        do {
+            try {
+                $sequence = self::sequence($timeSequence, $machineId, 'tbsl', $sequenceProvider);
+            } catch (SequenceTimestampException $exception) {
+                if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
+                    throw new UIDException(
+                        'Clock moved backwards while generating TBSL ID',
+                        0,
+                        $exception,
+                    );
+                }
+
+                $timeSequence = self::waitUntilNextTimeSequence($exception->lastTimestamp);
+
+                continue;
+            }
+
+            if ($sequence < 1) {
+                throw new UIDException('TBSL sequence provider must return a positive integer');
+            }
+
+            if ($sequence <= 0xfffff) {
+                return [$timeSequence, str_pad(dechex($sequence), 5, '0', STR_PAD_LEFT)];
+            }
+
+            $timeSequence = self::waitUntilNextTimeSequence($timeSequence);
+        } while (true);
     }
 
     private static function waitUntilNextTimeSequence(int $last): int

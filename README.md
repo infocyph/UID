@@ -14,8 +14,7 @@ All-in-one unique ID toolkit for PHP.
 
 - UUID (`v1`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`)
 - ULID (monotonic and random modes)
-- Snowflake, Sonyflake, TBSL
-- Randflake (encrypted 64-bit IDs with lease-bound node windows)
+- Snowflake, Sonyflake, Randflake, TBSL
 - NanoID, CUID2, KSUID, XID
 - Opaque and deterministic IDs
 - Value objects and comparator utilities

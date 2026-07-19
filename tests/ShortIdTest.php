@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\CUID2;
 use Infocyph\UID\NanoID;
@@ -10,7 +12,7 @@ test('CUID2', function () {
         ->toBeString()
         ->not()->toBeEmpty()
         ->toHaveLength(24)
-        ->toMatch('/^[0-9a-z]+$/');
+        ->toMatch('/^[a-z][0-9a-z]+$/');
 });
 
 test('CUID2 custom length', function () {
@@ -44,4 +46,13 @@ test('NanoID and CUID2 validation and parse', function () {
         ->and($cuidParsed['length'])->toBe(24)
         ->and(nanoid_is_valid($nano, 12))->toBeTrue()
         ->and(cuid2_is_valid($cuid))->toBeTrue();
+});
+
+test('CUID2 uses canonical first-letter and length boundaries', function () {
+    $minimum = CUID2::generate(2);
+
+    expect($minimum)->toMatch('/^[a-z][0-9a-z]$/')
+        ->and(CUID2::isValid('1abc'))->toBeFalse()
+        ->and(fn () => CUID2::generate(1))->toThrow(\InvalidArgumentException::class)
+        ->and(fn () => CUID2::generate(33))->toThrow(\InvalidArgumentException::class);
 });

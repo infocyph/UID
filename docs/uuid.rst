@@ -70,6 +70,10 @@ NIL and MAX
 Validation and Parsing
 ----------------------
 
+Validation accepts the RFC 9562 NIL and MAX values and UUID versions ``1..8``
+using the RFC variant. UUIDv7 rejects timestamps outside its unsigned 48-bit
+millisecond field instead of truncating them.
+
 .. code-block:: php
 
    <?php

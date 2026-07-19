@@ -16,34 +16,38 @@ final class BaseEncoder
         62 => '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
     ];
 
+    private const MAX_BYTE_LENGTH = 1_048_576;
+
     /**
      * Decodes one of supported bases (16/32/36/58/62) into bytes.
      */
     public static function decodeToBytes(string $encoded, int $base, int $bytesLength): string
     {
+        if ($encoded === '') {
+            throw new InvalidArgumentException('Encoded value must not be empty');
+        }
+
+        if ($bytesLength < 1 || $bytesLength > self::MAX_BYTE_LENGTH) {
+            throw new InvalidArgumentException('Byte length must be between 1 and 1048576');
+        }
+
         $alphabet = self::alphabet($base);
+        $maxEncodedLength = (int) ceil(($bytesLength * 8) / log($base, 2));
+        if (strlen($encoded) > $maxEncodedLength) {
+            throw new InvalidArgumentException('Encoded value exceeds target byte length');
+        }
+
         $decimal = '0';
+        $encodedLength = strlen($encoded);
 
-        foreach (str_split($encoded) as $char) {
-            $index = strpos($alphabet, $char);
-            $index !== false || throw new InvalidArgumentException('Invalid character for base ' . $base);
-            $decimal = bcadd(bcmul($decimal, (string) $base), (string) $index);
+        for ($index = 0; $index < $encodedLength; ++$index) {
+            $char = $encoded[$index];
+            $alphabetIndex = strpos($alphabet, $char);
+            $alphabetIndex !== false || throw new InvalidArgumentException('Invalid character for base ' . $base);
+            $decimal = bcadd(bcmul($decimal, (string) $base), (string) $alphabetIndex);
         }
 
-        $hex = '';
-        while ($decimal !== '0') {
-            $remainder = (int) bcmod($decimal, '16');
-            $hex = dechex($remainder) . $hex;
-            $decimal = bcdiv($decimal, '16', 0);
-        }
-
-        $hex = str_pad($hex, $bytesLength * 2, '0', STR_PAD_LEFT);
-        $bytes = hex2bin($hex);
-        if ($bytes === false || strlen($bytes) !== $bytesLength) {
-            throw new InvalidArgumentException('Invalid encoded value for target byte length');
-        }
-
-        return $bytes;
+        return DecimalBytes::toFixedBytes($decimal, $bytesLength);
     }
 
     /**
@@ -51,6 +55,11 @@ final class BaseEncoder
      */
     public static function encodeBytes(string $bytes, int $base): string
     {
+        $byteLength = strlen($bytes);
+        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
+            throw new InvalidArgumentException('Byte length must be between 1 and 1048576');
+        }
+
         $alphabet = self::alphabet($base);
         $decimal = self::bytesToDecimal($bytes);
 
@@ -75,14 +84,6 @@ final class BaseEncoder
 
     private static function bytesToDecimal(string $bytes): string
     {
-        $decimal = '0';
-        foreach (str_split(bin2hex($bytes)) as $char) {
-            $decimal = bcadd(
-                bcmul($decimal, '16'),
-                (string) hexdec($char),
-            );
-        }
-
-        return $decimal;
+        return DecimalBytes::fromBytes($bytes);
     }
 }

@@ -10,6 +10,7 @@ use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Exceptions\FileLockException;
+use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\SonyflakeException;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
@@ -17,12 +18,13 @@ use Infocyph\UID\Support\EpochGuard;
 use Infocyph\UID\Support\GetSequence;
 use Infocyph\UID\Support\NumericIdCodec;
 use Infocyph\UID\Support\OutputFormatter;
+use Infocyph\UID\Support\UnsignedDecimal;
 
 final class Sonyflake
 {
     use GetSequence;
 
-    private static int $lastElapsedTime = 0;
+    private static int $lastWallTime = 0;
 
     private static int $maxMachineIdLength = 16;
 
@@ -96,7 +98,10 @@ final class Sonyflake
      */
     public static function isValid(string $id): bool
     {
-        return preg_match('/^\d+$/', $id) === 1 && $id !== '0';
+        return $id !== ''
+            && $id !== '0'
+            && ctype_digit($id)
+            && UnsignedDecimal::compare($id, (string) PHP_INT_MAX) <= 0;
     }
 
     /**
@@ -119,6 +124,10 @@ final class Sonyflake
      */
     public static function parseWithEpoch(string $id, int $startTimestamp): array
     {
+        if (!self::isValid($id) || UnsignedDecimal::compare($id, (string) PHP_INT_MAX) === 1) {
+            throw new SonyflakeException('Invalid Sonyflake ID string');
+        }
+
         $parts = self::extractParts($id, $startTimestamp);
 
         return [
@@ -201,9 +210,9 @@ final class Sonyflake
     /**
      * Calculates the elapsed time in 10ms units.
      */
-    private static function elapsedTime(int $startTimestamp): int
+    private static function elapsedTime(int $currentTime, int $startTimestamp): int
     {
-        return floor(((new DateTimeImmutable('now'))->format('Uv') - $startTimestamp) / 10) | 0;
+        return intdiv($currentTime - $startTimestamp, 10);
     }
 
     /**
@@ -214,6 +223,10 @@ final class Sonyflake
      */
     private static function ensureEffectiveRuntime(int $elapsedTime): void
     {
+        if ($elapsedTime < 0) {
+            throw new SonyflakeException('Sonyflake epoch must not be in the future');
+        }
+
         if ($elapsedTime > (-1 ^ (-1 << self::$maxTimestampLength))) {
             throw new SonyflakeException('Exceeding the maximum life cycle of the algorithm');
         }
@@ -253,25 +266,48 @@ final class Sonyflake
             throw new SonyflakeException("Invalid machine ID, must be between 0 ~ $maxMachineID.");
         }
 
-        $elapsedTime = self::elapsedTime($startTimestamp);
-
-        if ($elapsedTime < self::$lastElapsedTime) {
+        $currentTime = (int) floor(microtime(true) * 1000);
+        if ($currentTime < self::$lastWallTime) {
             if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                 throw new SonyflakeException('Clock moved backwards while generating Sonyflake ID');
             }
 
-            $elapsedTime = self::waitUntilElapsed(self::$lastElapsedTime, $startTimestamp);
+            $currentTime = self::waitUntilWallTime(self::$lastWallTime);
         }
 
-        while (($sequence = self::sequence(
-            $elapsedTime,
-            $machineId,
-            'sonyflake',
-            $sequenceProvider,
-        )) > (-1 ^ (-1 << self::$maxSequenceLength))) {
+        $elapsedTime = self::elapsedTime($currentTime, $startTimestamp);
+        self::ensureEffectiveRuntime($elapsedTime);
+        $sequenceType = 'sonyflake_' . $startTimestamp;
+
+        while (true) {
+            try {
+                $sequence = self::sequence(
+                    $elapsedTime,
+                    $machineId,
+                    $sequenceType,
+                    $sequenceProvider,
+                );
+            } catch (SequenceTimestampException $exception) {
+                if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
+                    throw new SonyflakeException(
+                        'Clock moved backwards while generating Sonyflake ID',
+                        0,
+                        $exception,
+                    );
+                }
+
+                $elapsedTime = self::waitUntilElapsed($exception->lastTimestamp, $startTimestamp);
+
+                continue;
+            }
+
+            if ($sequence <= (-1 ^ (-1 << self::$maxSequenceLength))) {
+                break;
+            }
+
             $elapsedTime = self::waitUntilElapsed($elapsedTime, $startTimestamp);
         }
-        self::$lastElapsedTime = $elapsedTime;
+        self::$lastWallTime = max($currentTime, $startTimestamp + ($elapsedTime * 10));
 
         self::ensureEffectiveRuntime($elapsedTime);
 
@@ -287,17 +323,27 @@ final class Sonyflake
      */
     private static function getStartTimeStamp(): int
     {
-        return self::$startTime ??= (strtotime('2020-01-01 00:00:00') * 1000);
+        return self::$startTime ??= 1_577_836_800_000;
     }
 
     private static function waitUntilElapsed(int $elapsedTime, int $startTimestamp): int
     {
-        $next = self::elapsedTime($startTimestamp);
+        $next = self::elapsedTime((int) floor(microtime(true) * 1000), $startTimestamp);
         while ($next <= $elapsedTime) {
             usleep(1000);
-            $next = self::elapsedTime($startTimestamp);
+            $next = self::elapsedTime((int) floor(microtime(true) * 1000), $startTimestamp);
         }
 
         return $next;
+    }
+
+    private static function waitUntilWallTime(int $lastTime): int
+    {
+        do {
+            usleep(1000);
+            $currentTime = (int) floor(microtime(true) * 1000);
+        } while ($currentTime < $lastTime);
+
+        return $currentTime;
     }
 }

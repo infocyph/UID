@@ -21,7 +21,7 @@ Each algorithm class using ``GetSequence`` provides these static methods:
 - ``resetSequenceProvider()``
 - ``useFilesystemSequenceProvider(?string $baseDirectory = null, int $waitTime = 1000, int $maxAttempts = 1000)``
 - ``useInMemorySequenceProvider()``
-- ``useSimpleCacheSequenceProvider(CacheInterface $cache, string $prefix = 'uid:seq:', int $waitTime = 1000, int $maxAttempts = 1000)``
+- ``useSimpleCacheSequenceProvider(CacheInterface $cache, string $prefix = 'uid.seq.', int $waitTime = 1000, int $maxAttempts = 1000)``
 - ``useSequenceCallback(callable $callback)``
 
 Defaults are tuned for better contention tolerance in parallel workloads.
@@ -51,8 +51,13 @@ Example: PSR-16 Simple Cache
    use Psr\SimpleCache\CacheInterface;
 
    /** @var CacheInterface $cache */
-   $provider = new PsrSimpleCacheSequenceProvider($cache, 'uid:seq:');
+   $provider = new PsrSimpleCacheSequenceProvider($cache, 'uid.seq.');
    Snowflake::setSequenceProvider($provider);
+
+The default cache prefix uses only the portable PSR-16 key character set.
+The built-in fallback lock is local to one host. For a cache shared by multiple
+hosts, provide a synchronizer backed by a distributed lock or use a custom
+provider with an atomic increment contract.
 
 Example: External Synchronizer
 ------------------------------

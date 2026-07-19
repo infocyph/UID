@@ -6,11 +6,14 @@ namespace Infocyph\UID\Support;
 
 final class DecimalBytes
 {
+    private const MAX_BYTE_LENGTH = 1_048_576;
+
     public static function fromBytes(string $bytes): string
     {
         $decimal = '0';
-        foreach (str_split(bin2hex($bytes)) as $char) {
-            $decimal = bcadd(bcmul($decimal, '16'), (string) hexdec($char));
+        $length = strlen($bytes);
+        for ($index = 0; $index < $length; ++$index) {
+            $decimal = bcadd(bcmul($decimal, '256'), (string) ord($bytes[$index]));
         }
 
         return $decimal;
@@ -21,32 +24,31 @@ final class DecimalBytes
      */
     public static function toFixedBytes(string $decimal, int $byteLength): string
     {
-        if ($byteLength < 1) {
-            throw new \InvalidArgumentException('Byte length must be greater than zero');
+        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
+            throw new \InvalidArgumentException('Byte length must be between 1 and 1048576');
         }
 
         if (preg_match('/^\d+$/', $decimal) !== 1) {
             throw new \InvalidArgumentException('Decimal value must contain only digits');
         }
 
-        $hex = '';
         $value = UnsignedDecimal::normalize($decimal);
-        while ($value !== '0') {
-            $remainder = (int) bcmod($value, '16');
-            $hex = dechex($remainder) . $hex;
-            $value = bcdiv($value, '16', 0);
-        }
-
-        if (strlen($hex) > ($byteLength * 2)) {
+        $maxDecimalDigits = (int) ceil($byteLength * log10(256));
+        if (strlen($value) > $maxDecimalDigits) {
             throw new \InvalidArgumentException('Decimal value exceeds target byte length');
         }
 
-        $hex = str_pad($hex, $byteLength * 2, '0', STR_PAD_LEFT);
-        $bytes = hex2bin($hex);
-        if ($bytes === false) {
-            throw new \InvalidArgumentException('Unable to convert decimal value to bytes');
+        $bytes = '';
+        while ($value !== '0') {
+            $bytes = chr((int) bcmod($value, '256')) . $bytes;
+            $value = bcdiv($value, '256', 0);
         }
 
-        return $bytes;
+        $valueLength = strlen($bytes);
+        if ($valueLength > $byteLength) {
+            throw new \InvalidArgumentException('Decimal value exceeds target byte length');
+        }
+
+        return str_repeat("\0", $byteLength - $valueLength) . $bytes;
     }
 }

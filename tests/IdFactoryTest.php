@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Configuration\TBSLConfig;

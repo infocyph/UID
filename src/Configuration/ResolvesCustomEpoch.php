@@ -28,7 +28,10 @@ trait ResolvesCustomEpoch
         }
 
         $epoch = strtotime($customEpoch);
+        if ($epoch === false) {
+            throw new \InvalidArgumentException('Custom epoch must be a valid date string');
+        }
 
-        return $epoch === false ? null : $epoch * 1000;
+        return $epoch * 1000;
     }
 }

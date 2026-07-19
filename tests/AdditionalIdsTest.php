@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\DeterministicId;
 use Infocyph\UID\IdComparator;
@@ -39,7 +41,8 @@ test('Opaque and deterministic IDs', function () {
 
 test('Opaque ID rejects non-positive lengths', function () {
     expect(fn () => OpaqueId::random(0))->toThrow(\InvalidArgumentException::class)
-        ->and(fn () => OpaqueId::random(-1))->toThrow(\InvalidArgumentException::class);
+        ->and(fn () => OpaqueId::random(-1))->toThrow(\InvalidArgumentException::class)
+        ->and(fn () => OpaqueId::random(1025))->toThrow(\InvalidArgumentException::class);
 });
 
 test('IdComparator sorts numeric and lexical values', function () {
@@ -48,4 +51,26 @@ test('IdComparator sorts numeric and lexical values', function () {
 
     expect($sortedNumeric)->toBe(['1', '2', '10'])
         ->and($sortedLexical)->toBe(['a', 'b', 'c']);
+});
+
+test('KSUID and XID reject text values outside their binary ranges', function () {
+    expect(KSUID::isValid(str_repeat('z', 27)))->toBeFalse()
+        ->and(fn () => KSUID::toBytes(str_repeat('z', 27)))->toThrow(\Exception::class)
+        ->and(XID::isValid('2' . str_repeat('0', 19)))->toBeFalse();
+});
+
+test('KSUID rejects timestamps outside its unsigned 32-bit lifetime', function () {
+    expect(fn () => KSUID::generate(new DateTimeImmutable('@1399999999')))
+        ->toThrow(\InvalidArgumentException::class)
+        ->and(fn () => KSUID::generate(new DateTimeImmutable('@5694967296')))
+        ->toThrow(\InvalidArgumentException::class);
+});
+
+test('Deterministic IDs enforce canonical namespace and output bounds', function () {
+    expect(fn () => DeterministicId::fromPayload('payload', 0))
+        ->toThrow(\InvalidArgumentException::class)
+        ->and(fn () => DeterministicId::fromPayload('payload', 44))
+        ->toThrow(\InvalidArgumentException::class)
+        ->and(fn () => DeterministicId::fromPayload('payload', 24, 'invalid|namespace'))
+        ->toThrow(\InvalidArgumentException::class);
 });

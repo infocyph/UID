@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\Configuration\RandflakeConfig;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Randflake;

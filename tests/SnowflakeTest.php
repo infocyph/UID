@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Snowflake;
@@ -142,4 +144,23 @@ test('Snowflake config supports output modes', function () {
     expect($intId)->toBeInt()
         ->and($binaryId)->toBeString()
         ->and(strlen($binaryId))->toBe(8);
+});
+
+test('Snowflake config rejects invalid epochs and resolver output', function () {
+    $invalidResolver = new SnowflakeConfig(nodeResolver: fn (): string => 'invalid');
+    $futureEpoch = ((int) floor(microtime(true) * 1000)) + 60_000;
+
+    expect(fn () => Snowflake::generateWithConfig(new SnowflakeConfig(customEpoch: 'not-a-date')))
+        ->toThrow(\InvalidArgumentException::class)
+        ->and(fn () => Snowflake::generateWithConfig(new SnowflakeConfig(customEpoch: $futureEpoch)))
+        ->toThrow(\Infocyph\UID\Exceptions\SnowflakeException::class)
+        ->and(fn () => Snowflake::generateWithConfig($invalidResolver))
+        ->toThrow(\UnexpectedValueException::class);
+});
+
+test('Snowflake validation rejects values outside the signed 63-bit layout', function () {
+    expect(Snowflake::isValid((string) PHP_INT_MAX))->toBeTrue()
+        ->and(Snowflake::isValid('9223372036854775808'))->toBeFalse()
+        ->and(fn () => Snowflake::parse('9223372036854775808'))
+        ->toThrow(\Infocyph\UID\Exceptions\SnowflakeException::class);
 });

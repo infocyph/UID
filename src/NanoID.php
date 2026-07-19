@@ -10,6 +10,8 @@ use InvalidArgumentException;
 
 final class NanoID implements IdAlgorithmInterface
 {
+    private const MAX_LENGTH = 1_048_576;
+
     /**
      * Generates a NanoID string with the requested size.
      *
@@ -17,10 +19,17 @@ final class NanoID implements IdAlgorithmInterface
      */
     public static function generate(int $length = 21): string
     {
-        ($length < 1) && throw new InvalidArgumentException('length must be greater than 0');
+        if ($length < 1 || $length > self::MAX_LENGTH) {
+            throw new InvalidArgumentException('length must be between 1 and 1048576');
+        }
+
+        $byteLength = intdiv(($length * 3) + 3, 4);
+        if ($byteLength < 1) {
+            throw new \LogicException('Unable to calculate NanoID entropy length');
+        }
 
         return substr(
-            str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(random_bytes($length))),
+            rtrim(strtr(base64_encode(random_bytes($byteLength)), '+/', '-_'), '='),
             0,
             $length,
         );

@@ -10,6 +10,10 @@ use InvalidArgumentException;
 
 final class OpaqueId
 {
+    private const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+    private const MAX_RANDOM_LENGTH = 1024;
+
     /**
      * Encodes an integer in a hashid-style opaque token.
      */
@@ -29,13 +33,36 @@ final class OpaqueId
      */
     public static function random(int $length = 12): string
     {
-        if ($length < 1) {
-            throw new InvalidArgumentException('length must be greater than 0');
+        if ($length < 1 || $length > self::MAX_RANDOM_LENGTH) {
+            throw new InvalidArgumentException('length must be between 1 and 1024');
         }
 
-        $bytes = random_bytes(max(8, $length));
+        $id = '';
+        $idLength = 0;
+        while ($idLength < $length) {
+            $remaining = $length - $idLength;
+            $chunkLength = intdiv(($remaining * 256) + 247, 248);
+            if ($chunkLength < 1) {
+                throw new \LogicException('Unable to calculate opaque ID entropy length');
+            }
 
-        return substr(BaseEncoder::encodeBytes($bytes, 62), 0, $length);
+            $bytes = random_bytes($chunkLength);
+            $byteLength = strlen($bytes);
+            for ($index = 0; $index < $byteLength; ++$index) {
+                $value = ord($bytes[$index]);
+                if ($value >= 248) {
+                    continue;
+                }
+
+                $id .= self::ALPHABET[$value % 62];
+                ++$idLength;
+                if ($idLength === $length) {
+                    break;
+                }
+            }
+        }
+
+        return $id;
     }
 
     /**

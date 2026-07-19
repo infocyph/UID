@@ -1,6 +1,6 @@
 {
     "name": "infocyph/uid",
-    "description": "UUID (RFC 9562), ULID, Snowflake ID, Sonyflake ID, and TBSL generator for PHP.",
+    "description": "UUID (RFC 9562), ULID, Snowflake, Sonyflake, Randflake, and TBSL generator for PHP.",
     "license": "MIT",
     "type": "library",
     "keywords": [

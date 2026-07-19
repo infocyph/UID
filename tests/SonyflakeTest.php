@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Sonyflake;
@@ -114,4 +116,23 @@ test('Sonyflake config supports output modes', function () {
     expect($intId)->toBeInt()
         ->and($binaryId)->toBeString()
         ->and(strlen($binaryId))->toBe(8);
+});
+
+test('Sonyflake config rejects invalid epochs and resolver output', function () {
+    $invalidResolver = new SonyflakeConfig(machineIdResolver: fn (): string => '1');
+    $futureEpoch = ((int) floor(microtime(true) * 1000)) + 60_000;
+
+    expect(fn () => Sonyflake::generateWithConfig(new SonyflakeConfig(customEpoch: 'not-a-date')))
+        ->toThrow(\InvalidArgumentException::class)
+        ->and(fn () => Sonyflake::generateWithConfig(new SonyflakeConfig(customEpoch: $futureEpoch)))
+        ->toThrow(\Infocyph\UID\Exceptions\SonyflakeException::class)
+        ->and(fn () => Sonyflake::generateWithConfig($invalidResolver))
+        ->toThrow(\UnexpectedValueException::class);
+});
+
+test('Sonyflake validation rejects values outside the signed 63-bit layout', function () {
+    expect(Sonyflake::isValid((string) PHP_INT_MAX))->toBeTrue()
+        ->and(Sonyflake::isValid('9223372036854775808'))->toBeFalse()
+        ->and(fn () => Sonyflake::parse('9223372036854775808'))
+        ->toThrow(\Infocyph\UID\Exceptions\SonyflakeException::class);
 });

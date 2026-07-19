@@ -10,10 +10,11 @@ use Exception;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Exceptions\ULIDException;
 use Infocyph\UID\Support\BaseEncoder;
-use Infocyph\UID\Support\DecimalBytes;
 
 final class ULID
 {
+    private const MAX_TIMESTAMP = 281_474_976_710_655;
+
     private static string $encodingChars = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
     private static int $encodingLength = 32;
@@ -52,18 +53,18 @@ final class ULID
             throw new ULIDException('ULID binary data must be exactly 16 bytes');
         }
 
-        $decimal = DecimalBytes::fromBytes($bytes);
-
-        $encoded = str_repeat('0', 26);
-        $chars = str_split($encoded);
-        for ($index = 25; $index >= 0; --$index) {
-            $remainder = (int) bcmod($decimal, '32');
-            $chars[$index] = self::$encodingChars[$remainder];
-            $decimal = bcdiv($decimal, '32', 0);
+        $ulid = '';
+        $buffer = 0;
+        $bits = 2;
+        for ($index = 0; $index < 16; ++$index) {
+            $buffer = ($buffer << 8) | ord($bytes[$index]);
+            $bits += 8;
+            while ($bits >= 5) {
+                $bits -= 5;
+                $ulid .= self::$encodingChars[($buffer >> $bits) & 31];
+                $buffer &= $bits === 0 ? 0 : (1 << $bits) - 1;
+            }
         }
-
-        $ulid = implode('', $chars);
-        self::isValid($ulid) || throw new ULIDException('Converted bytes produced invalid ULID');
 
         return $ulid;
     }
@@ -77,11 +78,20 @@ final class ULID
         ?DateTimeInterface $dateTime = null,
         UlidGenerationMode $mode = UlidGenerationMode::MONOTONIC,
     ): string {
-        $time = (int) ($dateTime ?? new DateTimeImmutable('now'))->format('Uv');
+        $time = $dateTime === null
+            ? (int) floor(microtime(true) * 1000)
+            : (int) $dateTime->format('Uv');
+        self::assertTimestamp($time);
 
         $isMonotonic = $mode === UlidGenerationMode::MONOTONIC;
+        if ($isMonotonic && $dateTime === null && $time < self::$lastGenTime) {
+            $time = self::$lastGenTime;
+        }
+
         $isDuplicate = $isMonotonic && $time === self::$lastGenTime;
-        self::$lastGenTime = $time;
+        if ($isMonotonic) {
+            self::$lastGenTime = $time;
+        }
 
         $timeChars = self::encodeTime($time);
         if (!$isMonotonic || !$isDuplicate || count(self::$lastRandChars) !== self::$randomLength) {
@@ -133,22 +143,19 @@ final class ULID
             throw new ULIDException('Invalid ULID string');
         }
 
-        $timeChars = str_split(strrev(substr($ulid, 0, self::$timeLength)));
-
         $time = 0;
-        foreach ($timeChars as $index => $char) {
-            $encodingIndex = strripos(self::$encodingChars, $char);
-            $time += ($encodingIndex * self::$encodingLength ** $index);
+        for ($index = 0; $index < self::$timeLength; ++$index) {
+            $encodingIndex = strpos(self::$encodingChars, $ulid[$index]);
+            $encodingIndex !== false || throw new ULIDException('Invalid ULID character');
+            $time = ($time * self::$encodingLength) + $encodingIndex;
         }
 
-        $time = str_split((string) $time, max(1, self::$timeLength));
-        $time[1] ??= '0';
-
-        if ($time[0] > (time() + (86400 * 365 * 10))) {
-            throw new ULIDException('Invalid ULID string: timestamp too large');
-        }
-
-        return new DateTimeImmutable("@$time[0].$time[1]");
+        return new DateTimeImmutable(
+            '@'
+            . intdiv($time, 1000)
+            . '.'
+            . str_pad((string) (($time % 1000) * 1000), 6, '0', STR_PAD_LEFT),
+        );
     }
 
     /**
@@ -182,31 +189,29 @@ final class ULID
             throw new ULIDException('Invalid ULID string');
         }
 
-        try {
-            return DecimalBytes::toFixedBytes(self::decodeToDecimal($ulid), 16);
-        } catch (\InvalidArgumentException $exception) {
-            throw new ULIDException('Unable to convert ULID to bytes', 0, $exception);
+        $bytes = '';
+        $buffer = 0;
+        $bits = -2;
+        for ($index = 0; $index < 26; ++$index) {
+            $alphabetIndex = strpos(self::$encodingChars, $ulid[$index]);
+            $alphabetIndex !== false || throw new ULIDException('Invalid ULID character');
+            $buffer = ($buffer << 5) | $alphabetIndex;
+            $bits += 5;
+            if ($bits >= 8) {
+                $bits -= 8;
+                $bytes .= chr(($buffer >> $bits) & 0xff);
+                $buffer &= $bits === 0 ? 0 : (1 << $bits) - 1;
+            }
         }
+
+        return $bytes;
     }
 
-    /**
-     * Decodes ULID base32 text to an arbitrary precision decimal string.
-     *
-     * @throws ULIDException
-     */
-    private static function decodeToDecimal(string $ulid): string
+    private static function assertTimestamp(int $timestamp): void
     {
-        $decimal = '0';
-        foreach (str_split($ulid) as $char) {
-            $index = strpos(self::$encodingChars, $char);
-            if ($index === false) {
-                throw new ULIDException('Invalid ULID character');
-            }
-
-            $decimal = bcadd(bcmul($decimal, '32'), (string) $index);
+        if ($timestamp < 0 || $timestamp > self::MAX_TIMESTAMP) {
+            throw new ULIDException('ULID timestamp must fit in an unsigned 48-bit integer');
         }
-
-        return $decimal;
     }
 
     /**
@@ -217,10 +222,10 @@ final class ULID
     private static function encodeTime(int $time): string
     {
         $timeChars = '';
-        for ($i = self::$timeLength - 1; $i >= 0; $i--) {
+        for ($i = self::$timeLength - 1; $i >= 0; --$i) {
             $mod = $time % self::$encodingLength;
             $timeChars = self::$encodingChars[$mod] . $timeChars;
-            $time = ($time - $mod) / self::$encodingLength;
+            $time = intdiv($time, self::$encodingLength);
         }
 
         return $timeChars;
@@ -256,8 +261,18 @@ final class ULID
      */
     private static function resetRandomState(): void
     {
-        for ($index = 0; $index < self::$randomLength; $index++) {
-            self::$lastRandChars[$index] = random_int(0, 31);
+        $random = random_bytes(10);
+        $buffer = 0;
+        $bits = 0;
+        $stateIndex = 0;
+        for ($index = 0; $index < 10; ++$index) {
+            $buffer = ($buffer << 8) | ord($random[$index]);
+            $bits += 8;
+            while ($bits >= 5) {
+                $bits -= 5;
+                self::$lastRandChars[$stateIndex++] = ($buffer >> $bits) & 31;
+                $buffer &= $bits === 0 ? 0 : (1 << $bits) - 1;
+            }
         }
     }
 
@@ -265,7 +280,7 @@ final class ULID
     {
         do {
             usleep(1000);
-            $next = (int) (new DateTimeImmutable('now'))->format('Uv');
+            $next = (int) floor(microtime(true) * 1000);
         } while ($next <= $lastTimestamp);
 
         return $next;

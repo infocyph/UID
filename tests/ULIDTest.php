@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Infocyph\UID\ULID;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Exceptions\ULIDException;
@@ -57,4 +59,20 @@ test('ULID base conversion roundtrip', function () {
     $encoded = ULID::toBase($ulid, 62);
 
     expect(ULID::fromBase($encoded, 62))->toBe($ulid);
+});
+
+test('ULID binary boundary vectors are canonical', function () {
+    $zero = str_repeat("\0", 16);
+    $maximum = str_repeat("\xff", 16);
+
+    expect(ULID::fromBytes($zero))->toBe(str_repeat('0', 26))
+        ->and(ULID::fromBytes($maximum))->toBe('7' . str_repeat('Z', 25))
+        ->and(ULID::toBytes('7' . str_repeat('Z', 25)))->toBe($maximum);
+});
+
+test('ULID rejects timestamps outside its unsigned 48-bit field', function () {
+    expect(fn () => ULID::generate(new DateTimeImmutable('@-1')))
+        ->toThrow(ULIDException::class)
+        ->and(fn () => ULID::generate(new DateTimeImmutable('@281474976711')))
+        ->toThrow(ULIDException::class);
 });

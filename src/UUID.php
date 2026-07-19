@@ -14,6 +14,10 @@ use const STR_PAD_LEFT;
 
 final class UUID
 {
+    private const MAX_V7_NODE_STATES = 1024;
+
+    private const MAX_V7_TIMESTAMP = 281_474_976_710_655;
+
     /** @var array<string, int> */
     private static array $nsList = [
         'dns' => 0,
@@ -157,13 +161,20 @@ final class UUID
     }
 
     /**
-     * Check if UUID is valid (validates version 1-9 & NIL)
+     * Checks whether a UUID uses a defined RFC 9562 version/variant, NIL, or MAX.
      *
      * @param string $uuid The UUID to be checked
      */
     public static function isValid(string $uuid): bool
     {
-        return (bool) preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-\d[0-9a-f]{3}-[089a-e][0-9a-f]{3}-[0-9a-f]{12}$/i', $uuid);
+        if (strcasecmp($uuid, self::nil()) === 0 || strcasecmp($uuid, self::max()) === 0) {
+            return true;
+        }
+
+        return preg_match(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iD',
+            $uuid,
+        ) === 1;
     }
 
     /**
@@ -222,6 +233,10 @@ final class UUID
         ];
 
         if (!$data['isValid']) {
+            return $data;
+        }
+
+        if (strcasecmp($uuid, self::nil()) === 0 || strcasecmp($uuid, self::max()) === 0) {
             return $data;
         }
 
@@ -392,7 +407,13 @@ final class UUID
      */
     public static function v7(?DateTimeInterface $dateTime = null, ?string $node = null): string
     {
-        $unixTsMs = (int) ($dateTime ?? new DateTimeImmutable('now'))->format('Uv');
+        $unixTsMs = $dateTime === null
+            ? (int) floor(microtime(true) * 1000)
+            : (int) $dateTime->format('Uv');
+        if ($unixTsMs < 0 || $unixTsMs > self::MAX_V7_TIMESTAMP) {
+            throw new UUIDException('UUID v7 timestamp must fit in an unsigned 48-bit integer');
+        }
+
         $isExplicitTimestamp = $dateTime !== null;
         $node = $node === null ? null : self::normalizeNode($node);
 
@@ -544,10 +565,11 @@ final class UUID
             return '0';
         }
 
-        foreach (str_split($hex) as $char) {
+        $length = strlen($hex);
+        for ($index = 0; $index < $length; ++$index) {
             $decimal = bcadd(
                 bcmul($decimal, '16'),
-                (string) hexdec($char),
+                (string) hexdec($hex[$index]),
             );
         }
 
@@ -561,28 +583,39 @@ final class UUID
      */
     private static function incrementHexCounter(string $hex): ?string
     {
-        $chars = str_split(strtolower($hex));
-        $hexChars = '0123456789abcdef';
-        $nextNibbles = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
-        for ($index = count($chars) - 1; $index >= 0; --$index) {
-            $value = strpos($hexChars, $chars[$index]);
-            if ($value === false) {
-                return null;
-            }
-
-            if ($value === 15) {
-                $chars[$index] = '0';
+        $hex = strtolower($hex);
+        for ($index = strlen($hex) - 1; $index >= 0; --$index) {
+            if ($hex[$index] === 'f') {
+                $hex[$index] = '0';
 
                 continue;
             }
 
-            $nextNibble = $nextNibbles[$value] ?? null;
-            if ($nextNibble === null) {
+            $next = match ($hex[$index]) {
+                '0' => '1',
+                '1' => '2',
+                '2' => '3',
+                '3' => '4',
+                '4' => '5',
+                '5' => '6',
+                '6' => '7',
+                '7' => '8',
+                '8' => '9',
+                '9' => 'a',
+                'a' => 'b',
+                'b' => 'c',
+                'c' => 'd',
+                'd' => 'e',
+                'e' => 'f',
+                default => null,
+            };
+            if ($next === null) {
                 return null;
             }
-            $chars[$index] = $nextNibble;
 
-            return implode('', $chars);
+            $hex[$index] = $next;
+
+            return $hex;
         }
 
         return null;
@@ -594,7 +627,7 @@ final class UUID
     private static function nameBased(string $namespace, string $string, int $version, string $algorithm): string
     {
         $resolvedNamespace = self::nsResolve($namespace);
-        if (!$resolvedNamespace) {
+        if ($resolvedNamespace === '') {
             throw new UUIDException('Invalid NameSpace!');
         }
 
@@ -655,6 +688,11 @@ final class UUID
 
         if ($state === null || $unixTsMs > $state['timestamp']) {
             $randomPart = self::randomV7NodePart();
+            if ($state === null && count(self::$v7NodeState) >= self::MAX_V7_NODE_STATES) {
+                $oldestKey = array_key_first(self::$v7NodeState);
+                unset(self::$v7NodeState[$oldestKey]);
+            }
+
             self::$v7NodeState[$stateKey] = ['timestamp' => $unixTsMs, 'random' => $randomPart];
 
             return [$unixTsMs, $randomPart];
@@ -690,7 +728,7 @@ final class UUID
     {
         do {
             usleep(1000);
-            $next = (int) (new DateTimeImmutable('now'))->format('Uv');
+            $next = (int) floor(microtime(true) * 1000);
         } while ($next <= $lastTimestamp);
 
         return $next;
@@ -758,15 +796,13 @@ final class UUID
      */
     private static function output(int $version, string $id): string
     {
-        $string = str_split($id, 4);
-
         return sprintf(
             "%08s-%04s-$version%03s-%04x-%012s",
-            $string[0] . $string[1],
-            $string[2],
-            substr($string[3], 1, 3),
-            hexdec($string[4]) & 0x3fff | 0x8000,
-            $string[5] . $string[6] . $string[7],
+            substr($id, 0, 8),
+            substr($id, 8, 4),
+            substr($id, 13, 3),
+            hexdec(substr($id, 16, 4)) & 0x3fff | 0x8000,
+            substr($id, 20, 12),
         );
     }
 

@@ -25,8 +25,8 @@ final readonly class CallbackSequenceProvider implements SequenceProviderInterfa
     public function next(string $type, int $machineId, int $timestamp): int
     {
         $value = ($this->callback)($type, $machineId, $timestamp);
-        if ($value < 0) {
-            throw new FileLockException('Custom sequence callback must return a non-negative integer');
+        if ($value < 1) {
+            throw new FileLockException('Custom sequence callback must return a positive integer');
         }
 
         return $value;
