@@ -7,7 +7,6 @@ namespace Infocyph\UID;
 use DateTimeImmutable;
 use Exception;
 use Infocyph\UID\Configuration\RandflakeConfig;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\RandflakeException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
@@ -17,7 +16,6 @@ use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\DecimalBytes;
 use Infocyph\UID\Support\GetSequence;
 use Infocyph\UID\Support\NumericConversion;
-use Infocyph\UID\Support\OutputFormatter;
 use Infocyph\UID\Support\UnsignedDecimal;
 
 final class Randflake
@@ -42,6 +40,9 @@ final class Randflake
 
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<int, int>>|null */
     private static ?\WeakMap $lastTimestampByProvider = null;
+
+    /** @var array<string, array<int, int>> */
+    private static array $roundKeyCache = [];
 
     /**
      * @throws RandflakeException
@@ -103,12 +104,11 @@ final class Randflake
      */
     public static function generate(int $nodeId, int $leaseStart, int $leaseEnd, string $secret): string
     {
-        return (string) self::generateInternal(
+        return self::generateInternal(
             $nodeId,
             $leaseStart,
             $leaseEnd,
             $secret,
-            IdOutputType::STRING,
             null,
         );
     }
@@ -124,14 +124,13 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      */
-    public static function generateWithConfig(RandflakeConfig $config): int|string
+    public static function generateWithConfig(RandflakeConfig $config): string
     {
         return self::generateInternal(
             $config->nodeId,
             $config->leaseStart,
             $config->leaseEnd,
             $config->secret,
-            $config->outputType,
             $config->sequenceProvider,
         );
     }
@@ -236,9 +235,8 @@ final class Randflake
         int $leaseStart,
         int $leaseEnd,
         string $secret,
-        IdOutputType $outputType,
         ?SequenceProviderInterface $sequenceProvider,
-    ): int|string {
+    ): string {
         self::validateNode($nodeId);
         self::validateLeaseWindow($leaseStart, $leaseEnd);
         $secret = self::validateSecret($secret);
@@ -289,9 +287,8 @@ final class Randflake
 
         $plain = self::packPayload($now, $nodeId, $sequence);
         $cipher = self::permute($plain, $secret, false);
-        $decimalId = DecimalBytes::fromBytes($cipher);
 
-        return OutputFormatter::formatNumeric($decimalId, $outputType);
+        return DecimalBytes::fromBytes($cipher);
     }
 
     /**
@@ -379,6 +376,11 @@ final class Randflake
      */
     private static function roundKeys(string $secret): array
     {
+        $fingerprint = hash('sha256', $secret);
+        if (isset(self::$roundKeyCache[$fingerprint])) {
+            return self::$roundKeyCache[$fingerprint];
+        }
+
         $keys = [];
         for ($round = 0; $round < 8; ++$round) {
             $material = hash('sha256', $secret . ':' . $round, true);
@@ -386,7 +388,11 @@ final class Randflake
             $keys[] = self::unpackedInt($parts, 'key');
         }
 
-        return $keys;
+        if (count(self::$roundKeyCache) === 16) {
+            array_shift(self::$roundKeyCache);
+        }
+
+        return self::$roundKeyCache[$fingerprint] = $keys;
     }
 
     /**

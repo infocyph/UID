@@ -1,68 +1,28 @@
 Id Facade
 =========
 
-The ``Infocyph\\UID\\Id`` class is the unified entry point for all generators and helpers.
+``Infocyph\UID\Id`` is a focused generation facade. ``Id::uuid()`` defaults to
+UUIDv7. Parsing, validation, and conversion remain on each algorithm class.
 
-Default Strategy
-----------------
+Generation methods include ``uuid1`` through ``uuid8``, ``ulid``, ``typeId``,
+``objectId``, ``snowflake``, ``sonyflake``, ``randflake``, ``tbsl``, ``ksuid``,
+``xid``, ``nanoId``, ``cuid2``, ``random``, and ``deterministic``.
 
-``Id::uuid()`` maps to ``UUID::v7()`` by default.
-
-Core Generation Methods
------------------------
-
-- ``Id::uuid1()``, ``Id::uuid3()``, ``Id::uuid4()``, ``Id::uuid5()``, ``Id::uuid6()``, ``Id::uuid7()``, ``Id::uuid8()``
-- ``Id::ulid()``
-- ``Id::snowflake()``
-- ``Id::sonyflake()``
-- ``Id::tbsl()``
-- ``Id::randflake(RandflakeConfig $config)``
-- ``Id::randflakeString(RandflakeConfig $config)``
-- ``Id::nanoId()``
-- ``Id::cuid2()``
-- ``Id::ksuid()``
-- ``Id::xid()``
-- ``Id::opaque()``
-- ``Id::deterministic()``
-
-Value Object Helpers
---------------------
-
-The facade also exposes value-object constructors:
-
-- ``Id::uuid1Value()``, ``Id::uuid3Value()``, ..., ``Id::uuid8Value()``
-- ``Id::uuidValue($uuid)``
-- ``Id::ulidValue()``
-- ``Id::snowflakeValue()``
-- ``Id::sonyflakeValue()``
-- ``Id::tbslValue()``
-
-UUID Utility Helpers via Id
----------------------------
-
-- ``uuidNil()``, ``uuidMax()``, ``uuidIsNil()``, ``uuidIsMax()``, ``uuidIsValid()``
-- ``uuidNormalize()``, ``uuidCompact()``, ``uuidBraces()``, ``uuidUrn()``
-- ``uuidToBytes()``, ``uuidFromBytes()``
-- ``uuidToBase()``, ``uuidFromBase()``
-- ``uuidParse()``
-
-NanoID/CUID2 Utility Helpers via Id
------------------------------------
-
-- ``nanoIdIsValid()``, ``nanoIdParse()``
-- ``cuid2IsValid()``, ``cuid2Parse()``
-
-Example
--------
+``snowflakeValue`` and ``sonyflakeValue`` are the two configuration-aware value
+factories. They preserve a configured custom epoch so timestamps are interpreted
+in the same ID domain in which they were generated.
 
 .. code-block:: php
 
    <?php
 
+   use Infocyph\UID\Configuration\SnowflakeConfig;
    use Infocyph\UID\Id;
 
-   $uuidV7 = Id::uuid();
-   $uuidV4 = Id::uuid4();
+   $uuid = Id::uuid();
+   $typeId = Id::typeId('user');
+   $objectId = Id::objectId();
+   $random = Id::random(24);
 
-   $uuidValue = Id::uuidValue($uuidV7);
-   $isSortable = $uuidValue->isSortable();
+   $config = new SnowflakeConfig(customEpoch: 1_700_000_000_000);
+   $value = Id::snowflakeValue($config);

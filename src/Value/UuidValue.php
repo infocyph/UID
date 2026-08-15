@@ -13,7 +13,7 @@ use Throwable;
 final readonly class UuidValue implements IdValueInterface
 {
     /**
-     * @var array{isValid: bool, version: int|null, variant: string|null, time: DateTimeInterface|null, node: string|null, tail: string|null}
+     * @var array{version: int|null, variant: string|null, time: DateTimeInterface|null, node: string|null, tail: string|null}
      */
     private array $parsed;
 
@@ -23,9 +23,6 @@ final readonly class UuidValue implements IdValueInterface
     {
         $this->value = UUID::normalize($value);
         $this->parsed = UUID::parse($this->value);
-        if (!$this->parsed['isValid']) {
-            throw new \InvalidArgumentException('Invalid UUID string');
-        }
     }
 
     public function __toString(): string
@@ -70,7 +67,7 @@ final readonly class UuidValue implements IdValueInterface
 
     public function isSortable(): bool
     {
-        return in_array($this->getVersion(), [6, 7, 8], true);
+        return in_array($this->getVersion(), [6, 7], true);
     }
 
     public function toString(): string

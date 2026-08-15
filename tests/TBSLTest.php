@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Infocyph\UID\Configuration\TBSLConfig;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\TBSL;
 
 test('TBSL Basic Functionality', function () {
@@ -11,8 +10,7 @@ test('TBSL Basic Functionality', function () {
     $sf = TBSL::generate();
     $finishedAt = time() + 1;
     $parsed = TBSL::parse($sf);
-    expect($parsed['isValid'])->toBeTrue()
-        ->and($parsed['time']->getTimestamp())->toBeBetween($startedAt, $finishedAt)
+    expect($parsed['time']->getTimestamp())->toBeBetween($startedAt, $finishedAt)
         ->and($parsed['machineId'])->toBe(0);
 });
 
@@ -67,11 +65,8 @@ test('TBSL base conversion roundtrip', function () {
     expect(TBSL::fromBase($encoded, 62))->toBe($id);
 });
 
-test('TBSL config supports output mode', function () {
-    $binary = TBSL::generateWithConfig(new TBSLConfig(outputType: IdOutputType::BINARY));
-
-    expect($binary)->toBeString()
-        ->and(strlen($binary))->toBe(10);
+test('TBSL config returns the canonical text representation', function () {
+    expect(TBSL::generateWithConfig(new TBSLConfig()))->toHaveLength(20);
 });
 
 test('TBSL advances time when a sequence exceeds its 20-bit field', function () {
@@ -81,12 +76,12 @@ test('TBSL advances time when a sequence exceeds its 20-bit field', function () 
         unset($type, $machineId);
         $firstTimestamp ??= $timestamp;
 
-        return $timestamp === $firstTimestamp ? 0x100000 : 1;
+        return $timestamp === $firstTimestamp ? 0x100001 : 1;
     });
 
     try {
         $id = TBSL::generate(0, true);
-        expect(substr($id, -5))->toBe('00001');
+        expect(substr($id, -5))->toBe('00000');
     } finally {
         TBSL::resetSequenceProvider();
     }

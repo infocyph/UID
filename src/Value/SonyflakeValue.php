@@ -12,6 +12,11 @@ use Infocyph\UID\Sonyflake;
  */
 final readonly class SonyflakeValue extends AbstractParsedIdValue
 {
+    public function __construct(string $value, private ?int $customEpoch = null)
+    {
+        parent::__construct($value);
+    }
+
     public function getMachineId(): int
     {
         return $this->parsed['machine_id'];
@@ -29,7 +34,9 @@ final readonly class SonyflakeValue extends AbstractParsedIdValue
 
     protected function parser(): callable
     {
-        return Sonyflake::parse(...);
+        return $this->customEpoch === null
+            ? Sonyflake::parse(...)
+            : fn(string $id): array => Sonyflake::parseWithEpoch($id, $this->customEpoch);
     }
 
     protected function validator(): callable

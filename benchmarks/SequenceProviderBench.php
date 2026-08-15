@@ -4,75 +4,59 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Benchmarks;
 
+use Infocyph\UID\Configuration\RandflakeConfig;
+use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Randflake;
+use Infocyph\UID\Sequence\FilesystemSequenceProvider;
+use Infocyph\UID\Sequence\InMemorySequenceProvider;
 use Infocyph\UID\Snowflake;
-use InvalidArgumentException;
 use PhpBench\Attributes as Bench;
 
 final class SequenceProviderBench
 {
-    private int $leaseEnd;
+    private RandflakeConfig $randflakeFilesystem;
 
-    private int $leaseStart;
+    private RandflakeConfig $randflakeInMemory;
 
-    private string $secret;
+    private SnowflakeConfig $snowflakeFilesystem;
+
+    private SnowflakeConfig $snowflakeInMemory;
 
     public function __construct()
     {
         require_once __DIR__ . '/BenchBootstrap.php';
         BenchBootstrap::load();
-        [$this->leaseStart, $this->leaseEnd, $this->secret] = BenchBootstrap::randflakeContext();
+        [$leaseStart, $leaseEnd, $secret] = BenchBootstrap::randflakeContext();
 
-        Snowflake::resetSequenceProvider();
-        Randflake::resetSequenceProvider();
+        $filesystem = new FilesystemSequenceProvider(namespace: 'phpbench-sequence');
+        $memory = new InMemorySequenceProvider();
+        $this->snowflakeFilesystem = new SnowflakeConfig(1, 1, sequenceProvider: $filesystem);
+        $this->snowflakeInMemory = new SnowflakeConfig(1, 1, sequenceProvider: $memory);
+        $this->randflakeFilesystem = new RandflakeConfig(1, $leaseStart, $leaseEnd, $secret, $filesystem);
+        $this->randflakeInMemory = new RandflakeConfig(1, $leaseStart, $leaseEnd, $secret, $memory);
     }
 
-    #[Bench\Revs(500)]
-    #[Bench\Iterations(5)]
-    #[Bench\ParamProviders('provideSequenceProviders')]
-    public function benchSequenceProvider(array $params): void
+    #[Bench\Revs(500), Bench\Iterations(5)]
+    public function benchRandflakeFilesystem(): void
     {
-        $subject = $params['subject'] ?? null;
-        if (!is_string($subject) || $subject === '') {
-            throw new InvalidArgumentException('Benchmark subject is required.');
-        }
-
-        switch ($subject) {
-            case 'snowflake_filesystem':
-                Snowflake::useFilesystemSequenceProvider();
-                Snowflake::generate(1, 1);
-
-                return;
-            case 'snowflake_in_memory':
-                Snowflake::useInMemorySequenceProvider();
-                Snowflake::generate(1, 1);
-
-                return;
-            case 'randflake_filesystem':
-                Randflake::useFilesystemSequenceProvider();
-                Randflake::generate(1, $this->leaseStart, $this->leaseEnd, $this->secret);
-
-                return;
-            case 'randflake_in_memory':
-                Randflake::useInMemorySequenceProvider();
-                Randflake::generate(1, $this->leaseStart, $this->leaseEnd, $this->secret);
-
-                return;
-            default:
-                throw new InvalidArgumentException("Unknown sequence provider subject: $subject");
-        }
+        Randflake::generateWithConfig($this->randflakeFilesystem);
     }
 
-    /**
-     * @return array<string, array{subject: string}>
-     */
-    public function provideSequenceProviders(): array
+    #[Bench\Revs(500), Bench\Iterations(5)]
+    public function benchRandflakeInMemory(): void
     {
-        return [
-            'snowflake_filesystem' => ['subject' => 'snowflake_filesystem'],
-            'snowflake_in_memory' => ['subject' => 'snowflake_in_memory'],
-            'randflake_filesystem' => ['subject' => 'randflake_filesystem'],
-            'randflake_in_memory' => ['subject' => 'randflake_in_memory'],
-        ];
+        Randflake::generateWithConfig($this->randflakeInMemory);
+    }
+
+    #[Bench\Revs(500), Bench\Iterations(5)]
+    public function benchSnowflakeFilesystem(): void
+    {
+        Snowflake::generateWithConfig($this->snowflakeFilesystem);
+    }
+
+    #[Bench\Revs(500), Bench\Iterations(5)]
+    public function benchSnowflakeInMemory(): void
+    {
+        Snowflake::generateWithConfig($this->snowflakeInMemory);
     }
 }

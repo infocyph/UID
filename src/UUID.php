@@ -14,28 +14,26 @@ use const STR_PAD_LEFT;
 
 final class UUID
 {
-    private const MAX_V7_NODE_STATES = 1024;
-
     private const MAX_V7_TIMESTAMP = 281_474_976_710_655;
 
-    /** @var array<string, int> */
-    private static array $nsList = [
+    private const NS_LIST = [
         'dns' => 0,
         'url' => 1,
         'oid' => 2,
         'x500' => 4,
     ];
 
-    /** @var array<int, int> */
-    private static array $randomLength = [
+    private const RANDOM_LENGTH = [
         6 => 2,
         7 => 4,
         8 => 1,
     ];
 
-    private static int $secondIntervals = 10_000_000;
+    private const SECOND_INTERVALS = 10_000_000;
 
-    private static int $secondIntervals78 = 10_000;
+    private const SECOND_INTERVALS_78 = 10_000;
+
+    private const TIME_OFFSET = 0x01b21dd213814000;
 
     /** @var array<int, int> */
     private static array $subSec = [
@@ -45,8 +43,6 @@ final class UUID
         8 => 0,
     ];
 
-    private static int $timeOffset = 0x01b21dd213814000;
-
     /** @var array<int, int> */
     private static array $unixTs = [
         1 => 0,
@@ -55,11 +51,16 @@ final class UUID
         8 => 0,
     ];
 
+    private static int $v1ClockSequence;
+
+    private static int $v1LastTimestamp = 0;
+
+    private static ?int $v1SourcePid = null;
+
     /** @var array{timestamp: int, tail: string}|null */
     private static ?array $v7DefaultState = null;
 
-    /** @var array<string, array{timestamp: int, random: string}> */
-    private static array $v7NodeState = [];
+    private static ?int $v7SourcePid = null;
 
     /**
      * Converts a UUID to compact (32 hex chars, no dashes) format.
@@ -107,7 +108,10 @@ final class UUID
      */
     public static function getNode(): string
     {
-        return bin2hex(random_bytes(6));
+        $node = random_bytes(6);
+        $node[0] = $node[0] | "\x01";
+
+        return bin2hex($node);
     }
 
     /**
@@ -119,7 +123,7 @@ final class UUID
      */
     public static function guid(bool $trim = true): string
     {
-        if (function_exists('com_create_guid') === true) {
+        if (function_exists('com_create_guid')) {
             $data = com_create_guid();
             if (!is_string($data)) {
                 throw new UUIDException('Failed to generate GUID');
@@ -217,24 +221,23 @@ final class UUID
      * Parses a UUID string and returns an array with information about the UUID.
      *
      * @param string $uuid The UUID string to parse.
-     * @return array{isValid: bool, version: int|null, variant: string|null, time: DateTimeInterface|null, node: string|null, tail: string|null}
+     * @return array{version: int|null, variant: string|null, time: DateTimeInterface|null, node: string|null, tail: string|null}
      * @throws Exception
      */
     public static function parse(string $uuid): array
     {
         $uuid = trim($uuid, '{}');
+        if (!self::isValid($uuid)) {
+            throw new UUIDException('Invalid UUID string');
+        }
+
         $data = [
-            'isValid' => self::isValid($uuid),
             'version' => null,
             'variant' => null,
             'time' => null,
             'node' => null,
             'tail' => null,
         ];
-
-        if (!$data['isValid']) {
-            return $data;
-        }
 
         if (strcasecmp($uuid, self::nil()) === 0 || strcasecmp($uuid, self::max()) === 0) {
             return $data;
@@ -246,7 +249,7 @@ final class UUID
         }
         $variantN = hexdec($uuidData[3][0]);
         $data['version'] = (int) $uuidData[2][0];
-        $data['time'] = in_array($data['version'], [1, 6, 7, 8], true) ? self::getTime($uuidData, $data['version']) : null;
+        $data['time'] = in_array($data['version'], [1, 6, 7], true) ? self::getTime($uuidData, $data['version']) : null;
         $data['tail'] = $uuidData[4];
         $data['node'] = in_array($data['version'], [7, 8], true) ? null : $uuidData[4];
         $data['variant'] = match (true) {
@@ -326,14 +329,15 @@ final class UUID
     public static function v1(?string $node = null): string
     {
         [$unixTs, $subSec] = self::getUnixTimeSubSec();
-        $time = str_pad(dechex((int) ($unixTs . $subSec) + self::$timeOffset), 16, '0', STR_PAD_LEFT);
+        [$timestamp, $clockSequence] = self::nextV1State((int) ($unixTs . $subSec) + self::TIME_OFFSET);
+        $time = str_pad(dechex($timestamp), 16, '0', STR_PAD_LEFT);
 
         return sprintf(
             '%08s-%04s-1%03s-%04x-%012s',
             substr($time, -8),
             substr($time, -12, 4),
             substr($time, -15, 3),
-            random_int(0, 0x3fff) & 0x3fff | 0x8000,
+            $clockSequence | 0x8000,
             $node === null ? self::getNode() : self::normalizeNode($node),
         );
     }
@@ -386,8 +390,8 @@ final class UUID
         [$unixTs, $subSec] = self::getUnixTimeSubSec(6);
         $unixTs = (int) $unixTs;
         $subSec = (int) $subSec;
-        $timestamp = $unixTs * self::$secondIntervals + $subSec;
-        $timeHex = str_pad(dechex($timestamp + self::$timeOffset), 15, '0', STR_PAD_LEFT);
+        $timestamp = $unixTs * self::SECOND_INTERVALS + $subSec;
+        $timeHex = str_pad(dechex($timestamp + self::TIME_OFFSET), 15, '0', STR_PAD_LEFT);
         $string = substr_replace(
             substr($timeHex, -15),
             '6',
@@ -402,10 +406,9 @@ final class UUID
      * Generates a version 7 UUID.
      *
      * @param DateTimeInterface|null $dateTime An optional DateTimeInterface object to create the UUID.
-     * @param string|null $node The node identifier. Defaults to null.
      * @throws Exception
      */
-    public static function v7(?DateTimeInterface $dateTime = null, ?string $node = null): string
+    public static function v7(?DateTimeInterface $dateTime = null): string
     {
         $unixTsMs = $dateTime === null
             ? (int) floor(microtime(true) * 1000)
@@ -415,14 +418,7 @@ final class UUID
         }
 
         $isExplicitTimestamp = $dateTime !== null;
-        $node = $node === null ? null : self::normalizeNode($node);
-
-        if ($node === null) {
-            [$unixTsMs, $tail] = self::nextV7DefaultState($unixTsMs, $isExplicitTimestamp);
-        } else {
-            [$unixTsMs, $randomPart] = self::nextV7NodeState($node, $unixTsMs, $isExplicitTimestamp);
-            $tail = $randomPart . $node;
-        }
+        [$unixTsMs, $tail] = self::nextV7DefaultState($unixTsMs, $isExplicitTimestamp);
 
         $string = substr(str_pad(dechex($unixTsMs), 12, '0', STR_PAD_LEFT), -12)
             . $tail;
@@ -441,8 +437,8 @@ final class UUID
         [$unixTs, $subSec] = self::getUnixTimeSubSec(8);
         $unixTs = (int) $unixTs;
         $subSec = (int) $subSec;
-        $unixTsMs = $unixTs * 1000 + intdiv($subSec, self::$secondIntervals78);
-        $subSec = intdiv(($subSec % self::$secondIntervals78) << 14, self::$secondIntervals78);
+        $unixTsMs = $unixTs * 1000 + intdiv($subSec, self::SECOND_INTERVALS_78);
+        $subSec = intdiv(($subSec % self::SECOND_INTERVALS_78) << 14, self::SECOND_INTERVALS_78);
         $subSecA = $subSec >> 2;
         $subSecByte = ((ord(random_bytes(1)) & 0x0f) | (($subSec & 0x03) << 4)) & 0xff;
         $string = substr(str_pad(dechex($unixTsMs), 12, '0', STR_PAD_LEFT), -12)
@@ -480,9 +476,9 @@ final class UUID
     {
         $timestamp = match ($version) {
             1 => substr((string) $uuid[2], -3) . $uuid[1] . $uuid[0],
-            6, 8 => $uuid[0] . $uuid[1] . substr((string) $uuid[2], -3),
+            6 => $uuid[0] . $uuid[1] . substr((string) $uuid[2], -3),
             7 => $uuid[0] . $uuid[1],
-            default => throw new UUIDException('Invalid version (applicable: 1, 6, 7, 8)'),
+            default => throw new UUIDException('Invalid version (applicable: 1, 6, 7)'),
         };
 
         switch ($version) {
@@ -494,22 +490,17 @@ final class UUID
                 ];
 
                 break;
-            case 8:
-                $unixTs = hexdec(substr('0' . $timestamp, 0, 13));
-                $subSec = -(
-                    -(
-                        (hexdec(substr('0' . $timestamp, 13)) << 2)
-                        + (hexdec((string) $uuid[3][0]) & 0x03)
-                    ) * self::$secondIntervals78 >> 14
-                );
-                $time = str_split((string) ($unixTs * self::$secondIntervals78 + $subSec), 10);
-                $time[1] = substr($time[1], 0, 6);
-
-                break;
             default:
-                $timestamp = self::hexToDecimal($timestamp);
-                $epochNanoseconds = bcsub($timestamp, (string) self::$timeOffset);
-                $time = explode('.', bcdiv($epochNanoseconds, (string) self::$secondIntervals, 6));
+                $unixIntervals = (int) hexdec($timestamp) - self::TIME_OFFSET;
+                $time = [
+                    (string) intdiv($unixIntervals, self::SECOND_INTERVALS),
+                    str_pad(
+                        (string) intdiv($unixIntervals % self::SECOND_INTERVALS, 10),
+                        6,
+                        '0',
+                        STR_PAD_LEFT,
+                    ),
+                ];
         }
 
         return new DateTimeImmutable(
@@ -541,7 +532,7 @@ final class UUID
         ) {
             $unixTs = self::$unixTs[$version];
             $subSec = self::$subSec[$version];
-            if ($subSec >= self::$secondIntervals - 1) {
+            if ($subSec >= self::SECOND_INTERVALS - 1) {
                 $subSec = 0;
                 $unixTs++;
             } else {
@@ -552,28 +543,6 @@ final class UUID
         self::$subSec[$version] = $subSec;
 
         return [$unixTs, $subSec];
-    }
-
-    /**
-     * @return numeric-string
-     */
-    private static function hexToDecimal(string $hex): string
-    {
-        $decimal = '0';
-        $hex = strtolower(ltrim($hex, '0'));
-        if ($hex === '') {
-            return '0';
-        }
-
-        $length = strlen($hex);
-        for ($index = 0; $index < $length; ++$index) {
-            $decimal = bcadd(
-                bcmul($decimal, '16'),
-                (string) hexdec($hex[$index]),
-            );
-        }
-
-        return $decimal;
     }
 
     /**
@@ -640,11 +609,39 @@ final class UUID
     }
 
     /**
+     * @return array{0:int,1:int}
+     */
+    private static function nextV1State(int $timestamp): array
+    {
+        $pid = (int) getmypid();
+        if (self::$v1SourcePid !== $pid) {
+            self::$v1SourcePid = $pid;
+            self::$v1ClockSequence = random_int(0, 0x3fff);
+            self::$v1LastTimestamp = 0;
+        }
+
+        if ($timestamp <= self::$v1LastTimestamp) {
+            self::$v1ClockSequence = (self::$v1ClockSequence + 1) & 0x3fff;
+            $timestamp = self::$v1LastTimestamp + 1;
+        }
+
+        self::$v1LastTimestamp = $timestamp;
+
+        return [$timestamp, self::$v1ClockSequence];
+    }
+
+    /**
      * @return array{0: int, 1: string}
      * @throws Exception
      */
     private static function nextV7DefaultState(int $unixTsMs, bool $isExplicitTimestamp): array
     {
+        $pid = (int) getmypid();
+        if (self::$v7SourcePid !== $pid) {
+            self::$v7SourcePid = $pid;
+            self::$v7DefaultState = null;
+        }
+
         $state = self::$v7DefaultState;
 
         if ($state === null || $unixTsMs > $state['timestamp']) {
@@ -675,50 +672,6 @@ final class UUID
         self::$v7DefaultState = ['timestamp' => $unixTsMs, 'tail' => $tail];
 
         return [$unixTsMs, $tail];
-    }
-
-    /**
-     * @return array{0: int, 1: string}
-     * @throws Exception
-     */
-    private static function nextV7NodeState(string $node, int $unixTsMs, bool $isExplicitTimestamp): array
-    {
-        $stateKey = 'node:' . $node;
-        $state = self::$v7NodeState[$stateKey] ?? null;
-
-        if ($state === null || $unixTsMs > $state['timestamp']) {
-            $randomPart = self::randomV7NodePart();
-            if ($state === null && count(self::$v7NodeState) >= self::MAX_V7_NODE_STATES) {
-                $oldestKey = array_key_first(self::$v7NodeState);
-                unset(self::$v7NodeState[$oldestKey]);
-            }
-
-            self::$v7NodeState[$stateKey] = ['timestamp' => $unixTsMs, 'random' => $randomPart];
-
-            return [$unixTsMs, $randomPart];
-        }
-
-        if ($isExplicitTimestamp && $state['timestamp'] !== $unixTsMs) {
-            $randomPart = self::randomV7NodePart();
-            self::$v7NodeState[$stateKey] = ['timestamp' => $unixTsMs, 'random' => $randomPart];
-
-            return [$unixTsMs, $randomPart];
-        }
-
-        $unixTsMs = $state['timestamp'];
-        $randomPart = self::incrementHexCounter($state['random']);
-        if ($randomPart === null) {
-            if ($isExplicitTimestamp) {
-                throw new UUIDException('Monotonic UUID v7 overflow for the provided timestamp');
-            }
-
-            $unixTsMs = self::nextV7Timestamp($state['timestamp']);
-            $randomPart = self::randomV7NodePart();
-        }
-
-        self::$v7NodeState[$stateKey] = ['timestamp' => $unixTsMs, 'random' => $randomPart];
-
-        return [$unixTsMs, $randomPart];
     }
 
     /**
@@ -779,9 +732,16 @@ final class UUID
         if (self::isValid($namespace)) {
             return str_replace('-', '', $namespace);
         }
-        $namespace = str_replace(['namespace', 'ns', '_'], '', strtolower($namespace));
-        if (isset(self::$nsList[$namespace])) {
-            return '6ba7b81' . self::$nsList[$namespace] . '9dad11d180b400c04fd430c8';
+        $namespace = strtolower($namespace);
+        foreach (['namespace_', 'namespace-', 'ns_', 'ns-'] as $prefix) {
+            if (str_starts_with($namespace, $prefix)) {
+                $namespace = substr($namespace, strlen($prefix));
+
+                break;
+            }
+        }
+        if (array_key_exists($namespace, self::NS_LIST)) {
+            return '6ba7b81' . self::NS_LIST[$namespace] . '9dad11d180b400c04fd430c8';
         }
 
         return '';
@@ -817,7 +777,11 @@ final class UUID
     private static function prepareNode(int $version, ?string $node = null): string
     {
         if ($node === null) {
-            return bin2hex(random_bytes(self::randomLengthFor($version) + 6));
+            $randomLength = self::randomLengthFor($version);
+            $random = random_bytes($randomLength + 6);
+            $random[$randomLength] = $random[$randomLength] | "\x01";
+
+            return bin2hex($random);
         }
 
         return bin2hex(random_bytes(self::randomLengthFor($version))) . self::normalizeNode($node);
@@ -828,20 +792,7 @@ final class UUID
      */
     private static function randomLengthFor(int $version): int
     {
-        $length = self::$randomLength[$version] ?? throw new UUIDException('Unsupported UUID version for random length');
-        if ($length < 1) {
-            throw new UUIDException('Random length must be greater than zero');
-        }
-
-        return $length;
-    }
-
-    /**
-     * @throws Exception
-     */
-    private static function randomV7NodePart(): string
-    {
-        return bin2hex(random_bytes(self::randomLengthFor(7)));
+        return self::RANDOM_LENGTH[$version] ?? throw new UUIDException('Unsupported UUID version for random length');
     }
 
     /**

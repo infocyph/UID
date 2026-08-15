@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\CUID2;
 use Infocyph\UID\NanoID;
+
+use function Infocyph\UID\cuid2;
+use function Infocyph\UID\nano_id;
 
 test('CUID2', function () {
     $string = CUID2::generate();
@@ -25,8 +27,8 @@ test('nanoId', function () {
     expect($string)->toBeString()->not()->toBeEmpty()->toHaveLength(21);
 });
 
-test('global helper functions for NanoID and CUID2', function () {
-    expect(nanoid(10))->toHaveLength(10)
+test('namespaced helper functions for NanoID and CUID2', function () {
+    expect(nano_id(10))->toHaveLength(10)
         ->and(cuid2(24))->toHaveLength(24);
 });
 
@@ -38,14 +40,10 @@ test('NanoID and CUID2 validation and parse', function () {
     $cuidParsed = CUID2::parse($cuid);
 
     expect(NanoID::isValid($nano, 12))->toBeTrue()
-        ->and($nanoParsed['isValid'])->toBeTrue()
         ->and($nanoParsed['length'])->toBe(12)
         ->and($nanoParsed['alphabet'])->toBe('base64url')
         ->and(CUID2::isValid($cuid))->toBeTrue()
-        ->and($cuidParsed['isValid'])->toBeTrue()
-        ->and($cuidParsed['length'])->toBe(24)
-        ->and(nanoid_is_valid($nano, 12))->toBeTrue()
-        ->and(cuid2_is_valid($cuid))->toBeTrue();
+        ->and($cuidParsed['length'])->toBe(24);
 });
 
 test('CUID2 uses canonical first-letter and length boundaries', function () {

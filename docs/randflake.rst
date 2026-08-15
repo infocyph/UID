@@ -46,14 +46,12 @@ Use ``Infocyph\\UID\\Configuration\\RandflakeConfig``:
 - ``leaseStart`` and ``leaseEnd`` (Unix seconds)
 - ``secret`` (exactly 16 bytes)
 - optional ``sequenceProvider``
-- optional ``IdOutputType`` (``STRING``, ``INT``, ``BINARY``)
 
 .. code-block:: php
 
    <?php
 
    use Infocyph\UID\Configuration\RandflakeConfig;
-   use Infocyph\UID\Enums\IdOutputType;
    use Infocyph\UID\Randflake;
 
    $config = new RandflakeConfig(
@@ -61,7 +59,6 @@ Use ``Infocyph\\UID\\Configuration\\RandflakeConfig``:
        leaseStart: time() - 5,
        leaseEnd: time() + 300,
        secret: 'super-secret-key',
-       outputType: IdOutputType::STRING,
    );
 
    $id = Randflake::generateWithConfig($config);

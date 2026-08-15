@@ -7,12 +7,15 @@ It supports:
 
 - UUID (v1, v3, v4, v5, v6, v7, v8)
 - ULID
+- TypeID
+- ObjectID
 - Snowflake
 - Sonyflake
 - Randflake
 - TBSL
 - NanoID and CUID2
 - KSUID and XID
+- RandomId and NanoID
 - Opaque and deterministic IDs
 
 .. toctree::
@@ -29,6 +32,8 @@ It supports:
 
    uuid
    ulid
+   typeid
+   objectid
    snowflake
    sonyflake
    randflake
@@ -45,6 +50,7 @@ It supports:
    helpers
    db-storage
    compatibility
+   benchmark-report
    framework-integration
    exceptions
    references

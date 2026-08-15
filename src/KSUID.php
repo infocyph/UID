@@ -7,11 +7,11 @@ namespace Infocyph\UID;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Exception;
-use Infocyph\UID\Contracts\IdAlgorithmInterface;
+use Infocyph\UID\Exceptions\UIDException;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\BinaryUnpack;
 
-final class KSUID implements IdAlgorithmInterface
+final class KSUID
 {
     private const EPOCH = 1_400_000_000;
 
@@ -25,7 +25,7 @@ final class KSUID implements IdAlgorithmInterface
     public static function fromBytes(string $bytes): string
     {
         if (strlen($bytes) !== 20) {
-            throw new Exception('KSUID binary data must be exactly 20 bytes');
+            throw new UIDException('KSUID binary data must be exactly 20 bytes');
         }
 
         return str_pad(BaseEncoder::encodeBytes($bytes, 62), 27, '0', STR_PAD_LEFT);
@@ -57,22 +57,22 @@ final class KSUID implements IdAlgorithmInterface
     }
 
     /**
-     * @return array{isValid: bool, time: DateTimeImmutable|null, payload: string|null}
+     * @return array{time: DateTimeImmutable, payload: string}
      * @throws Exception
      */
     public static function parse(string $ksuid): array
     {
-        $data = ['isValid' => self::isValid($ksuid), 'time' => null, 'payload' => null];
-        if (!$data['isValid']) {
-            return $data;
+        if (!self::isValid($ksuid)) {
+            throw new UIDException('Invalid KSUID string');
         }
 
         $bytes = self::toBytes($ksuid);
         $timestamp = BinaryUnpack::u32(substr($bytes, 0, 4), 'Unable to parse KSUID timestamp') + self::EPOCH;
-        $data['time'] = new DateTimeImmutable('@' . $timestamp);
-        $data['payload'] = bin2hex(substr($bytes, 4));
 
-        return $data;
+        return [
+            'time' => new DateTimeImmutable('@' . $timestamp),
+            'payload' => bin2hex(substr($bytes, 4)),
+        ];
     }
 
     /**
@@ -81,7 +81,7 @@ final class KSUID implements IdAlgorithmInterface
     public static function toBytes(string $ksuid): string
     {
         if (!self::isValid($ksuid)) {
-            throw new Exception('Invalid KSUID string');
+            throw new UIDException('Invalid KSUID string');
         }
 
         return BaseEncoder::decodeToBytes($ksuid, 62, 20);

@@ -8,16 +8,16 @@ use DateTimeImmutable;
 use Infocyph\UID\TBSL;
 
 /**
- * @extends AbstractParsedIdValue<array{isValid: bool, time: DateTimeImmutable|null, machineId: int|null}>
+ * @extends AbstractParsedIdValue<array{time: DateTimeImmutable, machineId: int}>
  */
 final readonly class TbslValue extends AbstractParsedIdValue
 {
-    public function getMachineId(): ?int
+    public function getMachineId(): int
     {
         return $this->parsed['machineId'];
     }
 
-    public function getTimestamp(): ?DateTimeImmutable
+    public function getTimestamp(): DateTimeImmutable
     {
         return $this->parsed['time'];
     }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Configuration;
 
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class RandflakeConfig
@@ -15,6 +14,5 @@ final readonly class RandflakeConfig
         public int $leaseEnd,
         public string $secret,
         public ?SequenceProviderInterface $sequenceProvider = null,
-        public IdOutputType $outputType = IdOutputType::STRING,
     ) {}
 }

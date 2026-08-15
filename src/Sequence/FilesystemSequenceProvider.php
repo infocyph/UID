@@ -9,106 +9,189 @@ use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Support\FileLock;
 use InvalidArgumentException;
 
-final readonly class FilesystemSequenceProvider implements SequenceProviderInterface
+final class FilesystemSequenceProvider implements SequenceProviderInterface
 {
-    private string $baseDirectory;
+    private const MAX_PATH_CACHE = 1024;
+
+    private const MAX_SEQUENCE_STATE_BYTES = 64;
+
+    private readonly string $baseDirectory;
+
+    /** @var array<string, string> */
+    private array $pathCache = [];
+
+    /** @var array<string, array{timestamp:int,next:int,end:int}> */
+    private array $reservations = [];
+
+    private ?int $sourcePid = null;
 
     public function __construct(
         ?string $baseDirectory = null,
-        private int $waitTime = 1_000,
-        private int $maxAttempts = 1_000,
+        private readonly string $namespace = '',
+        private readonly ?int $lockTimeoutMicros = null,
+        private readonly int $reservationSize = 1,
     ) {
         $this->baseDirectory = $baseDirectory ?: sys_get_temp_dir();
+
+        if ($namespace !== '' && preg_match('/^[A-Za-z0-9_-]+$/D', $namespace) !== 1) {
+            throw new InvalidArgumentException('Sequence namespace may contain only letters, numbers, underscores, and hyphens');
+        }
+
+        if ($lockTimeoutMicros !== null && $lockTimeoutMicros < 0) {
+            throw new InvalidArgumentException('Lock timeout must not be negative');
+        }
+
+        if ($reservationSize < 1) {
+            throw new InvalidArgumentException('Reservation size must be a positive integer');
+        }
     }
 
-    /**
-     * @throws FileLockException
-     */
     public function next(string $type, int $machineId, int $timestamp): int
     {
         $fileLocation = $this->sequenceFileLocation($type, $machineId);
-        $handle = $this->acquireLock($fileLocation);
+        $this->resetAfterFork();
+        $reservation = $this->reservations[$fileLocation] ?? null;
+
+        if (
+            $reservation !== null
+            && $reservation['timestamp'] === $timestamp
+            && $reservation['next'] <= $reservation['end']
+        ) {
+            $allocation = $reservation['next'];
+            $this->reservations[$fileLocation]['next'] = $allocation + 1;
+
+            return $allocation;
+        }
+
+        $handle = FileLock::acquire(
+            $fileLocation,
+            $this->lockTimeoutMicros,
+            'Failed to open sequence file: ' . $fileLocation,
+            'Unable to acquire sequence lock: ' . $fileLocation,
+        );
 
         try {
-            return $this->updateSequence($handle, $timestamp);
+            [$lastTimestamp, $lastAllocation, $oldLength] = $this->readState($handle);
+            if ($lastTimestamp > $timestamp) {
+                throw new SequenceTimestampException($lastTimestamp, $timestamp);
+            }
+
+            $allocation = $lastTimestamp === $timestamp ? $lastAllocation + 1 : 1;
+            if ($allocation > PHP_INT_MAX - $this->reservationSize + 1) {
+                throw new FileLockException('Sequence value exhausted');
+            }
+
+            $reservedEnd = $allocation + $this->reservationSize - 1;
+            $state = $timestamp . ',' . $reservedEnd;
+            $this->writeState($handle, $state, $oldLength);
+            $this->reservations[$fileLocation] = [
+                'timestamp' => $timestamp,
+                'next' => $allocation + 1,
+                'end' => $reservedEnd,
+            ];
+
+            return $allocation;
         } finally {
             flock($handle, LOCK_UN);
             fclose($handle);
         }
     }
 
-    /**
-     * @return resource
-     * @throws FileLockException
-     */
-    private function acquireLock(string $fileLocation)
+    private static function isCanonicalInteger(string $value): bool
     {
-        return FileLock::acquire(
-            $fileLocation,
-            $this->waitTime,
-            $this->maxAttempts,
-            'Failed to open sequence file: ' . $fileLocation,
-            'Unable to acquire sequence lock: ' . $fileLocation,
-        );
-    }
-
-    private function sequenceFileLocation(string $type, int $machineId): string
-    {
-        if (preg_match('/^[A-Za-z0-9_-]+$/D', $type) !== 1) {
-            throw new InvalidArgumentException('Sequence type may contain only letters, numbers, underscores, and hyphens');
-        }
-
-        return $this->baseDirectory . DIRECTORY_SEPARATOR . "uid-$type-$machineId.seq";
+        return $value !== ''
+            && ctype_digit($value)
+            && ($value === '0' || $value[0] !== '0');
     }
 
     /**
      * @param resource $handle
-     * @throws FileLockException
+     * @return array{0:int,1:int,2:int}
      */
-    private function updateSequence($handle, int $timestamp): int
+    private function readState($handle): array
     {
-        $sequence = 0;
-        $line = stream_get_contents($handle);
-        if ($line === false) {
+        $state = stream_get_contents($handle, self::MAX_SEQUENCE_STATE_BYTES + 1);
+        if ($state === false) {
             throw new FileLockException('Unable to read sequence state');
         }
 
-        $line = trim($line);
-        if ($line !== '') {
-            if (preg_match('/^(0|[1-9]\d*),(0|[1-9]\d*)$/D', $line) !== 1) {
-                throw new FileLockException('Sequence state is malformed');
-            }
-
-            $parts = explode(',', $line, 2);
-            $lastTimestamp = filter_var($parts[0], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-            $lastSequence = filter_var($parts[1], FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-            if ($lastTimestamp === false || $lastSequence === false) {
-                throw new FileLockException('Sequence state is malformed');
-            }
-
-            if ($lastTimestamp > $timestamp) {
-                throw new SequenceTimestampException($lastTimestamp, $timestamp);
-            }
-
-            $sequence = $lastTimestamp === $timestamp ? $lastSequence : 0;
+        $oldLength = strlen($state);
+        if ($oldLength > self::MAX_SEQUENCE_STATE_BYTES) {
+            throw new FileLockException('Sequence state exceeds the maximum size');
         }
 
-        if ($sequence === PHP_INT_MAX) {
-            throw new FileLockException('Sequence value exhausted');
+        if ($state === '') {
+            return [0, 0, 0];
         }
 
-        ++$sequence;
-        $state = "$timestamp,$sequence";
+        $comma = strpos($state, ',');
+        if ($comma === false || str_contains(substr($state, $comma + 1), ',')) {
+            throw new FileLockException('Sequence state is malformed');
+        }
 
+        $timestamp = substr($state, 0, $comma);
+        $allocation = substr($state, $comma + 1);
+        if (!self::isCanonicalInteger($timestamp) || !self::isCanonicalInteger($allocation)) {
+            throw new FileLockException('Sequence state is malformed');
+        }
+
+        if (
+            strlen($timestamp) > 19
+            || strlen($allocation) > 19
+            || (strlen($timestamp) === 19 && $timestamp > (string) PHP_INT_MAX)
+            || (strlen($allocation) === 19 && $allocation > (string) PHP_INT_MAX)
+        ) {
+            throw new FileLockException('Sequence state is malformed');
+        }
+
+        return [(int) $timestamp, (int) $allocation, $oldLength];
+    }
+
+    private function resetAfterFork(): void
+    {
+        $pid = (int) getmypid();
+        if ($pid === $this->sourcePid) {
+            return;
+        }
+
+        $this->sourcePid = $pid;
+        $this->reservations = [];
+    }
+
+    private function sequenceFileLocation(string $type, int $machineId): string
+    {
+        $cacheKey = $type . ':' . $machineId;
+        if (isset($this->pathCache[$cacheKey])) {
+            return $this->pathCache[$cacheKey];
+        }
+
+        if (preg_match('/^[A-Za-z0-9_-]+$/D', $type) !== 1) {
+            throw new InvalidArgumentException('Sequence type may contain only letters, numbers, underscores, and hyphens');
+        }
+
+        $name = 'uid-' . ($this->namespace === '' ? '' : $this->namespace . '-') . $type . '-' . $machineId . '.seq';
+        if (count($this->pathCache) === self::MAX_PATH_CACHE) {
+            array_shift($this->pathCache);
+        }
+
+        return $this->pathCache[$cacheKey] = $this->baseDirectory . DIRECTORY_SEPARATOR . $name;
+    }
+
+    /**
+     * @param resource $handle
+     */
+    private function writeState($handle, string $state, int $oldLength): void
+    {
         rewind($handle) || throw new FileLockException('Unable to rewind sequence file');
         $written = fwrite($handle, $state);
         if ($written === false || $written !== strlen($state)) {
             throw new FileLockException('Unable to write complete sequence state');
         }
 
-        ftruncate($handle, $written) || throw new FileLockException('Unable to truncate sequence file');
-        fflush($handle) || throw new FileLockException('Unable to flush sequence state');
+        if ($written < $oldLength) {
+            ftruncate($handle, $written) || throw new FileLockException('Unable to truncate sequence file');
+        }
 
-        return $sequence;
+        fflush($handle) || throw new FileLockException('Unable to flush sequence state');
     }
 }

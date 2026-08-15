@@ -7,7 +7,6 @@ namespace Infocyph\UID\Configuration;
 use Closure;
 use DateTimeInterface;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class SnowflakeConfig
@@ -18,16 +17,15 @@ final readonly class SnowflakeConfig
 
     /**
      * @param callable():mixed|null $nodeResolver
-     * @param DateTimeInterface|int|string|null $customEpoch Epoch in ms (int), parseable date string, or DateTime.
+     * @param DateTimeInterface|int|null $customEpoch Epoch in milliseconds or a date-time value.
      */
     public function __construct(
         public int $datacenterId = 0,
         public int $workerId = 0,
         ?callable $nodeResolver = null,
-        public DateTimeInterface|int|string|null $customEpoch = null,
+        public DateTimeInterface|int|null $customEpoch = null,
         public ?SequenceProviderInterface $sequenceProvider = null,
         public ClockBackwardPolicy $clockBackwardPolicy = ClockBackwardPolicy::WAIT,
-        public IdOutputType $outputType = IdOutputType::STRING,
     ) {
         $this->nodeResolver = $nodeResolver ? $nodeResolver(...) : null;
     }

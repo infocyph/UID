@@ -1,34 +1,17 @@
-Sequence Providers
-==================
+Sequence Providers and Coordination
+===================================
 
-UID supports pluggable sequence backends for Snowflake, Sonyflake, Randflake, and sequenced TBSL.
+Snowflake, Sonyflake, Randflake, and sequenced TBSL use a sequence provider.
+The filesystem provider is the cross-process default. The in-memory provider is
+process-local and must not be used when multiple workers share an ID domain.
 
-Supported Providers
+Filesystem Provider
 -------------------
 
-- ``FilesystemSequenceProvider`` (default)
-- ``InMemorySequenceProvider``
-- ``PsrSimpleCacheSequenceProvider``
-- ``CallbackSequenceProvider``
-- Any custom ``SequenceProviderInterface`` implementation
-
-Per-Algorithm Static Selection
-------------------------------
-
-Each algorithm class using ``GetSequence`` provides these static methods:
-
-- ``setSequenceProvider(SequenceProviderInterface $provider)``
-- ``resetSequenceProvider()``
-- ``useFilesystemSequenceProvider(?string $baseDirectory = null, int $waitTime = 1000, int $maxAttempts = 1000)``
-- ``useInMemorySequenceProvider()``
-- ``useSimpleCacheSequenceProvider(CacheInterface $cache, string $prefix = 'uid.seq.', int $waitTime = 1000, int $maxAttempts = 1000)``
-- ``useSequenceCallback(callable $callback)``
-
-Defaults are tuned for better contention tolerance in parallel workloads.
-If you prefer faster fail behavior, set lower ``waitTime``/``maxAttempts`` explicitly.
-
-Example: Process-Local In-Memory
---------------------------------
+The normal path uses blocking ``flock()``. An optional monotonic timeout can be
+set in microseconds. State reads are bounded, malformed state fails closed, and
+validated paths—not open handles—are cached. Namespaces isolate applications
+sharing a directory.
 
 .. code-block:: php
 
@@ -36,56 +19,29 @@ Example: Process-Local In-Memory
 
    use Infocyph\UID\Snowflake;
 
-   Snowflake::useInMemorySequenceProvider();
-   $id = Snowflake::generate(1, 1);
-
-Example: PSR-16 Simple Cache
-----------------------------
-
-.. code-block:: php
-
-   <?php
-
-   use Infocyph\UID\Sequence\PsrSimpleCacheSequenceProvider;
-   use Infocyph\UID\Snowflake;
-   use Psr\SimpleCache\CacheInterface;
-
-   /** @var CacheInterface $cache */
-   $provider = new PsrSimpleCacheSequenceProvider($cache, 'uid.seq.');
-   Snowflake::setSequenceProvider($provider);
-
-The default cache prefix uses only the portable PSR-16 key character set.
-The built-in fallback lock is local to one host. For a cache shared by multiple
-hosts, provide a synchronizer backed by a distributed lock or use a custom
-provider with an atomic increment contract.
-
-Example: External Synchronizer
-------------------------------
-
-``PsrSimpleCacheSequenceProvider`` optionally accepts a synchronizer callback:
-
-.. code-block:: php
-
-   <?php
-
-   $provider = new PsrSimpleCacheSequenceProvider(
-       cache: $cache,
-       synchronizer: function (string $key, callable $criticalSection): mixed {
-           // Acquire distributed lock here (Redis, DB, etc.)
-           // then run and return the critical section result.
-           return $criticalSection();
-       }
+   Snowflake::useFilesystemSequenceProvider(
+       baseDirectory: '/run/my-app',
+       namespace: 'billing',
+       lockTimeoutMicros: 250_000,
+       reservationSize: 8,
    );
 
-   Snowflake::setSequenceProvider($provider);
+Reservation size defaults to 1. Larger ranges reduce lock traffic but reserve
+unused values when a process exits; they do not permit duplicate allocations.
 
-Custom Provider Contract
-------------------------
+Other Providers
+---------------
 
-Implement:
+``setSequenceProvider()`` accepts any ``SequenceProviderInterface``. Convenience
+methods select filesystem, in-memory, callback, or optional PSR-16 providers.
+The PSR-16 provider needs an application-supplied distributed synchronizer when
+the cache is shared by multiple hosts; its fallback lock coordinates one host only.
+
+The provider contract is:
 
 .. code-block:: php
 
    public function next(string $type, int $machineId, int $timestamp): int;
 
-The return value should be a positive integer sequence.
+It returns a positive allocation starting at 1. Generators map that allocation
+to their zero-based encoded sequence fields.

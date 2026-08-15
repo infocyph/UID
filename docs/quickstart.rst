@@ -1,77 +1,27 @@
 Quickstart
 ==========
 
-Using the ``Id`` Facade
------------------------
-
 .. code-block:: php
 
    <?php
 
    use Infocyph\UID\Id;
+   use Infocyph\UID\TypeID;
+   use Infocyph\UID\UUID;
 
-   $uuid = Id::uuid();          // default UUID strategy (v7)
+   $uuid = Id::uuid();
    $ulid = Id::ulid();
-   $snowflake = Id::snowflake();
-   $sonyflake = Id::sonyflake();
-   $tbsl = Id::tbsl();
-   $randflake = \Infocyph\UID\Randflake::generate(42, time() - 5, time() + 300, 'super-secret-key');
-   $nano = Id::nanoId(21);
-   $cuid2 = Id::cuid2(24);
+   $typeId = Id::typeId('user');
+   $objectId = Id::objectId();
+   $random = Id::random(24);
 
-Using Algorithm Classes
------------------------
+   $uuidParts = UUID::parse($uuid);
+   $typeParts = TypeID::parse($typeId);
+   $uuidBytes = UUID::toBytes($uuid);
+   $sameUuid = UUID::fromBytes($uuidBytes);
 
-.. code-block:: php
-
-   <?php
-
-   use Infocyph\UID\CUID2;
-   use Infocyph\UID\NanoID;
-
-   $nano = NanoID::generate(21);
-   $cuid2 = CUID2::generate(24);
-
-   NanoID::isValid($nano, 21);      // bool
-   CUID2::isValid($cuid2);          // bool
-
-Validation and Parsing
-----------------------
-
-.. code-block:: php
-
-   <?php
-
-   use Infocyph\UID\Id;
-
-   Id::uuidIsValid($uuid);          // bool
-   Id::uuidParse($uuid);            // ['isValid', 'version', 'variant', 'time', 'node', 'tail']
-
-   Id::nanoIdIsValid($nano, 21);    // bool
-   Id::nanoIdParse($nano, 21);      // ['isValid', 'length', 'alphabet']
-
-   Id::cuid2IsValid($cuid2);        // bool
-   Id::cuid2Parse($cuid2);          // ['isValid', 'length']
-
-Binary and Base Conversion
---------------------------
-
-.. code-block:: php
-
-   <?php
-
-   use Infocyph\UID\Id;
-
-   $bytes = Id::uuidToBytes($uuid);       // 16 bytes
-   $roundTrip = Id::uuidFromBytes($bytes);
-
-   $base58 = Id::uuidToBase($uuid, 58);
-   $uuidAgain = Id::uuidFromBase($base58, 58);
-
-   $tbslBase62 = tbsl_to_base(Id::tbsl(), 62);
-
-Configuration-Based Generators
-------------------------------
+Configuration-based coordinated generators return canonical strings. Output
+representation is handled separately with ``toBytes()`` or ``toBase()``.
 
 .. code-block:: php
 
@@ -79,14 +29,12 @@ Configuration-Based Generators
 
    use Infocyph\UID\Configuration\SnowflakeConfig;
    use Infocyph\UID\Enums\ClockBackwardPolicy;
-   use Infocyph\UID\Enums\IdOutputType;
    use Infocyph\UID\Id;
 
    $config = new SnowflakeConfig(
        datacenterId: 1,
        workerId: 7,
        clockBackwardPolicy: ClockBackwardPolicy::WAIT,
-       outputType: IdOutputType::STRING,
    );
 
    $id = Id::snowflake($config);

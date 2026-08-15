@@ -3,8 +3,9 @@
 declare(strict_types=1);
 
 use Infocyph\UID\Configuration\RandflakeConfig;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Randflake;
+
+use function Infocyph\UID\randflake;
 
 test('Randflake basic generation and parsing', function () {
     $now = time();
@@ -81,7 +82,7 @@ test('Randflake validates secret node and lease', function () {
         ->toThrow(\Infocyph\UID\Exceptions\RandflakeException::class);
 });
 
-test('Randflake config supports output modes', function () {
+test('Randflake config returns its canonical decimal representation', function () {
     $now = time();
     $leaseStart = $now - 5;
     $leaseEnd = $now + 300;
@@ -93,42 +94,20 @@ test('Randflake config supports output modes', function () {
             leaseStart: $leaseStart,
             leaseEnd: $leaseEnd,
             secret: $secret,
-            outputType: IdOutputType::STRING,
         ),
     );
 
-    $binaryId = Randflake::generateWithConfig(
-        new RandflakeConfig(
-            nodeId: 2,
-            leaseStart: $leaseStart,
-            leaseEnd: $leaseEnd,
-            secret: $secret,
-            outputType: IdOutputType::BINARY,
-        ),
-    );
-
-    expect($stringId)->toBeString()
-        ->and($binaryId)->toBeString()
-        ->and(strlen($binaryId))->toBe(8);
+    expect($stringId)->toBeString()->toMatch('/^\d+$/');
 });
 
-test('Randflake global helper functions', function () {
+test('Randflake namespaced helper delegates to the generator', function () {
     $now = time();
     $leaseStart = $now - 5;
     $leaseEnd = $now + 300;
     $secret = 'super-secret-key';
 
-    $id = randflake(4, $leaseStart, $leaseEnd, $secret);
-    $stringId = randflake_string(4, $leaseStart, $leaseEnd, $secret);
-    $parsed = randflake_parse($id, $secret);
-    $parsedString = randflake_parse_string($stringId, $secret);
-    $inspected = randflake_inspect($id, $secret);
-    $inspectedString = randflake_inspect_string($stringId, $secret);
+    $id = randflake(new RandflakeConfig(4, $leaseStart, $leaseEnd, $secret));
 
-    expect(randflake_is_valid($id))->toBeTrue()
-        ->and(randflake_from_base(randflake_to_base($id, 36), 36))->toBe($id)
-        ->and($parsed['node_id'])->toBe(4)
-        ->and($parsedString['node_id'])->toBe(4)
-        ->and($inspected['node_id'])->toBe(4)
-        ->and($inspectedString['node_id'])->toBe(4);
+    expect(Randflake::isValid($id))->toBeTrue()
+        ->and(Randflake::parse($id, $secret)['node_id'])->toBe(4);
 });

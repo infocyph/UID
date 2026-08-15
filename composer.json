@@ -1,16 +1,23 @@
 {
     "name": "infocyph/uid",
-    "description": "UUID (RFC 9562), ULID, Snowflake, Sonyflake, Randflake, and TBSL generator for PHP.",
+    "description": "High-performance ID toolkit for PHP with UUID, ULID, TypeID, ObjectID, coordinated IDs, and compact ID utilities.",
     "license": "MIT",
     "type": "library",
     "keywords": [
         "uuid",
+        "uuidv7",
+        "typeid",
+        "objectid",
         "ulid",
         "snowflake",
         "sonyflake",
         "tbsl",
         "ksuid",
         "xid",
+        "nanoid",
+        "cuid2",
+        "random-id",
+        "sortable-id",
         "id",
         "key",
         "unique",
@@ -25,14 +32,17 @@
     ],
     "require": {
         "php": ">=8.2",
-        "ext-bcmath": "*",
-        "psr/simple-cache": "^3.0"
+        "php-64bit": "*"
     },
     "require-dev": {
-        "infocyph/phpforge": "dev-main"
+        "infocyph/phpforge": "dev-main@dev",
+        "psr/simple-cache": "^3.0"
     },
     "replace": {
-        "abmmhasan/uuid": "*"
+        "abmmhasan/uuid": "self.version"
+    },
+    "suggest": {
+        "psr/simple-cache": "Required for the optional PSR-16 sequence provider."
     },
     "minimum-stability": "stable",
     "prefer-stable": true,

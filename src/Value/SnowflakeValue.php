@@ -12,6 +12,11 @@ use Infocyph\UID\Snowflake;
  */
 final readonly class SnowflakeValue extends AbstractParsedIdValue
 {
+    public function __construct(string $value, private ?int $customEpoch = null)
+    {
+        parent::__construct($value);
+    }
+
     public function getDatacenterId(): int
     {
         return $this->parsed['datacenter_id'];
@@ -39,7 +44,9 @@ final readonly class SnowflakeValue extends AbstractParsedIdValue
 
     protected function parser(): callable
     {
-        return Snowflake::parse(...);
+        return $this->customEpoch === null
+            ? Snowflake::parse(...)
+            : fn(string $id): array => Snowflake::parseWithEpoch($id, $this->customEpoch);
     }
 
     protected function validator(): callable

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Infocyph\UID\Configuration\SonyflakeConfig;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Sonyflake;
 
 beforeEach(function () {
@@ -65,7 +64,7 @@ test('Sonyflake Max Sequence Handling', function () {
 
         if ($firstTimestamp === null) {
             $firstTimestamp = $timestamp;
-            return 256;
+            return 257;
         }
 
         if ($timestamp === $firstTimestamp) {
@@ -73,7 +72,7 @@ test('Sonyflake Max Sequence Handling', function () {
                 throw new \RuntimeException('Sonyflake did not advance timestamp after sequence overflow');
             }
 
-            return 256;
+            return 257;
         }
 
         return 1;
@@ -82,7 +81,7 @@ test('Sonyflake Max Sequence Handling', function () {
     $id = Sonyflake::generate();
     $parsed = Sonyflake::parse($id);
 
-    expect($parsed['sequence'])->toBe(1)
+    expect($parsed['sequence'])->toBe(0)
         ->and($attempts)->toBeGreaterThan(1);
 });
 
@@ -91,12 +90,7 @@ test('Sonyflake validation helper', function () {
 
     expect(Sonyflake::isValid($id))->toBeTrue()
         ->and(Sonyflake::isValid('abc'))->toBeFalse()
-        ->and(Sonyflake::isValid('0'))->toBeFalse();
-});
-
-test('Sonyflake rejects invalid start timestamp format', function () {
-    expect(fn () => Sonyflake::setStartTimeStamp('not-a-date'))
-        ->toThrow(\Infocyph\UID\Exceptions\SonyflakeException::class);
+        ->and(Sonyflake::isValid('0'))->toBeTrue();
 });
 
 test('Sonyflake bytes and base conversion roundtrip', function () {
@@ -109,22 +103,15 @@ test('Sonyflake bytes and base conversion roundtrip', function () {
         ->and(Sonyflake::fromBase($encoded, 58))->toBe($id);
 });
 
-test('Sonyflake config supports output modes', function () {
-    $intId = Sonyflake::generateWithConfig(new SonyflakeConfig(outputType: IdOutputType::INT));
-    $binaryId = Sonyflake::generateWithConfig(new SonyflakeConfig(outputType: IdOutputType::BINARY));
-
-    expect($intId)->toBeInt()
-        ->and($binaryId)->toBeString()
-        ->and(strlen($binaryId))->toBe(8);
+test('Sonyflake config returns a canonical decimal string', function () {
+    expect(Sonyflake::generateWithConfig(new SonyflakeConfig()))->toMatch('/^\d+$/');
 });
 
 test('Sonyflake config rejects invalid epochs and resolver output', function () {
     $invalidResolver = new SonyflakeConfig(machineIdResolver: fn (): string => '1');
     $futureEpoch = ((int) floor(microtime(true) * 1000)) + 60_000;
 
-    expect(fn () => Sonyflake::generateWithConfig(new SonyflakeConfig(customEpoch: 'not-a-date')))
-        ->toThrow(\InvalidArgumentException::class)
-        ->and(fn () => Sonyflake::generateWithConfig(new SonyflakeConfig(customEpoch: $futureEpoch)))
+    expect(fn () => Sonyflake::generateWithConfig(new SonyflakeConfig(customEpoch: $futureEpoch)))
         ->toThrow(\Infocyph\UID\Exceptions\SonyflakeException::class)
         ->and(fn () => Sonyflake::generateWithConfig($invalidResolver))
         ->toThrow(\UnexpectedValueException::class);
