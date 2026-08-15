@@ -31,8 +31,8 @@
         }
     ],
     "require": {
-        "php": ">=8.2",
-        "php-64bit": "*"
+        "php": "^8.2",
+        "php-64bit": "^8.2"
     },
     "require-dev": {
         "infocyph/phpforge": "dev-main@dev",
