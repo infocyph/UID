@@ -1,44 +1,40 @@
 Database Storage
 ================
 
-UID includes ``Infocyph\\UID\\DbStorage`` with recommendations for UUID, ULID, and Snowflake.
+Storage recommendations are documentation only; v5 has no runtime ``DbStorage`` API.
 
-UUID
-----
+.. list-table::
+   :header-rows: 1
 
-- MySQL: prefer ``BINARY(16)`` for compact indexes.
-- PostgreSQL: prefer native ``UUID`` type.
-- Ordering: ``UUIDv7`` provides better insertion locality than ``UUIDv4``.
+   * - Format
+     - MySQL
+     - PostgreSQL
+   * - UUID
+     - ``BINARY(16)``
+     - native ``UUID``
+   * - TypeID
+     - text, or ``BINARY(16)`` plus type
+     - text, or ``UUID`` plus type
+   * - ULID
+     - ``CHAR(26)`` / ``BINARY(16)``
+     - ``CHAR(26)`` / ``BYTEA``
+   * - ObjectID
+     - ``CHAR(24)`` / ``BINARY(12)``
+     - ``CHAR(24)`` / ``BYTEA``
+   * - Snowflake/Sonyflake
+     - ``BIGINT``
+     - ``BIGINT``
+   * - Randflake
+     - ``BIGINT UNSIGNED`` / ``BINARY(8)``
+     - ``NUMERIC(20,0)`` / ``BYTEA``
+   * - TBSL
+     - ``CHAR(20)`` / ``BINARY(10)``
+     - ``CHAR(20)`` / ``BYTEA``
 
-ULID
-----
+UUIDv7 is recommended when UUID index locality matters. For TypeID, store the
+text prefix only when it is useful at the persistence boundary; otherwise keep
+the entity type in the schema and store the underlying UUID bytes.
 
-- MySQL: ``CHAR(26)`` (readable) or ``BINARY(16)`` (compact/index-friendly).
-- PostgreSQL: ``CHAR(26)`` or ``BYTEA`` depending on interoperability.
-- Ordering: canonical ULID text is chronologically sortable.
-
-Snowflake and Sonyflake
------------------------
-
-- MySQL: ``BIGINT UNSIGNED``.
-- PostgreSQL: ``BIGINT`` if range is safe, otherwise ``NUMERIC(20,0)``.
-- Ordering: numeric sort equals time sort.
-
-TBSL
-----
-
-- Use ``CHAR(20)`` for canonical uppercase hex.
-- Use ``BINARY(10)`` when compactness matters.
-
-Programmatic Access
--------------------
-
-.. code-block:: php
-
-   <?php
-
-   use Infocyph\UID\DbStorage;
-
-   $uuidAdvice = DbStorage::uuid();
-   $ulidAdvice = DbStorage::ulid();
-   $snowflakeAdvice = DbStorage::snowflake();
+An epoch is part of a deployed Snowflake or Sonyflake ID domain. Changing it
+creates a different domain and may eventually produce values overlapping the
+original domain.

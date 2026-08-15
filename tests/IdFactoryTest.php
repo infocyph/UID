@@ -6,14 +6,16 @@ use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Configuration\TBSLConfig;
 use Infocyph\UID\Configuration\RandflakeConfig;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Id;
+use Infocyph\UID\RandomId;
 use Infocyph\UID\Value\UuidValue;
 
 test('Id factory basic methods', function () {
     $ksuid = Id::ksuid();
     $xid = Id::xid();
+    $typeId = Id::typeId('user');
+    $objectId = Id::objectId();
     $uuid1 = Id::uuid1();
     $namespace = Id::uuid4();
     $uuid3 = Id::uuid3($namespace, 'id-factory');
@@ -36,6 +38,8 @@ test('Id factory basic methods', function () {
 
     expect($ksuid)->toBeString()->toHaveLength(27)
         ->and($xid)->toBeString()->toHaveLength(20)
+        ->and($typeId)->toStartWith('user_')->toHaveLength(31)
+        ->and($objectId)->toHaveLength(24)
         ->and($uuid1)->toBeString()->toHaveLength(36)
         ->and($uuid3)->toBeString()->toHaveLength(36)
         ->and($uuid4)->toBeString()->toHaveLength(36)
@@ -50,8 +54,8 @@ test('Id factory basic methods', function () {
         ->and((string)$randflake)->toBeString()->not()->toBeEmpty();
 });
 
-test('Id factory value objects', function () {
-    $uuidValue = Id::uuid7Value();
+test('value objects remain available from their owning type', function () {
+    $uuidValue = new UuidValue(Id::uuid7());
     expect($uuidValue)->toBeInstanceOf(UuidValue::class)
         ->and($uuidValue->toString())->toHaveLength(36)
         ->and($uuidValue->getVersion())->toBe(7);
@@ -60,34 +64,29 @@ test('Id factory value objects', function () {
 test('Id factory random strategy', function () {
     $nano = Id::nanoId(10);
     $cuid2 = Id::cuid2(24);
-    $opaque = Id::opaque(10);
+    $random = Id::random(10);
     $deterministic = Id::deterministic('payload', 16, 'ns');
 
     expect($nano)->toHaveLength(10)
         ->and($cuid2)->toHaveLength(24)
-        ->and(Id::nanoIdIsValid($nano, 10))->toBeTrue()
-        ->and(Id::cuid2IsValid($cuid2))->toBeTrue()
-        ->and($opaque)->toHaveLength(10)
+        ->and(RandomId::isValid($random, 10))->toBeTrue()
         ->and($deterministic)->toHaveLength(16);
 });
 
-test('configuration objects apply output modes', function () {
-    $snowflake = Id::snowflake(new SnowflakeConfig(outputType: IdOutputType::INT));
-    $sonyflake = Id::sonyflake(new SonyflakeConfig(outputType: IdOutputType::INT));
-    $tbsl = Id::tbsl(new TBSLConfig(outputType: IdOutputType::BINARY));
+test('configuration objects keep generation policy separate from representation', function () {
+    $snowflake = Id::snowflake(new SnowflakeConfig());
+    $sonyflake = Id::sonyflake(new SonyflakeConfig());
+    $tbsl = Id::tbsl(new TBSLConfig());
     $now = time();
     $randflake = Id::randflake(new RandflakeConfig(
         nodeId: 1,
         leaseStart: $now - 5,
         leaseEnd: $now + 300,
         secret: 'super-secret-key',
-        outputType: IdOutputType::BINARY,
     ));
 
-    expect($snowflake)->toBeInt()
-        ->and($sonyflake)->toBeInt()
-        ->and($tbsl)->toBeString()
-        ->and(strlen($tbsl))->toBe(10)
-        ->and($randflake)->toBeString()
-        ->and(strlen($randflake))->toBe(8);
+    expect($snowflake)->toBeString()
+        ->and($sonyflake)->toBeString()
+        ->and($tbsl)->toHaveLength(20)
+        ->and($randflake)->toBeString();
 });

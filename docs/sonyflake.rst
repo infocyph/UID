@@ -33,7 +33,6 @@ Use ``Infocyph\\UID\\Configuration\\SonyflakeConfig`` for:
 - custom epoch
 - custom sequence provider
 - clock-backward policy
-- output type (string/int/binary)
 
 .. code-block:: php
 
@@ -66,8 +65,10 @@ Validation and Parsing
 Custom Epoch APIs
 -----------------
 
-- ``Sonyflake::setStartTimeStamp('2020-01-01 00:00:00')``
 - ``Sonyflake::parseWithEpoch($id, $epochMs)``
+
+The epoch is immutable global-domain configuration: supply it through a config
+and retain it when parsing. Changing an epoch creates a different ID domain.
 
 Binary and Alternate Bases
 --------------------------

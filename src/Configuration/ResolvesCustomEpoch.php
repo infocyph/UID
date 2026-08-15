@@ -13,7 +13,7 @@ trait ResolvesCustomEpoch
         return self::resolveEpochValue($this->customEpoch);
     }
 
-    private static function resolveEpochValue(DateTimeInterface|int|string|null $customEpoch): ?int
+    private static function resolveEpochValue(DateTimeInterface|int|null $customEpoch): ?int
     {
         if ($customEpoch === null) {
             return null;
@@ -23,15 +23,6 @@ trait ResolvesCustomEpoch
             return (int) $customEpoch->format('Uv');
         }
 
-        if (is_int($customEpoch)) {
-            return $customEpoch;
-        }
-
-        $epoch = strtotime($customEpoch);
-        if ($epoch === false) {
-            throw new \InvalidArgumentException('Custom epoch must be a valid date string');
-        }
-
-        return $epoch * 1000;
+        return $customEpoch;
     }
 }

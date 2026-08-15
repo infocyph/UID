@@ -14,23 +14,37 @@ final class FileLock
      */
     public static function acquire(
         string $path,
-        int $waitTime,
-        int $maxAttempts,
+        ?int $timeoutMicros,
         string $openErrorMessage,
         string $lockErrorMessage,
     ) {
-        $waitTime = max(100, $waitTime);
-        $maxAttempts = max(1, $maxAttempts);
-
         ($handle = fopen($path, 'c+')) || throw new FileLockException($openErrorMessage);
 
-        for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-            if (flock($handle, LOCK_EX | LOCK_NB)) {
+        if ($timeoutMicros === null) {
+            if (flock($handle, LOCK_EX)) {
                 return $handle;
             }
 
-            usleep($waitTime);
+            fclose($handle);
+
+            throw new FileLockException($lockErrorMessage);
         }
+
+        $deadline = hrtime(true) + ($timeoutMicros * 1000);
+        do {
+            $wouldBlock = 0;
+            if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
+                return $handle;
+            }
+
+            if ($wouldBlock !== 1) {
+                fclose($handle);
+
+                throw new FileLockException($lockErrorMessage);
+            }
+
+            usleep(1000);
+        } while (hrtime(true) < $deadline);
 
         fclose($handle);
 

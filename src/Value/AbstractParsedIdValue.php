@@ -16,7 +16,7 @@ abstract readonly class AbstractParsedIdValue implements IdValueInterface
     /** @var TParsed */
     protected array $parsed;
 
-    final public function __construct(string $value)
+    public function __construct(string $value)
     {
         $this->parsed = $this->initializeComparableValue(
             $value,

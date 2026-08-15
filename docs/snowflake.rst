@@ -32,10 +32,9 @@ Use ``Infocyph\\UID\\Configuration\\SnowflakeConfig`` for advanced control:
 
 - fixed ``datacenterId`` and ``workerId``
 - ``nodeResolver`` callback
-- ``customEpoch`` (``DateTimeInterface`` | ``int`` ms | parseable date string)
+- ``customEpoch`` (``DateTimeInterface`` or integer milliseconds)
 - custom ``sequenceProvider``
 - ``ClockBackwardPolicy`` (``WAIT`` or ``THROW``)
-- ``IdOutputType`` (``STRING``, ``INT``, ``BINARY``)
 
 .. code-block:: php
 
@@ -43,15 +42,13 @@ Use ``Infocyph\\UID\\Configuration\\SnowflakeConfig`` for advanced control:
 
    use Infocyph\UID\Configuration\SnowflakeConfig;
    use Infocyph\UID\Enums\ClockBackwardPolicy;
-   use Infocyph\UID\Enums\IdOutputType;
    use Infocyph\UID\Snowflake;
 
    $config = new SnowflakeConfig(
        datacenterId: 2,
        workerId: 3,
-       customEpoch: '2020-01-01 00:00:00',
+       customEpoch: 1_577_836_800_000,
        clockBackwardPolicy: ClockBackwardPolicy::WAIT,
-       outputType: IdOutputType::STRING,
    );
 
    $id = Snowflake::generateWithConfig($config);
@@ -78,8 +75,10 @@ Validation and Parsing
 Custom Epoch APIs
 -----------------
 
-- ``Snowflake::setStartTimeStamp('2020-01-01 00:00:00')``
 - ``Snowflake::parseWithEpoch($id, $epochMs)``
+
+The epoch is immutable global-domain configuration: supply it through a config
+and retain it when parsing. Changing an epoch creates a different ID domain.
 
 Binary and Alternate Bases
 --------------------------

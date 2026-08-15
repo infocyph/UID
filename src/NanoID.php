@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Infocyph\UID;
 
 use Exception;
-use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use InvalidArgumentException;
 
-final class NanoID implements IdAlgorithmInterface
+final class NanoID
 {
-    private const MAX_LENGTH = 1_048_576;
+    private const MAX_LENGTH = 1024;
 
     /**
      * Generates a NanoID string with the requested size.
@@ -20,7 +19,7 @@ final class NanoID implements IdAlgorithmInterface
     public static function generate(int $length = 21): string
     {
         if ($length < 1 || $length > self::MAX_LENGTH) {
-            throw new InvalidArgumentException('length must be between 1 and 1048576');
+            throw new InvalidArgumentException('length must be between 1 and 1024');
         }
 
         $byteLength = intdiv(($length * 3) + 3, 4);
@@ -50,12 +49,15 @@ final class NanoID implements IdAlgorithmInterface
     /**
      * Parses NanoID information.
      *
-     * @return array{isValid: bool, length: int, alphabet: string}
+     * @return array{length: int, alphabet: string}
      */
     public static function parse(string $id, ?int $length = null): array
     {
+        if (!self::isValid($id, $length)) {
+            throw new InvalidArgumentException('Invalid NanoID string');
+        }
+
         return [
-            'isValid' => self::isValid($id, $length),
             'length' => strlen($id),
             'alphabet' => 'base64url',
         ];

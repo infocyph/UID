@@ -13,20 +13,22 @@ use Infocyph\UID\Support\BaseEncoder;
 
 final class ULID
 {
+    private const ENCODING_CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+
+    private const ENCODING_LENGTH = 32;
+
     private const MAX_TIMESTAMP = 281_474_976_710_655;
 
-    private static string $encodingChars = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    private const RANDOM_LENGTH = 16;
 
-    private static int $encodingLength = 32;
+    private const TIME_LENGTH = 10;
 
     private static int $lastGenTime = 0;
 
     /** @var array<int, int> */
     private static array $lastRandChars = [];
 
-    private static int $randomLength = 16;
-
-    private static int $timeLength = 10;
+    private static ?int $sourcePid = null;
 
     /**
      * Decodes one of bases: 16, 32, 36, 58, 62 into canonical ULID.
@@ -61,7 +63,7 @@ final class ULID
             $bits += 8;
             while ($bits >= 5) {
                 $bits -= 5;
-                $ulid .= self::$encodingChars[($buffer >> $bits) & 31];
+                $ulid .= self::ENCODING_CHARS[($buffer >> $bits) & 31];
                 $buffer &= $bits === 0 ? 0 : (1 << $bits) - 1;
             }
         }
@@ -78,6 +80,7 @@ final class ULID
         ?DateTimeInterface $dateTime = null,
         UlidGenerationMode $mode = UlidGenerationMode::MONOTONIC,
     ): string {
+        self::resetAfterFork();
         $time = $dateTime === null
             ? (int) floor(microtime(true) * 1000)
             : (int) $dateTime->format('Uv');
@@ -94,7 +97,7 @@ final class ULID
         }
 
         $timeChars = self::encodeTime($time);
-        if (!$isMonotonic || !$isDuplicate || count(self::$lastRandChars) !== self::$randomLength) {
+        if (!$isMonotonic || !$isDuplicate || count(self::$lastRandChars) !== self::RANDOM_LENGTH) {
             self::resetRandomState();
         } elseif (!self::incrementRandomState()) {
             if ($dateTime !== null) {
@@ -144,10 +147,10 @@ final class ULID
         }
 
         $time = 0;
-        for ($index = 0; $index < self::$timeLength; ++$index) {
-            $encodingIndex = strpos(self::$encodingChars, $ulid[$index]);
+        for ($index = 0; $index < self::TIME_LENGTH; ++$index) {
+            $encodingIndex = strpos(self::ENCODING_CHARS, $ulid[$index]);
             $encodingIndex !== false || throw new ULIDException('Invalid ULID character');
-            $time = ($time * self::$encodingLength) + $encodingIndex;
+            $time = ($time * self::ENCODING_LENGTH) + $encodingIndex;
         }
 
         return new DateTimeImmutable(
@@ -193,7 +196,7 @@ final class ULID
         $buffer = 0;
         $bits = -2;
         for ($index = 0; $index < 26; ++$index) {
-            $alphabetIndex = strpos(self::$encodingChars, $ulid[$index]);
+            $alphabetIndex = strpos(self::ENCODING_CHARS, $ulid[$index]);
             $alphabetIndex !== false || throw new ULIDException('Invalid ULID character');
             $buffer = ($buffer << 5) | $alphabetIndex;
             $bits += 5;
@@ -222,10 +225,10 @@ final class ULID
     private static function encodeTime(int $time): string
     {
         $timeChars = '';
-        for ($i = self::$timeLength - 1; $i >= 0; --$i) {
-            $mod = $time % self::$encodingLength;
-            $timeChars = self::$encodingChars[$mod] . $timeChars;
-            $time = intdiv($time, self::$encodingLength);
+        for ($i = self::TIME_LENGTH - 1; $i >= 0; --$i) {
+            $mod = $time % self::ENCODING_LENGTH;
+            $timeChars = self::ENCODING_CHARS[$mod] . $timeChars;
+            $time = intdiv($time, self::ENCODING_LENGTH);
         }
 
         return $timeChars;
@@ -233,7 +236,7 @@ final class ULID
 
     private static function incrementRandomState(): bool
     {
-        for ($index = self::$randomLength - 1; $index >= 0; --$index) {
+        for ($index = self::RANDOM_LENGTH - 1; $index >= 0; --$index) {
             if (self::$lastRandChars[$index] < 31) {
                 self::$lastRandChars[$index]++;
 
@@ -249,11 +252,23 @@ final class ULID
     private static function randomCharsFromState(): string
     {
         $randChars = '';
-        for ($index = 0; $index < self::$randomLength; $index++) {
-            $randChars .= self::$encodingChars[self::$lastRandChars[$index]];
+        for ($index = 0; $index < self::RANDOM_LENGTH; $index++) {
+            $randChars .= self::ENCODING_CHARS[self::$lastRandChars[$index]];
         }
 
         return $randChars;
+    }
+
+    private static function resetAfterFork(): void
+    {
+        $pid = (int) getmypid();
+        if (self::$sourcePid === $pid) {
+            return;
+        }
+
+        self::$sourcePid = $pid;
+        self::$lastGenTime = 0;
+        self::$lastRandChars = [];
     }
 
     /**

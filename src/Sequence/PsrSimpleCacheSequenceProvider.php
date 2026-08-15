@@ -91,8 +91,7 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
 
         return FileLock::acquire(
             $lockFile,
-            $this->waitTime,
-            $this->maxAttempts,
+            $this->waitTime * $this->maxAttempts,
             'Unable to open sequence cache lock file: ' . $lockFile,
             'Unable to acquire sequence cache lock for key: ' . $key,
         );

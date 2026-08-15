@@ -22,7 +22,7 @@ Generation
 
    $id = TBSL::generate();
    $idWithMachine = TBSL::generate(machineId: 9);
-   $idWithSequence = TBSL::generate(machineId: 9, sequenced: true);
+   $randomId = TBSL::generateRandom(machineId: 9);
 
 Configuration Object
 --------------------
@@ -33,7 +33,6 @@ Use ``Infocyph\\UID\\Configuration\\TBSLConfig`` for:
 - toggling ``sequenced`` mode
 - custom sequence provider
 - clock-backward policy
-- output type (string/int/binary)
 
 .. code-block:: php
 
@@ -58,9 +57,8 @@ Parsing
 
 ``parse()`` output:
 
-- ``isValid`` (bool)
-- ``time`` (DateTimeImmutable|null)
-- ``machineId`` (int|null)
+- ``time`` (DateTimeImmutable)
+- ``machineId`` (int)
 
 Binary and Alternate Bases
 --------------------------

@@ -8,14 +8,11 @@ use DateTimeImmutable;
 use Exception;
 use Infocyph\UID\Configuration\TBSLConfig;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\UIDException;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
-use Infocyph\UID\Support\DecimalBytes;
 use Infocyph\UID\Support\GetSequence;
-use Infocyph\UID\Support\UnsignedDecimal;
 
 final class TBSL
 {
@@ -55,13 +52,12 @@ final class TBSL
      * @return string The generated unique identifier.
      * @throws Exception
      */
-    public static function generate(int $machineId = 0, bool $sequenced = false): string
+    public static function generate(int $machineId = 0, bool $sequenced = true): string
     {
-        return (string) self::generateInternal(
+        return self::generateInternal(
             $machineId,
             $sequenced,
             ClockBackwardPolicy::WAIT,
-            IdOutputType::STRING,
         );
     }
 
@@ -70,13 +66,17 @@ final class TBSL
      *
      * @throws Exception
      */
-    public static function generateWithConfig(TBSLConfig $config): int|string
+    public static function generateRandom(int $machineId = 0): string
+    {
+        return self::generate($machineId, false);
+    }
+
+    public static function generateWithConfig(TBSLConfig $config): string
     {
         return self::generateInternal(
             $config->resolveMachineId(),
             $config->sequenced,
             $config->clockBackwardPolicy,
-            $config->outputType,
             $config->sequenceProvider,
         );
     }
@@ -93,19 +93,13 @@ final class TBSL
      * Parses a TBSL string and returns an array with its components.
      *
      * @param string $tbsl The TBSL string to parse.
-     * @return array{isValid: bool, time: DateTimeImmutable|null, machineId: int|null}
+     * @return array{time: DateTimeImmutable, machineId: int}
      * @throws Exception
      */
     public static function parse(string $tbsl): array
     {
-        $data = [
-            'isValid' => self::isValid($tbsl),
-            'time' => null,
-            'machineId' => null,
-        ];
-
-        if (!$data['isValid']) {
-            return $data;
+        if (!self::isValid($tbsl)) {
+            throw new UIDException('Invalid TBSL string');
         }
 
         $storeBytes = hex2bin('0' . substr($tbsl, 0, 15));
@@ -114,10 +108,11 @@ final class TBSL
         $storeValue = $storeParts['value'] ?? null;
         is_int($storeValue) || throw new Exception('Unable to parse TBSL timestamp');
         $storeData = str_pad((string) $storeValue, 18, '0', STR_PAD_LEFT);
-        $data['time'] = new DateTimeImmutable('@' . substr($storeData, 0, 10) . '.' . substr($storeData, 10, 6));
-        $data['machineId'] = (int) substr($storeData, -2);
 
-        return $data;
+        return [
+            'time' => new DateTimeImmutable('@' . substr($storeData, 0, 10) . '.' . substr($storeData, 10, 6)),
+            'machineId' => (int) substr($storeData, -2),
+        ];
     }
 
     /**
@@ -157,15 +152,6 @@ final class TBSL
         }
     }
 
-    private static function formatOutput(string $id, IdOutputType $outputType): int|string
-    {
-        return match ($outputType) {
-            IdOutputType::STRING => $id,
-            IdOutputType::BINARY => self::toBytes($id),
-            IdOutputType::INT => self::hexToDecimal($id),
-        };
-    }
-
     /**
      * @throws Exception
      */
@@ -173,9 +159,8 @@ final class TBSL
         int $machineId,
         bool $sequenced,
         ClockBackwardPolicy $clockBackwardPolicy,
-        IdOutputType $outputType,
         ?SequenceProviderInterface $sequenceProvider = null,
-    ): int|string {
+    ): string {
         self::assertMachineId($machineId);
 
         [$micro, $seconds] = explode(' ', microtime());
@@ -203,26 +188,11 @@ final class TBSL
             throw new UIDException('TBSL timestamp exceeds its 60-bit field');
         }
 
-        $id = strtoupper(sprintf(
+        return strtoupper(sprintf(
             '%015s%05s',
             $storeData,
             $tail,
         ));
-
-        return self::formatOutput($id, $outputType);
-    }
-
-    private static function hexToDecimal(string $hex): int
-    {
-        $bytes = hex2bin(strtolower($hex));
-        $bytes !== false || throw new UIDException('Unable to convert TBSL hex to bytes');
-        $decimal = DecimalBytes::fromBytes($bytes);
-
-        if (UnsignedDecimal::compare($decimal, (string) PHP_INT_MAX) === 1) {
-            throw new UIDException('TBSL integer output exceeds PHP_INT_MAX; use string or binary output');
-        }
-
-        return (int) $decimal;
     }
 
     /**
@@ -266,8 +236,8 @@ final class TBSL
                 throw new UIDException('TBSL sequence provider must return a positive integer');
             }
 
-            if ($sequence <= 0xfffff) {
-                return [$timeSequence, str_pad(dechex($sequence), 5, '0', STR_PAD_LEFT)];
+            if ($sequence <= 0x100000) {
+                return [$timeSequence, str_pad(dechex($sequence - 1), 5, '0', STR_PAD_LEFT)];
             }
 
             $timeSequence = self::waitUntilNextTimeSequence($timeSequence);

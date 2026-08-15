@@ -4,253 +4,171 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Benchmarks;
 
-use DateTimeImmutable;
+use Infocyph\UID\Configuration\RandflakeConfig;
+use Infocyph\UID\Configuration\SnowflakeConfig;
+use Infocyph\UID\Configuration\SonyflakeConfig;
+use Infocyph\UID\Configuration\TBSLConfig;
 use Infocyph\UID\CUID2;
 use Infocyph\UID\DeterministicId;
 use Infocyph\UID\KSUID;
 use Infocyph\UID\NanoID;
+use Infocyph\UID\ObjectID;
 use Infocyph\UID\OpaqueId;
 use Infocyph\UID\Randflake;
+use Infocyph\UID\RandomId;
+use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Snowflake;
 use Infocyph\UID\Sonyflake;
 use Infocyph\UID\TBSL;
+use Infocyph\UID\TypeID;
 use Infocyph\UID\ULID;
 use Infocyph\UID\UUID;
 use Infocyph\UID\XID;
-use InvalidArgumentException;
 use PhpBench\Attributes as Bench;
 
 final class HotspotBench
 {
-    private string $cuid2;
+    private string $opaque;
 
-    private string $ksuid;
+    private RandflakeConfig $randflakeConfig;
 
-    private int $leaseEnd;
+    private SnowflakeConfig $snowflakeConfig;
 
-    private int $leaseStart;
+    private SonyflakeConfig $sonyflakeConfig;
 
-    private string $nanoid;
-
-    private string $randflake;
-
-    private string $randflakeSecret;
-
-    private string $snowflake;
-
-    private string $sonyflake;
-
-    private string $tbsl;
-
-    private string $ulid;
-
-    private string $uuid;
-
-    private string $xid;
+    private TBSLConfig $tbslConfig;
 
     public function __construct()
     {
         require_once __DIR__ . '/BenchBootstrap.php';
         BenchBootstrap::load();
-        $this->prepareRandflakeContext();
 
-        $this->uuid = UUID::v7();
-        $this->ulid = ULID::generate();
-        $this->snowflake = Snowflake::generate();
-        $this->sonyflake = Sonyflake::generate();
-        $this->tbsl = TBSL::generate();
-        $this->ksuid = KSUID::generate();
-        $this->xid = XID::generate();
-        $this->nanoid = NanoID::generate();
-        $this->cuid2 = CUID2::generate();
-        $this->randflake = Randflake::generate(42, $this->leaseStart, $this->leaseEnd, $this->randflakeSecret);
+        $provider = new FilesystemSequenceProvider(namespace: 'phpbench');
+        [$leaseStart, $leaseEnd, $secret] = BenchBootstrap::randflakeContext();
+        $this->snowflakeConfig = new SnowflakeConfig(sequenceProvider: $provider);
+        $this->sonyflakeConfig = new SonyflakeConfig(sequenceProvider: $provider);
+        $this->randflakeConfig = new RandflakeConfig(1, $leaseStart, $leaseEnd, $secret, $provider);
+        $this->tbslConfig = new TBSLConfig(sequenceProvider: $provider);
+        $this->opaque = OpaqueId::fromInt(123456, 'bench');
     }
 
-    #[Bench\Revs(1000)]
-    #[Bench\Iterations(5)]
-    #[Bench\ParamProviders('provideGenerationSubjects')]
-    public function benchGeneration(array $params): void
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchCuid2(): void
     {
-        $this->runSubjectBench('generation', $params);
+        CUID2::generate();
     }
 
-    #[Bench\Revs(1000)]
-    #[Bench\Iterations(5)]
-    #[Bench\ParamProviders('provideParseSubjects')]
-    public function benchParse(array $params): void
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchDeterministicId(): void
     {
-        $this->runSubjectBench('parse', $params);
+        DeterministicId::fromPayload('payload', 24, 'bench');
     }
 
-    #[Bench\Revs(1000)]
-    #[Bench\Iterations(5)]
-    public function benchUlidMonotonicBurstSameMs(): void
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchKsuid(): void
     {
-        $fixed = DateTimeImmutable::createFromFormat('U.u', '1700000000.123000');
-        ULID::generate($fixed);
+        KSUID::generate();
     }
 
-    #[Bench\Revs(1000)]
-    #[Bench\Iterations(5)]
-    #[Bench\ParamProviders('provideValidationSubjects')]
-    public function benchValidation(array $params): void
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchNanoId(): void
     {
-        $this->runSubjectBench('validation', $params);
+        NanoID::generate();
     }
 
-    /**
-     * @return array<string, array{subject: string}>
-     */
-    public function provideGenerationSubjects(): array
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchObjectId(): void
     {
-        return [
-            'cuid2' => ['subject' => 'cuid2'],
-            'deterministic' => ['subject' => 'deterministic'],
-            'ksuid' => ['subject' => 'ksuid'],
-            'nanoid' => ['subject' => 'nanoid'],
-            'opaque' => ['subject' => 'opaque'],
-            'randflake' => ['subject' => 'randflake'],
-            'snowflake' => ['subject' => 'snowflake'],
-            'sonyflake' => ['subject' => 'sonyflake'],
-            'tbsl' => ['subject' => 'tbsl'],
-            'ulid' => ['subject' => 'ulid'],
-            'uuid_v7' => ['subject' => 'uuid_v7'],
-            'xid' => ['subject' => 'xid'],
-        ];
+        ObjectID::generate();
     }
 
-    /**
-     * @return array<string, array{subject: string}>
-     */
-    public function provideParseSubjects(): array
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchOpaqueIdDecode(): void
     {
-        return [
-            'ksuid' => ['subject' => 'ksuid'],
-            'randflake_inspect' => ['subject' => 'randflake_inspect'],
-            'randflake_parse' => ['subject' => 'randflake_parse'],
-            'snowflake' => ['subject' => 'snowflake'],
-            'sonyflake' => ['subject' => 'sonyflake'],
-            'tbsl' => ['subject' => 'tbsl'],
-            'ulid_get_time' => ['subject' => 'ulid_get_time'],
-            'uuid' => ['subject' => 'uuid'],
-            'xid' => ['subject' => 'xid'],
-        ];
+        OpaqueId::toInt($this->opaque, 'bench');
     }
 
-    /**
-     * @return array<string, array{subject: string}>
-     */
-    public function provideValidationSubjects(): array
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchOpaqueIdEncode(): void
     {
-        return [
-            'cuid2' => ['subject' => 'cuid2'],
-            'nanoid' => ['subject' => 'nanoid'],
-            'randflake' => ['subject' => 'randflake'],
-            'snowflake' => ['subject' => 'snowflake'],
-            'sonyflake' => ['subject' => 'sonyflake'],
-            'tbsl' => ['subject' => 'tbsl'],
-        ];
+        OpaqueId::fromInt(123456, 'bench');
     }
 
-    private function prepareRandflakeContext(): void
+    #[Bench\Revs(250), Bench\Iterations(5)]
+    public function benchRandflakeFilesystem(): void
     {
-        [$this->leaseStart, $this->leaseEnd, $this->randflakeSecret] = BenchBootstrap::randflakeContext();
+        Randflake::generateWithConfig($this->randflakeConfig);
     }
 
-    /**
-     * @param array{subject?: mixed} $params
-     */
-    private function runSubjectBench(string $operation, array $params): void
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchRandomId62(): void
     {
-        $subject = $this->subject($params);
-        $runner = match ($operation) {
-            'generation' => [
-                'cuid2' => fn() => CUID2::generate(),
-                'deterministic' => fn() => DeterministicId::fromPayload('payload', 24, 'bench'),
-                'ksuid' => fn() => KSUID::generate(),
-                'nanoid' => fn() => NanoID::generate(),
-                'opaque' => fn() => OpaqueId::random(12),
-                'randflake' => fn() => Randflake::generate(42, $this->leaseStart, $this->leaseEnd, $this->randflakeSecret),
-                'snowflake' => fn() => Snowflake::generate(),
-                'sonyflake' => fn() => Sonyflake::generate(),
-                'tbsl' => fn() => TBSL::generate(),
-                'ulid' => fn() => ULID::generate(),
-                'uuid_v7' => fn() => UUID::v7(),
-                'xid' => fn() => XID::generate(),
-            ],
-            'parse' => [
-                'ksuid' => fn() => KSUID::parse($this->ksuid),
-                'randflake_inspect' => fn() => Randflake::inspect($this->randflake, $this->randflakeSecret),
-                'randflake_parse' => fn() => Randflake::parse($this->randflake, $this->randflakeSecret),
-                'snowflake' => fn() => Snowflake::parse($this->snowflake),
-                'sonyflake' => fn() => Sonyflake::parse($this->sonyflake),
-                'tbsl' => fn() => TBSL::parse($this->tbsl),
-                'ulid_get_time' => fn() => ULID::getTime($this->ulid),
-                'uuid' => fn() => UUID::parse($this->uuid),
-                'xid' => fn() => XID::parse($this->xid),
-            ],
-            'validation' => $this->validationRunners(),
-            default => throw new InvalidArgumentException("Unknown benchmark operation: $operation"),
-        };
-        $handler = $runner[$subject] ?? throw new InvalidArgumentException("Unknown {$operation} subject: $subject");
-        $handler();
+        RandomId::generate(21, '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
     }
 
-    /**
-     * @param array{subject?: mixed} $params
-     */
-    private function subject(array $params): string
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchRandomId64(): void
     {
-        $subject = $params['subject'] ?? null;
-        if (!is_string($subject) || $subject === '') {
-            throw new InvalidArgumentException('Benchmark subject is required.');
-        }
-
-        return $subject;
+        RandomId::generate(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
     }
 
-    private function validateCuid2(): void
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchRandomIdDefault61(): void
     {
-        CUID2::isValid($this->cuid2);
+        RandomId::generate();
     }
 
-    private function validateNanoid(): void
+    #[Bench\Revs(250), Bench\Iterations(5)]
+    public function benchSnowflakeFilesystem(): void
     {
-        NanoID::isValid($this->nanoid);
+        Snowflake::generateWithConfig($this->snowflakeConfig);
     }
 
-    private function validateRandflake(): void
+    #[Bench\Revs(250), Bench\Iterations(5)]
+    public function benchSonyflakeFilesystem(): void
     {
-        Randflake::isValid($this->randflake);
+        Sonyflake::generateWithConfig($this->sonyflakeConfig);
     }
 
-    private function validateSnowflake(): void
+    #[Bench\Revs(250), Bench\Iterations(5)]
+    public function benchTbslFilesystem(): void
     {
-        Snowflake::isValid($this->snowflake);
+        TBSL::generateWithConfig($this->tbslConfig);
     }
 
-    private function validateSonyflake(): void
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchTypeId(): void
     {
-        Sonyflake::isValid($this->sonyflake);
+        TypeID::generate('user');
     }
 
-    private function validateTbsl(): void
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchUlidMonotonic(): void
     {
-        TBSL::isValid($this->tbsl);
+        ULID::generateMonotonic();
     }
 
-    /**
-     * @return array<string, callable():void>
-     */
-    private function validationRunners(): array
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchUlidRandom(): void
     {
-        return [
-            'cuid2' => fn() => $this->validateCuid2(),
-            'nanoid' => fn() => $this->validateNanoid(),
-            'randflake' => fn() => $this->validateRandflake(),
-            'snowflake' => fn() => $this->validateSnowflake(),
-            'sonyflake' => fn() => $this->validateSonyflake(),
-            'tbsl' => fn() => $this->validateTbsl(),
-        ];
+        ULID::generateRandom();
+    }
+
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchUuidV4(): void
+    {
+        UUID::v4();
+    }
+
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchUuidV7(): void
+    {
+        UUID::v7();
+    }
+
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchXid(): void
+    {
+        XID::generate();
     }
 }

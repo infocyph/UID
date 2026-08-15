@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Infocyph\UID\Configuration\SnowflakeConfig;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Snowflake;
 
 test('Snowflake Basic Functionality', function () {
@@ -119,12 +118,7 @@ test('Snowflake validation helper', function () {
 
     expect(Snowflake::isValid($id))->toBeTrue()
         ->and(Snowflake::isValid('abc'))->toBeFalse()
-        ->and(Snowflake::isValid('0'))->toBeFalse();
-});
-
-test('Snowflake rejects invalid start timestamp format', function () {
-    expect(fn () => Snowflake::setStartTimeStamp('not-a-date'))
-        ->toThrow(\Infocyph\UID\Exceptions\SnowflakeException::class);
+        ->and(Snowflake::isValid('0'))->toBeTrue();
 });
 
 test('Snowflake bytes and base conversion roundtrip', function () {
@@ -137,22 +131,15 @@ test('Snowflake bytes and base conversion roundtrip', function () {
         ->and(Snowflake::fromBase($encoded, 36))->toBe($id);
 });
 
-test('Snowflake config supports output modes', function () {
-    $intId = Snowflake::generateWithConfig(new SnowflakeConfig(outputType: IdOutputType::INT));
-    $binaryId = Snowflake::generateWithConfig(new SnowflakeConfig(outputType: IdOutputType::BINARY));
-
-    expect($intId)->toBeInt()
-        ->and($binaryId)->toBeString()
-        ->and(strlen($binaryId))->toBe(8);
+test('Snowflake config returns a canonical decimal string', function () {
+    expect(Snowflake::generateWithConfig(new SnowflakeConfig()))->toMatch('/^\d+$/');
 });
 
 test('Snowflake config rejects invalid epochs and resolver output', function () {
     $invalidResolver = new SnowflakeConfig(nodeResolver: fn (): string => 'invalid');
     $futureEpoch = ((int) floor(microtime(true) * 1000)) + 60_000;
 
-    expect(fn () => Snowflake::generateWithConfig(new SnowflakeConfig(customEpoch: 'not-a-date')))
-        ->toThrow(\InvalidArgumentException::class)
-        ->and(fn () => Snowflake::generateWithConfig(new SnowflakeConfig(customEpoch: $futureEpoch)))
+    expect(fn () => Snowflake::generateWithConfig(new SnowflakeConfig(customEpoch: $futureEpoch)))
         ->toThrow(\Infocyph\UID\Exceptions\SnowflakeException::class)
         ->and(fn () => Snowflake::generateWithConfig($invalidResolver))
         ->toThrow(\UnexpectedValueException::class);

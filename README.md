@@ -15,7 +15,7 @@ All-in-one unique ID toolkit for PHP.
 - UUID (`v1`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`)
 - ULID (monotonic and random modes)
 - Snowflake, Sonyflake, Randflake, TBSL
-- NanoID, CUID2, KSUID, XID
+- TypeID, ObjectID, NanoID, RandomId, CUID2, KSUID, XID
 - Opaque and deterministic IDs
 - Value objects and comparator utilities
 - Binary conversion and base encoders (`16`, `32`, `36`, `58`, `62`)
@@ -24,7 +24,7 @@ All-in-one unique ID toolkit for PHP.
 ## Requirements
 
 - PHP `>=8.2`
-- `ext-bcmath`
+- A 64-bit PHP runtime
 
 ## Installation
 
@@ -32,7 +32,7 @@ All-in-one unique ID toolkit for PHP.
 composer require infocyph/uid
 ```
 
-Global helper functions are autoloaded via `src/functions.php`.
+Namespaced generator functions are autoloaded via `src/functions.php`.
 
 ## Quick Usage
 
@@ -90,17 +90,36 @@ The shared byte-level encoder is available as
 
 ## Security
 
-Protected by [PHPForge](https://github.com/infocyph/PHPForge) — an automated quality and security gate for PHP projects.
+Do not disclose suspected vulnerabilities in a public issue, discussion or pull request. Review the
+[security policy](SECURITY.md), then use [GitHub private vulnerability reporting](https://github.com/infocyph/UID/security/advisories/new)
+to contact the maintainers confidentially.
+
+UID is protected by [PHPForge](https://github.com/infocyph/PHPForge), an automated quality and security gate covering
+tests, static and taint analysis, dependency auditing, architecture checks, and release readiness. Automated controls reduce
+risk but do not replace responsible disclosure or manual review.
 
 ---
 
 <div align="center">
   <sub><strong>Made with ❤️ for the PHP community</strong></sub><br />
   <sub><a href="LICENSE">MIT Licensed</a></sub><br />
-  <a href="https://docs.infocyph.com/projects/UID">Documentation</a> •
+  <a href="https://docs.infocyph.com/projects/UID/en/latest/">Documentation</a> •
   <a href="SECURITY.md">Security</a> •
   <a href="CODE_OF_CONDUCT.md">Code of Conduct</a> •
-  <a href="CONTRIBUTING.md">Contributing</a> •
-  <a href="https://github.com/infocyph/UID/issues">Report Bug</a> •
-  <a href="https://github.com/infocyph/UID/issues">Request Feature</a>
+  <a href="CONTRIBUTING.md">Contributing</a><br />
+  <span title="Issue templates" aria-label="Issue templates">🗂️</span>
+  <a href="https://github.com/infocyph/UID/issues/new?template=bug_report.yml">Bug</a> •
+  <a href="https://github.com/infocyph/UID/issues/new?template=feature_request.yml">Feature</a> •
+  <a href="https://github.com/infocyph/UID/issues/new?template=docs_improvement.yml">Documentation</a> •
+  <a href="https://github.com/infocyph/UID/issues/new?template=question.yml">Question</a> •
+  <a href="https://github.com/infocyph/UID/issues/new?template=ci_failure.yml">CI failure</a><br />
+  <span title="Pull request templates" aria-label="Pull request templates">🔀</span>
+  <a href="https://github.com/infocyph/UID/compare/main...HEAD?quick_pull=1&amp;template=PULL_REQUEST_TEMPLATE.md">General</a> •
+  <a href="https://github.com/infocyph/UID/compare/main...HEAD?quick_pull=1&amp;template=bug_fix.md">Bug fix</a> •
+  <a href="https://github.com/infocyph/UID/compare/main...HEAD?quick_pull=1&amp;template=feature.md">Feature</a> •
+  <a href="https://github.com/infocyph/UID/compare/main...HEAD?quick_pull=1&amp;template=refactor.md">Refactor</a> •
+  <a href="https://github.com/infocyph/UID/compare/main...HEAD?quick_pull=1&amp;template=performance.md">Performance</a> •
+  <a href="https://github.com/infocyph/UID/compare/main...HEAD?quick_pull=1&amp;template=security_reliability.md">Security &amp; reliability</a> •
+  <a href="https://github.com/infocyph/UID/compare/main...HEAD?quick_pull=1&amp;template=documentation.md">Documentation</a> •
+  <a href="https://github.com/infocyph/UID/compare/main...HEAD?quick_pull=1&amp;template=maintenance.md">Maintenance</a>
 </div>

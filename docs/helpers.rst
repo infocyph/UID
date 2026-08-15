@@ -1,93 +1,27 @@
-Global Helper Functions
-=======================
+Namespaced Generator Functions
+==============================
 
-UID autoloads helper functions from ``src/functions.php``.
-
-UUID Helpers
-------------
-
-- ``uuid1(?string $node = null)``
-- ``uuid3(string $namespace, string $string)``
-- ``uuid4()``
-- ``uuid5(string $namespace, string $string)``
-- ``uuid6(?string $node = null)``
-- ``uuid7(?DateTimeInterface $dateTime = null, ?string $node = null)``
-- ``uuid8(?string $node = null)``
-- ``guid(bool $trim = true)``
-
-UUID Utility Helpers
---------------------
-
-- ``uuid_nil()``, ``uuid_max()``
-- ``uuid_is_nil(string $uuid)``, ``uuid_is_max(string $uuid)``
-- ``uuid_normalize(string $uuid)``, ``uuid_compact(string $uuid)``
-- ``uuid_urn(string $uuid)``, ``uuid_braces(string $uuid)``
-- ``uuid_to_base(string $uuid, int $base)``, ``uuid_from_base(string $encoded, int $base)``
-
-ULID Helpers
-------------
-
-- ``ulid(?DateTimeInterface $dateTime = null)``
-- ``ulid_monotonic(?DateTimeInterface $dateTime = null)``
-- ``ulid_random(?DateTimeInterface $dateTime = null)``
-- ``ulid_to_base(string $ulid, int $base)``
-- ``ulid_from_base(string $encoded, int $base)``
-
-Snowflake/Sonyflake/TBSL Helpers
---------------------------------
-
-- ``snowflake(int $datacenter = 0, int $workerId = 0)``
-- ``snowflake_is_valid(string $id)``
-- ``snowflake_to_base(string $id, int $base)``
-- ``snowflake_from_base(string $encoded, int $base)``
-
-- ``sonyflake(int $machineId = 0)``
-- ``sonyflake_is_valid(string $id)``
-- ``sonyflake_to_base(string $id, int $base)``
-- ``sonyflake_from_base(string $encoded, int $base)``
-
-- ``tbsl(int $machineId = 0, bool $sequenced = false)``
-- ``tbsl_is_valid(string $id)``
-- ``tbsl_to_base(string $id, int $base)``
-- ``tbsl_from_base(string $encoded, int $base)``
-
-Randflake Helpers
------------------
-
-- ``randflake(int $nodeId, int $leaseStart, int $leaseEnd, string $secret)``
-- ``randflake_string(int $nodeId, int $leaseStart, int $leaseEnd, string $secret)``
-- ``randflake_is_valid(string $id)``
-- ``randflake_to_base(string $id, int $base)``
-- ``randflake_from_base(string $encoded, int $base)``
-- ``randflake_parse(string $id, string $secret)``
-- ``randflake_parse_string(string $id, string $secret)``
-- ``randflake_inspect(string $id, string $secret)``
-- ``randflake_inspect_string(string $id, string $secret)``
-
-Short/Random/Opaque Helpers
----------------------------
-
-- ``nanoid(int $size = 21)``
-- ``nanoid_is_valid(string $id, ?int $size = null)``
-- ``cuid2(int $maxLength = 24)``
-- ``cuid2_is_valid(string $id)``
-- ``opaque_id(int $length = 12)``
-- ``deterministic_id(string $payload, int $length = 24, string $namespace = 'default')``
-
-Other Helpers
--------------
-
-- ``ksuid(?DateTimeInterface $dateTime = null)``
-- ``xid()``
-
-Example
--------
+Composer autoloads generator-only functions in the ``Infocyph\UID`` namespace.
+Import them explicitly before use:
 
 .. code-block:: php
 
    <?php
 
-   $id = uuid7();
-   $ul = ulid_random();
-   $sf = snowflake(1, 2);
-   $short = nanoid(16);
+   use function Infocyph\UID\object_id;
+   use function Infocyph\UID\random_id;
+   use function Infocyph\UID\type_id;
+   use function Infocyph\UID\uuid7;
+
+   $uuid = uuid7();
+   $typeId = type_id('user');
+   $objectId = object_id();
+   $random = random_id(24);
+
+Available helpers are ``uuid1``, ``uuid3``, ``uuid4``, ``uuid5``, ``uuid6``,
+``uuid7``, ``uuid8``, ``ulid``, ``type_id``, ``object_id``, ``snowflake``,
+``sonyflake``, ``randflake``, ``tbsl``, ``ksuid``, ``xid``, ``nano_id``,
+``cuid2``, and ``random_id``.
+
+Conversion, parsing, validation, and internal ``__uid_*`` helpers are deliberately
+not exported. Use the relevant class for those operations.

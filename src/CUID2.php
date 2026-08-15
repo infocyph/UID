@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Infocyph\UID;
 
 use Exception;
-use Infocyph\UID\Contracts\IdAlgorithmInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use InvalidArgumentException;
 
-final class CUID2 implements IdAlgorithmInterface
+final class CUID2
 {
     private const INITIAL_COUNTER_MAX = 476_782_367;
 
@@ -18,6 +17,8 @@ final class CUID2 implements IdAlgorithmInterface
     private static int $counter;
 
     private static ?string $fingerprint = null;
+
+    private static ?int $sourcePid = null;
 
     /**
      * Generates a CUID2 string with a specified maximum length.
@@ -30,9 +31,14 @@ final class CUID2 implements IdAlgorithmInterface
             'length must be between 2 and 32',
         );
 
-        self::$counter ??= random_int(0, self::INITIAL_COUNTER_MAX);
+        self::ensureProcessState();
         $time = (string) (int) floor(microtime(true) * 1000);
-        $counter = (string) self::$counter++;
+        $counter = (string) self::$counter;
+        if (self::$counter === PHP_INT_MAX) {
+            self::$counter = random_int(0, self::INITIAL_COUNTER_MAX);
+        } else {
+            ++self::$counter;
+        }
         $salt = random_bytes($length);
         $fingerprint = self::fingerprint();
         $hashInput = pack('N', strlen($time)) . $time
@@ -60,14 +66,25 @@ final class CUID2 implements IdAlgorithmInterface
     /**
      * Parses CUID2 information.
      *
-     * @return array{isValid: bool, length: int}
+     * @return array{length: int}
      */
     public static function parse(string $id, ?int $length = null): array
     {
-        return [
-            'isValid' => self::isValid($id, $length),
-            'length' => strlen($id),
-        ];
+        self::isValid($id, $length) || throw new InvalidArgumentException('Invalid CUID2 string');
+
+        return ['length' => strlen($id)];
+    }
+
+    private static function ensureProcessState(): void
+    {
+        $pid = (int) getmypid();
+        if (self::$sourcePid === $pid) {
+            return;
+        }
+
+        self::$sourcePid = $pid;
+        self::$counter = random_int(0, self::INITIAL_COUNTER_MAX);
+        self::$fingerprint = null;
     }
 
     /**
@@ -84,7 +101,7 @@ final class CUID2 implements IdAlgorithmInterface
         $host = gethostname();
         $source = ($host === false ? '' : $host)
             . "\0"
-            . getmypid()
+            . (int) getmypid()
             . random_bytes(32);
 
         return self::$fingerprint = substr(

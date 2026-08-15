@@ -8,37 +8,32 @@ use DateTimeImmutable;
 use Exception;
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
-use Infocyph\UID\Enums\IdOutputType;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\SnowflakeException;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
-use Infocyph\UID\Support\EpochGuard;
 use Infocyph\UID\Support\GetSequence;
 use Infocyph\UID\Support\NumericConversion;
-use Infocyph\UID\Support\OutputFormatter;
 use Infocyph\UID\Support\UnsignedDecimal;
 
 final class Snowflake
 {
     use GetSequence;
 
-    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<int, array{timestamp:int, sequence:int}>>|null */
+    private const DATACENTER_BITS = 5;
+
+    private const DEFAULT_EPOCH = 1_577_836_800_000;
+
+    private const SEQUENCE_BITS = 12;
+
+    private const TIMESTAMP_BITS = 41;
+
+    private const WORKER_BITS = 5;
+
+    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, array{timestamp:int, sequence:int}>>|null */
     private static ?\WeakMap $lastStateByProvider = null;
-
-    private static int $lastTimestamp = 0;
-
-    private static int $maxDatacenterLength = 5;
-
-    private static int $maxSequenceLength = 12;
-
-    private static int $maxTimestampLength = 41;
-
-    private static int $maxWorkIdLength = 5;
-
-    private static ?int $startTime = null;
 
     /**
      * Decodes one of bases: 16, 32, 36, 58, 62 into Snowflake decimal.
@@ -70,12 +65,11 @@ final class Snowflake
      */
     public static function generate(int $datacenter = 0, int $workerId = 0): string
     {
-        return (string) self::generateInternal(
+        return self::generateInternal(
             $datacenter,
             $workerId,
             self::getStartTimeStamp(),
             ClockBackwardPolicy::WAIT,
-            IdOutputType::STRING,
         );
     }
 
@@ -84,7 +78,7 @@ final class Snowflake
      *
      * @throws SnowflakeException|FileLockException
      */
-    public static function generateWithConfig(SnowflakeConfig $config): int|string
+    public static function generateWithConfig(SnowflakeConfig $config): string
     {
         [$datacenterId, $workerId] = $config->resolveNode();
         $customEpoch = $config->resolveCustomEpochMs();
@@ -94,7 +88,6 @@ final class Snowflake
             $workerId,
             $customEpoch ?? self::getStartTimeStamp(),
             $config->clockBackwardPolicy,
-            $config->outputType,
             $config->sequenceProvider,
         );
     }
@@ -105,7 +98,6 @@ final class Snowflake
     public static function isValid(string $id): bool
     {
         return $id !== ''
-            && $id !== '0'
             && ctype_digit($id)
             && UnsignedDecimal::compare($id, (string) PHP_INT_MAX) <= 0;
     }
@@ -137,8 +129,8 @@ final class Snowflake
             throw new SnowflakeException('Invalid Snowflake ID string');
         }
 
-        $binaryId = decbin((int) $id);
-        $timestamp = (int) bindec(substr($binaryId, 0, -22)) + $startTimestamp;
+        $numericId = (int) $id;
+        $timestamp = ($numericId >> 22) + $startTimestamp;
         [$seconds, $fraction] = self::timestampParts($timestamp);
 
         return [
@@ -148,42 +140,10 @@ final class Snowflake
                 . '.'
                 . str_pad($fraction, 6, '0', STR_PAD_LEFT),
             ),
-            'sequence' => (int) bindec(substr($binaryId, -12)),
-            'worker_id' => (int) bindec(substr($binaryId, -17, 5)),
-            'datacenter_id' => (int) bindec(substr($binaryId, -22, 5)),
+            'sequence' => $numericId & 0xfff,
+            'worker_id' => ($numericId >> 12) & 0x1f,
+            'datacenter_id' => ($numericId >> 17) & 0x1f,
         ];
-    }
-
-    /**
-     * Sets the start timestamp for the Snowflake algorithm.
-     *
-     * @param string $timeString The start time in string format.
-     * @throws SnowflakeException
-     */
-    public static function setStartTimeStamp(string $timeString): void
-    {
-        try {
-            $resolved = EpochGuard::resolveStartTime(
-                $timeString,
-                'Invalid start time format',
-                'The start time cannot be in the future',
-            );
-        } catch (\InvalidArgumentException $exception) {
-            throw new SnowflakeException($exception->getMessage(), 0, $exception);
-        }
-        $time = $resolved['time'];
-        $current = $resolved['current'];
-
-        if (($current - $time) > (-1 ^ (-1 << self::$maxTimestampLength))) {
-            throw new SnowflakeException(
-                sprintf(
-                    'The current microtime - start_time is not allowed to exceed -1 ^ (-1 << %d),\n                    You can reset the start time to fix this',
-                    self::$maxTimestampLength,
-                ),
-            );
-        }
-
-        self::$startTime = $time * 1000;
     }
 
     /**
@@ -211,8 +171,8 @@ final class Snowflake
      */
     private static function assertNodeIds(int $datacenter, int $workerId): void
     {
-        $maxDataCenter = -1 ^ (-1 << self::$maxDatacenterLength);
-        $maxWorkId = -1 ^ (-1 << self::$maxWorkIdLength);
+        $maxDataCenter = -1 ^ (-1 << self::DATACENTER_BITS);
+        $maxWorkId = -1 ^ (-1 << self::WORKER_BITS);
 
         if ($datacenter > $maxDataCenter || $datacenter < 0) {
             throw new SnowflakeException("Invalid datacenter ID, must be between 0 ~ $maxDataCenter.");
@@ -229,7 +189,7 @@ final class Snowflake
     private static function assertTimestampRange(int $currentTime, int $startTimestamp): void
     {
         $elapsed = $currentTime - $startTimestamp;
-        $maxTimestamp = -1 ^ (-1 << self::$maxTimestampLength);
+        $maxTimestamp = -1 ^ (-1 << self::TIMESTAMP_BITS);
         if ($elapsed < 0) {
             throw new SnowflakeException('Snowflake epoch must not be in the future');
         }
@@ -279,28 +239,22 @@ final class Snowflake
         int $workerId,
         int $startTimestamp,
         ClockBackwardPolicy $clockBackwardPolicy,
-        IdOutputType $outputType,
         ?SequenceProviderInterface $sequenceProvider = null,
-    ): int|string {
+    ): string {
         self::assertNodeIds($datacenter, $workerId);
 
         $currentTime = (int) floor(microtime(true) * 1000);
         self::assertTimestampRange($currentTime, $startTimestamp);
 
-        if ($currentTime < self::$lastTimestamp) {
-            if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
-                throw new SnowflakeException('Clock moved backwards while generating Snowflake ID');
-            }
-
-            $currentTime = self::waitUntil(self::$lastTimestamp);
-            self::assertTimestampRange($currentTime, $startTimestamp);
-        }
-
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
-        $sequenceKey = ($datacenter << self::$maxWorkIdLength) | $workerId;
+        $sequenceKey = ($datacenter << self::WORKER_BITS) | $workerId;
+        $stateKey = $startTimestamp . ':' . $sequenceKey;
         self::$lastStateByProvider ??= new \WeakMap();
         $providerState = self::$lastStateByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
-        $maxSequence = -1 ^ (-1 << self::$maxSequenceLength);
+        $maxSequence = -1 ^ (-1 << self::SEQUENCE_BITS);
+        $sequenceType = $startTimestamp === self::DEFAULT_EPOCH
+            ? 'snowflake'
+            : 'snowflake_' . $startTimestamp;
 
         while (true) {
             [$currentTime, $sequence] = self::nextSequenceAtValidTimestamp(
@@ -310,9 +264,10 @@ final class Snowflake
                 $maxSequence,
                 $clockBackwardPolicy,
                 $resolvedSequenceProvider,
+                $sequenceType,
             );
 
-            $lastState = $providerState[$sequenceKey] ?? null;
+            $lastState = $providerState[$stateKey] ?? null;
 
             if ($lastState === null) {
                 break;
@@ -333,22 +288,19 @@ final class Snowflake
             break;
         }
 
-        self::$lastTimestamp = $currentTime;
-        $providerState[$sequenceKey] = [
+        $providerState[$stateKey] = [
             'timestamp' => $currentTime,
             'sequence' => $sequence,
         ];
 
-        $workerLeftMoveLength = self::$maxSequenceLength;
-        $datacenterLeftMoveLength = self::$maxWorkIdLength + $workerLeftMoveLength;
-        $timestampLeftMoveLength = self::$maxDatacenterLength + $datacenterLeftMoveLength;
+        $workerLeftMoveLength = self::SEQUENCE_BITS;
+        $datacenterLeftMoveLength = self::WORKER_BITS + $workerLeftMoveLength;
+        $timestampLeftMoveLength = self::DATACENTER_BITS + $datacenterLeftMoveLength;
 
-        $id = (string) ((($currentTime - $startTimestamp) << $timestampLeftMoveLength)
+        return (string) ((($currentTime - $startTimestamp) << $timestampLeftMoveLength)
             | ($datacenter << $datacenterLeftMoveLength)
             | ($workerId << $workerLeftMoveLength)
             | ($sequence));
-
-        return OutputFormatter::formatNumeric($id, $outputType);
     }
 
     /**
@@ -356,7 +308,7 @@ final class Snowflake
      */
     private static function getStartTimeStamp(): int
     {
-        return self::$startTime ??= 1_577_836_800_000;
+        return self::DEFAULT_EPOCH;
     }
 
     /**
@@ -370,10 +322,11 @@ final class Snowflake
         int $maxSequence,
         ClockBackwardPolicy $clockBackwardPolicy,
         SequenceProviderInterface $sequenceProvider,
+        string $sequenceType,
     ): array {
         while (true) {
             try {
-                $sequence = self::sequence($currentTime, $sequenceKey, 'snowflake', $sequenceProvider);
+                $allocation = self::sequence($currentTime, $sequenceKey, $sequenceType, $sequenceProvider);
             } catch (SequenceTimestampException $exception) {
                 if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                     throw new SnowflakeException(
@@ -389,8 +342,12 @@ final class Snowflake
                 continue;
             }
 
-            if ($sequence <= $maxSequence) {
-                return [$currentTime, $sequence];
+            if ($allocation < 1) {
+                throw new SnowflakeException('Snowflake sequence provider must return a positive allocation');
+            }
+
+            if ($allocation <= $maxSequence + 1) {
+                return [$currentTime, $allocation - 1];
             }
 
             $currentTime = self::waitUntil($currentTime + 1);

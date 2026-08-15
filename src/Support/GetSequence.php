@@ -36,10 +36,16 @@ trait GetSequence
      */
     public static function useFilesystemSequenceProvider(
         ?string $baseDirectory = null,
-        int $waitTime = 1_000,
-        int $maxAttempts = 1_000,
+        string $namespace = '',
+        ?int $lockTimeoutMicros = null,
+        int $reservationSize = 1,
     ): void {
-        self::$sequenceProvider = new FilesystemSequenceProvider($baseDirectory, $waitTime, $maxAttempts);
+        self::$sequenceProvider = new FilesystemSequenceProvider(
+            $baseDirectory,
+            $namespace,
+            $lockTimeoutMicros,
+            $reservationSize,
+        );
     }
 
     /**
@@ -66,10 +72,17 @@ trait GetSequence
     public static function useSimpleCacheSequenceProvider(
         CacheInterface $cache,
         string $prefix = 'uid.seq.',
+        ?callable $synchronizer = null,
         int $waitTime = 1_000,
         int $maxAttempts = 1_000,
     ): void {
-        self::$sequenceProvider = new PsrSimpleCacheSequenceProvider($cache, $prefix, $waitTime, $maxAttempts);
+        self::$sequenceProvider = new PsrSimpleCacheSequenceProvider(
+            $cache,
+            $prefix,
+            $waitTime,
+            $maxAttempts,
+            $synchronizer,
+        );
     }
 
     /**
