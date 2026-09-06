@@ -11,30 +11,13 @@ on:
 jobs:
   phpforge:
     uses: infocyph/phpforge/.github/workflows/security-standards.yml@main
+    with:
+      fail_on_skipped_tests: true
+      integration_services: '[]'
+      service_topologies: '{}'
+      php_extensions: '["bcmath"]'
     permissions:
       security-events: write
       actions: read
       contents: read
-    with:
-      php_versions: '["8.2","8.3","8.4","8.5"]'
-      dependency_versions: '["prefer-lowest","prefer-stable"]'
-      php_extensions: "bcmath"
-      composer_flags: ""
-      phpstan_memory_limit: "1G"
-      psalm_threads: "1"
-      run_analysis: true
-      run_svg_report: true
-      fail_on_skipped_tests: false
-      enable_redis_service: false
-      enable_valkey_service: false
-      enable_memcached_service: false
-      enable_postgres_service: false
-      enable_mysql_service: false
-      enable_scylladb_service: false
-      enable_elasticsearch_service: false
-      enable_mongodb_service: false
-      service_db_name: "phpforge"
-      service_db_user: "phpforge"
-      service_db_password: "phpforge"
-      artifact_retention_days: 61
 
