@@ -86,7 +86,7 @@ final class TBSL
      */
     public static function isValid(string $tbsl): bool
     {
-        return (bool) preg_match('/^[0-9A-F]{20}$/', $tbsl);
+        return (bool) preg_match('/^[0-9A-F]{20}$/D', $tbsl);
     }
 
     /**

@@ -43,7 +43,7 @@ final class NanoID
             return false;
         }
 
-        return preg_match('/^[A-Za-z0-9_-]+$/', $id) === 1;
+        return preg_match('/^[A-Za-z0-9_-]+$/D', $id) === 1;
     }
 
     /**
