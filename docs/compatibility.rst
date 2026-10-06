@@ -10,8 +10,10 @@ Format Compatibility
 - ObjectID implements the BSON 12-byte ObjectID layout and canonical lowercase hexadecimal text.
 - ULID uses canonical Crockford Base32 and supports random and process-local monotonic modes.
 - Snowflake uses a 41/5/5/12 signed 64-bit layout.
-- Sonyflake uses a 39/16/8 signed 64-bit layout with 10 millisecond timestamps.
-- Randflake uses an unsigned 64-bit 30/17/17 layout before keyed permutation.
+- Sonyflake defaults to UID's 39/16/8 time/machine/sequence layout and also
+  supports explicit upstream 39/8/16 time/sequence/machine mode.
+- Randflake defaults to UID's unsigned 30/17/17 payload plus legacy Feistel
+  representation and also supports explicit upstream SPARX64 representation.
 - TBSL is a project-specific 10-byte, uppercase hexadecimal format.
 - KSUID and XID retain their standard fixed-length text and binary layouts.
 
@@ -63,5 +65,6 @@ Runtime Requirements
 
 - PHP 8.4 or newer on a 64-bit runtime.
 - The ctype extension is required.
+- Runwire 2.1 and PSR-20 clocks are optional passed-instance integrations.
 - No BCMath dependency.
 - PSR-16 is optional and needed only for the PSR simple-cache sequence provider.
