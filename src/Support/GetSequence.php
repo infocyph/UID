@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Support;
 
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\CallbackSequenceProvider;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\InMemorySequenceProvider;
-use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\PsrSimpleCacheSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Psr\SimpleCache\CacheInterface;
