@@ -6,6 +6,7 @@ namespace Infocyph\UID\Sequence;
 
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Support\FileLock;
 use InvalidArgumentException;
 
@@ -30,6 +31,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         private readonly string $namespace = '',
         private readonly ?int $lockTimeoutMicros = null,
         private readonly int $reservationSize = 1,
+        private readonly ?GenerationContext $runtime = null,
     ) {
         $this->baseDirectory = $baseDirectory ?: sys_get_temp_dir();
 
@@ -72,6 +74,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
             $this->lockTimeoutMicros,
             'Failed to open sequence file: ' . $fileLocation,
             'Unable to acquire sequence lock: ' . $fileLocation,
+            $this->runtime,
         );
 
         try {

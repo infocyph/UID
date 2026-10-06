@@ -7,6 +7,7 @@ namespace Infocyph\UID\Sequence;
 use Closure;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Support\FileLock;
 use InvalidArgumentException;
 use Psr\SimpleCache\CacheInterface;
@@ -28,6 +29,7 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
         private int $waitTime = 1_000,
         private int $maxAttempts = 1_000,
         ?callable $synchronizer = null,
+        private ?GenerationContext $runtime = null,
     ) {
         if (preg_match('/^[A-Za-z0-9_.]*$/D', $this->prefix) !== 1) {
             throw new InvalidArgumentException('Cache key prefix contains characters not guaranteed by PSR-16');
@@ -98,6 +100,7 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
             $this->waitTime * $this->maxAttempts,
             'Unable to open sequence cache lock file: ' . $lockFile,
             'Unable to acquire sequence cache lock for key: ' . $key,
+            $this->runtime,
         );
     }
 

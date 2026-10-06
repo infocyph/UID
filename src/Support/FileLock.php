@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Infocyph\UID\Support;
 
 use Infocyph\UID\Exceptions\FileLockException;
+use Infocyph\UID\Runtime\GenerationContext;
 
 final class FileLock
 {
@@ -17,10 +18,11 @@ final class FileLock
         ?int $timeoutMicros,
         string $openErrorMessage,
         string $lockErrorMessage,
+        ?GenerationContext $runtime = null,
     ) {
         $handle = self::openVerified($path, $openErrorMessage);
 
-        if ($timeoutMicros === null) {
+        if ($timeoutMicros === null && $runtime === null) {
             if (flock($handle, LOCK_EX)) {
                 return $handle;
             }
@@ -30,7 +32,13 @@ final class FileLock
             throw new FileLockException($lockErrorMessage);
         }
 
-        $deadline = hrtime(true) + ($timeoutMicros * 1000);
+        $effectiveTimeout = $timeoutMicros ?? $runtime?->waitTimeoutMicros ?? 1_000_000;
+        $deadline = hrtime(true) + ($effectiveTimeout * 1000);
+        $runtimeDeadline = $runtime?->runwire?->deadlineNanoseconds();
+        if ($runtimeDeadline !== null) {
+            $deadline = min($deadline, $runtimeDeadline);
+        }
+
         do {
             $wouldBlock = 0;
             if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
@@ -43,7 +51,11 @@ final class FileLock
                 throw new FileLockException($lockErrorMessage);
             }
 
-            usleep(1000);
+            if ($runtime !== null) {
+                $runtime->sleepMicroseconds(1_000);
+            } else {
+                usleep(1_000);
+            }
         } while (hrtime(true) < $deadline);
 
         fclose($handle);
