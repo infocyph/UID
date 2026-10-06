@@ -14,9 +14,9 @@ final readonly class SnowflakeConfig
 {
     use ResolvesCustomEpoch;
 
-    private ?Closure $nodeResolver;
-
     public ?int $customEpoch;
+
+    private ?Closure $nodeResolver;
 
     /**
      * @param callable():mixed|null $nodeResolver

@@ -12,10 +12,10 @@ use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class SonyflakeConfig
 {
-    public ?int $customEpoch;
-
     use ResolvesCustomEpoch;
     use ResolvesMachineId;
+
+    public ?int $customEpoch;
 
     /**
      * @param callable():mixed|null $machineIdResolver

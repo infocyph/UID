@@ -14,7 +14,8 @@ final readonly class RandflakeConfig
         public int $nodeId,
         public int $leaseStart,
         public int $leaseEnd,
-        #[\SensitiveParameter] public string $secret,
+        #[\SensitiveParameter]
+        public string $secret,
         public ?SequenceProviderInterface $sequenceProvider = null,
         public ?GenerationContext $runtime = null,
         public RandflakeFormat $format = RandflakeFormat::UID,
