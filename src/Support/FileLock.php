@@ -12,7 +12,7 @@ final class FileLock
 {
     private const int DEFAULT_TIMEOUT_MICROS = 1_000_000;
 
-    /**
+/**
      * @return resource
      * @throws FileLockException
      */
@@ -62,7 +62,90 @@ final class FileLock
         throw new FileLockException($lockErrorMessage);
     }
 
-    /**
+/**
+     * @param array<string|int, int> $metadata
+     * @throws FileLockException
+     */
+    private static function assertSafeMetadata(array $metadata, string $errorMessage): void
+    {
+        $mode = $metadata['mode'];
+        if (($mode & 0170000) !== 0100000) {
+            throw new FileLockException($errorMessage);
+        }
+
+        if (function_exists('posix_geteuid') && $metadata['uid'] !== posix_geteuid()) {
+            throw new FileLockException($errorMessage);
+        }
+    }
+
+/**
+     * @param array<string|int, int> $left
+     * @param array<string|int, int> $right
+     */
+    private static function assertSameFile(array $left, array $right, string $errorMessage): void
+    {
+        if ($left['dev'] !== $right['dev'] || $left['ino'] !== $right['ino']) {
+            throw new FileLockException($errorMessage);
+        }
+    }
+
+private static function changePermissions(string $path, int $permissions): bool
+    {
+        try {
+            return self::invokeFilesystem(static fn(): bool => chmod($path, $permissions));
+        } catch (ErrorException) {
+            return false;
+        }
+    }
+
+/**
+     * @template T
+     * @param callable():T $operation
+     * @return T
+     * @throws ErrorException
+     */
+    private static function invokeFilesystem(callable $operation): mixed
+    {
+        set_error_handler(
+            static function (int $severity, string $message, string $file, int $line): never {
+                throw new ErrorException($message, 0, $severity, $file, $line);
+            },
+        );
+
+        try {
+            return $operation();
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+/**
+     * @param array<string|int, int> $before
+     * @return resource
+     */
+    private static function openExisting(string $path, array $before, string $errorMessage)
+    {
+        $handle = self::openStream($path, 'r+b');
+        if (!is_resource($handle)) {
+            throw new FileLockException($errorMessage);
+        }
+
+        return self::verifyHandle($path, $handle, $before, $errorMessage);
+    }
+
+/**
+     * @return resource|false
+     */
+    private static function openStream(string $path, string $mode)
+    {
+        try {
+            return self::invokeFilesystem(static fn() => fopen($path, $mode));
+        } catch (ErrorException) {
+            return false;
+        }
+    }
+
+/**
      * @return resource
      * @throws FileLockException
      */
@@ -95,21 +178,19 @@ final class FileLock
         return self::verifyHandle($path, $handle, null, $errorMessage);
     }
 
-    /**
-     * @param array<string|int, int> $before
-     * @return resource
+/**
+     * @return array<string|int, int>|false
      */
-    private static function openExisting(string $path, array $before, string $errorMessage)
+    private static function pathMetadata(string $path): array|false
     {
-        $handle = self::openStream($path, 'r+b');
-        if (!is_resource($handle)) {
-            throw new FileLockException($errorMessage);
+        try {
+            return self::invokeFilesystem(static fn(): array|false => lstat($path));
+        } catch (ErrorException) {
+            return false;
         }
-
-        return self::verifyHandle($path, $handle, $before, $errorMessage);
     }
 
-    /**
+/**
      * @param resource $handle
      * @param array<string|int, int>|null $before
      * @return resource
@@ -137,84 +218,4 @@ final class FileLock
         }
     }
 
-    /**
-     * @param array<string|int, int> $left
-     * @param array<string|int, int> $right
-     */
-    private static function assertSameFile(array $left, array $right, string $errorMessage): void
-    {
-        if ($left['dev'] !== $right['dev'] || $left['ino'] !== $right['ino']) {
-            throw new FileLockException($errorMessage);
-        }
-    }
-
-    /**
-     * @return array<string|int, int>|false
-     */
-    private static function pathMetadata(string $path): array|false
-    {
-        try {
-            return self::invokeFilesystem(static fn(): array|false => lstat($path));
-        } catch (ErrorException) {
-            return false;
-        }
-    }
-
-    /**
-     * @return resource|false
-     */
-    private static function openStream(string $path, string $mode)
-    {
-        try {
-            return self::invokeFilesystem(static fn() => fopen($path, $mode));
-        } catch (ErrorException) {
-            return false;
-        }
-    }
-
-    private static function changePermissions(string $path, int $permissions): bool
-    {
-        try {
-            return self::invokeFilesystem(static fn(): bool => chmod($path, $permissions));
-        } catch (ErrorException) {
-            return false;
-        }
-    }
-
-    /**
-     * @template T
-     * @param callable():T $operation
-     * @return T
-     * @throws ErrorException
-     */
-    private static function invokeFilesystem(callable $operation): mixed
-    {
-        set_error_handler(
-            static function (int $severity, string $message, string $file, int $line): never {
-                throw new ErrorException($message, 0, $severity, $file, $line);
-            },
-        );
-
-        try {
-            return $operation();
-        } finally {
-            restore_error_handler();
-        }
-    }
-
-    /**
-     * @param array<string|int, int> $metadata
-     * @throws FileLockException
-     */
-    private static function assertSafeMetadata(array $metadata, string $errorMessage): void
-    {
-        $mode = $metadata['mode'];
-        if (($mode & 0170000) !== 0100000) {
-            throw new FileLockException($errorMessage);
-        }
-
-        if (function_exists('posix_geteuid') && $metadata['uid'] !== posix_geteuid()) {
-            throw new FileLockException($errorMessage);
-        }
-    }
 }
