@@ -7,6 +7,7 @@ namespace Infocyph\UID\Configuration;
 use Closure;
 use DateTimeInterface;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class SnowflakeConfig
@@ -28,6 +29,7 @@ final readonly class SnowflakeConfig
         DateTimeInterface|int|null $customEpoch = null,
         public ?SequenceProviderInterface $sequenceProvider = null,
         public ClockBackwardPolicy $clockBackwardPolicy = ClockBackwardPolicy::WAIT,
+        public ?GenerationContext $runtime = null,
     ) {
         $this->nodeResolver = $nodeResolver ? $nodeResolver(...) : null;
         $this->customEpoch = self::normalizeEpoch($customEpoch);
