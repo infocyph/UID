@@ -17,7 +17,7 @@ jobs:
       fail_on_skipped_tests: true
       integration_services: '[]'
       service_topologies: '{}'
-      php_extensions: '["bcmath"]'
+      php_extensions: '["ctype", "pcntl"]'
     permissions:
       security-events: write
       actions: read

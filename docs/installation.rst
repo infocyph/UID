@@ -4,8 +4,9 @@ Installation
 Requirements
 ------------
 
-- PHP 8.2 or newer
+- PHP 8.4 or newer
 - A 64-bit PHP runtime
+- PHP ctype extension
 - Composer
 
 BCMath is not required. PSR-16 is optional and is used only when selecting the

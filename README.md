@@ -23,8 +23,9 @@ All-in-one unique ID toolkit for PHP.
 
 ## Requirements
 
-- PHP `>=8.2`
+- PHP `>=8.4`
 - A 64-bit PHP runtime
+- PHP ctype extension
 
 ## Installation
 

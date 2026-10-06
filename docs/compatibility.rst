@@ -61,6 +61,7 @@ Always enforce authorization independently of identifier format.
 Runtime Requirements
 --------------------
 
-- PHP 8.2 or newer on a 64-bit runtime.
+- PHP 8.4 or newer on a 64-bit runtime.
+- The ctype extension is required.
 - No BCMath dependency.
 - PSR-16 is optional and needed only for the PSR simple-cache sequence provider.

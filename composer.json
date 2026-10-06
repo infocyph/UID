@@ -31,8 +31,9 @@
         }
     ],
     "require": {
-        "php": "^8.2",
-        "php-64bit": "^8.2"
+        "php": "^8.4",
+        "php-64bit": "^8.4",
+        "ext-ctype": "*"
     },
     "require-dev": {
         "infocyph/phpforge": "dev-main@dev",

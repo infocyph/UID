@@ -215,12 +215,12 @@ verify codecs and protocol envelopes rather than only self-round trips.
   owning package. Do not edit `vendor/`, remove the requested checks, add baselines
   or suppress errors. Refresh UID's development resolution once that fix is
   available; verify the same detector and intended rules actually execute.
-- [ ] Replace skip directives with clear prerequisite assertions for the
+- [x] Replace skip directives with clear prerequisite assertions for the
   designated process-test environment and supply `pcntl`/process support there.
   Keep meaningful single-process coverage for other platforms. Any suite split
   must be an explicit portability design; the process suite remains a required
   release lane and is never hidden to satisfy the scanner.
-- [ ] Set Composer runtime requirements to `php: ^8.4` and `php-64bit: ^8.4`
+- [x] Set Composer runtime requirements to `php: ^8.4` and `php-64bit: ^8.4`
   for the next release. Update installation, requirements and compatibility docs
   together. PHP 8.2/8.3 support ends with the 5.x line; document the upgrade path.
 - [ ] Verify production source and tooling on real PHP 8.4 and PHP 8.5 in stable
@@ -228,7 +228,7 @@ verify codecs and protocol envelopes rather than only self-round trips.
   versions as they become available; do not claim PHP 9 compatibility from a
   lower-bound requirement alone. Require platform checks on clean production
   installs and do not use Composer platform emulation as execution evidence.
-- [ ] Declare mandatory ctype support or remove that dependency with equivalent,
+- [x] Declare mandatory ctype support or remove that dependency with equivalent,
   measured validation. Keep PSR-16 optional and production installs free of tooling.
 - [ ] Address abandoned dev-package usage through PHPForge/PHPBench ownership;
   do not substitute a new UID production dependency to fix a tooling concern.

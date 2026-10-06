@@ -9,9 +9,8 @@ use Infocyph\UID\UUID;
 use Infocyph\UID\XID;
 
 test('process-local generator state is reseeded after a fork', function (Closure $generator) {
-    if (!function_exists('pcntl_fork') || !function_exists('pcntl_exec')) {
-        $this->markTestSkipped('The pcntl extension is required for fork-safety coverage');
-    }
+    expect(function_exists('pcntl_fork'))->toBeTrue()
+        ->and(function_exists('pcntl_exec'))->toBeTrue();
 
     $generator();
     $resultFile = sys_get_temp_dir() . '/uid-fork-' . bin2hex(random_bytes(12));
