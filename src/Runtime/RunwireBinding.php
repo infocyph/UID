@@ -11,14 +11,14 @@ use Infocyph\Runwire\Runtime\Enum\RuntimeCapability;
 use Infocyph\Runwire\RuntimeContext;
 use LogicException;
 
-final readonly class RunwireBinding
+final class RunwireBinding
 {
     private static ?TaskLocal $scopeProbe = null;
 
     public function __construct(
-        public RuntimeContext $runtime,
-        public ?RequestContext $request = null,
-        public ?CoroutineScope $scope = null,
+        public readonly RuntimeContext $runtime,
+        public readonly ?RequestContext $request = null,
+        public readonly ?CoroutineScope $scope = null,
     ) {
         $this->assertActive();
     }
