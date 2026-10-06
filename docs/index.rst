@@ -24,6 +24,7 @@ It supports:
 
    installation
    quickstart
+   migration-6.0
    id-facade
 
 .. toctree::

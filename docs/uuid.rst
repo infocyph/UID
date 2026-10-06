@@ -36,8 +36,8 @@ Generation
 Node-Aware Versions
 -------------------
 
-Versions ``v1``, ``v6``, ``v7``, and ``v8`` accept an optional node.
-If omitted, UID generates one.
+Versions ``v1``, ``v6``, and ``v8`` accept an optional node. If omitted, UID
+generates one. UUIDv7 is timestamp/randomness based and does not accept a node.
 
 .. code-block:: php
 
@@ -47,7 +47,9 @@ If omitted, UID generates one.
 
    $node = UUID::getNode(); // 12 hex chars
 
-   $uuid = UUID::v7(null, $node);
+   $v1 = UUID::v1($node);
+   $v6 = UUID::v6($node);
+   $v8 = UUID::v8($node);
 
 Canonical Utilities
 -------------------
@@ -85,7 +87,6 @@ millisecond field instead of truncating them.
 
 ``UUID::parse()`` returns:
 
-- ``isValid`` (bool)
 - ``version`` (int|null)
 - ``variant`` (string|null)
 - ``time`` (DateTimeInterface|null)

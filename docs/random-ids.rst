@@ -4,9 +4,11 @@ Random and Compact IDs
 RandomId and NanoID
 -------------------
 
-``RandomId`` and ``NanoID`` use rejection sampling over PHP's CSPRNG, avoiding
-modulo bias for every valid single-byte alphabet size from 2 through 256.
-Lengths are limited to 1024 bytes. Alphabets must contain unique symbols.
+``RandomId`` uses rejection sampling over PHP's CSPRNG for caller-supplied
+single-byte alphabets, avoiding modulo bias for valid alphabet sizes from 2
+through 256. ``NanoID`` uses a fixed Base64url alphabet and derives the requested
+length directly from CSPRNG bytes. Generated lengths are capped at 1024.
+RandomId alphabets must contain unique symbols.
 
 .. code-block:: php
 
