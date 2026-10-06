@@ -10,6 +10,7 @@ use Infocyph\UID\Configuration\RandflakeConfig;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\RandflakeException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
@@ -110,6 +111,7 @@ final class Randflake
             $leaseEnd,
             $secret,
             null,
+            null,
         );
     }
 
@@ -132,6 +134,7 @@ final class Randflake
             $config->leaseEnd,
             $config->secret,
             $config->sequenceProvider,
+            $config->runtime,
         );
     }
 
@@ -236,6 +239,7 @@ final class Randflake
         int $leaseEnd,
         #[\SensitiveParameter] string $secret,
         ?SequenceProviderInterface $sequenceProvider,
+        ?GenerationContext $runtime,
     ): string {
         self::validateNode($nodeId);
         self::validateLeaseWindow($leaseStart, $leaseEnd);
@@ -244,7 +248,7 @@ final class Randflake
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
         self::$lastTimestampByProvider ??= new \WeakMap();
         $providerState = self::$lastTimestampByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
-        $now = time();
+        $now = self::nowSeconds($runtime);
         if ($now < $leaseStart || $now > $leaseEnd) {
             throw new RandflakeException('randflake: invalid lease, lease expired or not started yet');
         }
@@ -262,7 +266,7 @@ final class Randflake
         try {
             $sequenceValue = self::sequence($now, $nodeId, 'randflake', $resolvedSequenceProvider);
         } catch (SequenceTimestampException $exception) {
-            $now = time();
+            $now = self::nowSeconds($runtime);
             if ($now < $leaseStart || $now > $leaseEnd) {
                 throw new RandflakeException('randflake: invalid lease, lease expired or not started yet', 0, $exception);
             }
@@ -303,6 +307,11 @@ final class Randflake
         $cipher = self::permute($plain, $secret, false);
 
         return DecimalBytes::fromBytes($cipher);
+    }
+
+    private static function nowSeconds(?GenerationContext $runtime): int
+    {
+        return $runtime?->nowSeconds() ?? time();
     }
 
     /**

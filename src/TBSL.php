@@ -10,6 +10,7 @@ use Infocyph\UID\Configuration\TBSLConfig;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\UIDException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\GetSequence;
@@ -17,6 +18,8 @@ use Infocyph\UID\Support\GetSequence;
 final class TBSL
 {
     use GetSequence;
+
+    private const int WAIT_TIMEOUT_MICROS = 1_000_000;
 
     private static int $lastTimeSequence = 0;
 
@@ -58,6 +61,7 @@ final class TBSL
             $machineId,
             $sequenced,
             ClockBackwardPolicy::WAIT,
+            runtime: null,
         );
     }
 
@@ -78,6 +82,7 @@ final class TBSL
             $config->sequenced,
             $config->clockBackwardPolicy,
             $config->sequenceProvider,
+            $config->runtime,
         );
     }
 
@@ -160,18 +165,18 @@ final class TBSL
         bool $sequenced,
         ClockBackwardPolicy $clockBackwardPolicy,
         ?SequenceProviderInterface $sequenceProvider = null,
+        ?GenerationContext $runtime = null,
     ): string {
         self::assertMachineId($machineId);
 
-        [$micro, $seconds] = explode(' ', microtime());
-        $timeSequence = (int) ($seconds . substr($micro, 2, 6));
+        $timeSequence = self::nowMicroseconds($runtime);
 
         if ($timeSequence < self::$lastTimeSequence) {
             if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                 throw new UIDException('Clock moved backwards while generating TBSL ID');
             }
 
-            $timeSequence = self::waitUntilNextTimeSequence(self::$lastTimeSequence);
+            $timeSequence = self::waitUntilNextTimeSequence(self::$lastTimeSequence, $runtime);
         }
         [$timeSequence, $tail] = self::resolveTail(
             $machineId,
@@ -179,6 +184,7 @@ final class TBSL
             $timeSequence,
             $clockBackwardPolicy,
             $sequenceProvider,
+            $runtime,
         );
         self::$lastTimeSequence = $timeSequence;
 
@@ -210,6 +216,7 @@ final class TBSL
         int $timeSequence,
         ClockBackwardPolicy $clockBackwardPolicy,
         ?SequenceProviderInterface $sequenceProvider = null,
+        ?GenerationContext $runtime = null,
     ): array {
         if (!$enableSequence) {
             return [$timeSequence, substr(bin2hex(random_bytes(3)), 0, 5)];
@@ -227,7 +234,7 @@ final class TBSL
                     );
                 }
 
-                $timeSequence = self::waitUntilNextTimeSequence($exception->lastTimestamp);
+                $timeSequence = self::waitUntilNextTimeSequence($exception->lastTimestamp, $runtime);
 
                 continue;
             }
@@ -240,16 +247,31 @@ final class TBSL
                 return [$timeSequence, str_pad(dechex($sequence - 1), 5, '0', STR_PAD_LEFT)];
             }
 
-            $timeSequence = self::waitUntilNextTimeSequence($timeSequence);
+            $timeSequence = self::waitUntilNextTimeSequence($timeSequence, $runtime);
         } while (true);
     }
 
-    private static function waitUntilNextTimeSequence(int $last): int
+    private static function nowMicroseconds(?GenerationContext $runtime): int
     {
-        do {
-            [$micro, $seconds] = explode(' ', microtime());
-            $candidate = (int) ($seconds . substr($micro, 2, 6));
-        } while ($candidate <= $last);
+        return $runtime?->nowMicroseconds() ?? (int) floor(microtime(true) * 1_000_000);
+    }
+
+    private static function waitUntilNextTimeSequence(int $last, ?GenerationContext $runtime): int
+    {
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
+
+        while (($candidate = self::nowMicroseconds($runtime)) <= $last) {
+            if (hrtime(true) >= $deadline) {
+                throw new UIDException('Timed out waiting for the next TBSL timestamp');
+            }
+
+            if ($runtime !== null) {
+                $runtime->sleepMicroseconds(100);
+            } else {
+                usleep(100);
+            }
+        }
 
         return $candidate;
     }
