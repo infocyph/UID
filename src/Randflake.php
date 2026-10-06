@@ -84,11 +84,11 @@ final class Randflake
             $id,
             32,
             8,
-            static fn(string $message, \InvalidArgumentException $exception): RandflakeException => new RandflakeException(
-                'randflake: invalid id',
-                0,
-                $exception,
-            ),
+            static function (string $message, \InvalidArgumentException $exception): RandflakeException {
+                unset($message);
+
+                return new RandflakeException('randflake: invalid id', 0, $exception);
+            },
         );
     }
 

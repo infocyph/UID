@@ -94,7 +94,7 @@ final class SignedDecimal64
                 throw new LogicException('Signed decimal subtraction produced an invalid digit');
             }
 
-            $result = (string) $difference . $result;
+            $result = $difference . $result;
             --$leftIndex;
             --$rightIndex;
         }

@@ -24,9 +24,15 @@ test('filesystem sequence rejects symlink state without touching its target', fu
         expect(fn(): int => $provider->next('test', 1, 100))->toThrow(FileLockException::class)
             ->and(file_get_contents($target))->toBe('unchanged');
     } finally {
-        @unlink($link);
-        @unlink($target);
-        @rmdir($directory);
+        if (is_link($link)) {
+            unlink($link);
+        }
+        if (is_file($target)) {
+            unlink($target);
+        }
+        if (is_dir($directory)) {
+            rmdir($directory);
+        }
     }
 });
 
@@ -41,7 +47,11 @@ test('filesystem sequence fails closed at integer exhaustion', function (): void
         expect(fn(): int => $provider->next('test', 1, 100))->toThrow(FileLockException::class)
             ->and(file_get_contents($state))->toBe('100,' . PHP_INT_MAX);
     } finally {
-        @unlink($state);
-        @rmdir($directory);
+        if (is_file($state)) {
+            unlink($state);
+        }
+        if (is_dir($directory)) {
+            rmdir($directory);
+        }
     }
 });
