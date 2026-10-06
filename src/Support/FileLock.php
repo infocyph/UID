@@ -12,7 +12,7 @@ final class FileLock
 {
     private const int DEFAULT_TIMEOUT_MICROS = 1_000_000;
 
-/**
+    /**
      * @return resource
      * @throws FileLockException
      */
@@ -62,7 +62,7 @@ final class FileLock
         throw new FileLockException($lockErrorMessage);
     }
 
-/**
+    /**
      * @param array<string|int, int> $metadata
      * @throws FileLockException
      */
@@ -78,7 +78,7 @@ final class FileLock
         }
     }
 
-/**
+    /**
      * @param array<string|int, int> $left
      * @param array<string|int, int> $right
      */
@@ -89,7 +89,7 @@ final class FileLock
         }
     }
 
-private static function changePermissions(string $path, int $permissions): bool
+    private static function changePermissions(string $path, int $permissions): bool
     {
         try {
             return self::invokeFilesystem(static fn(): bool => chmod($path, $permissions));
@@ -98,7 +98,7 @@ private static function changePermissions(string $path, int $permissions): bool
         }
     }
 
-/**
+    /**
      * @template T
      * @param callable():T $operation
      * @return T
@@ -119,7 +119,7 @@ private static function changePermissions(string $path, int $permissions): bool
         }
     }
 
-/**
+    /**
      * @param array<string|int, int> $before
      * @return resource
      */
@@ -133,7 +133,7 @@ private static function changePermissions(string $path, int $permissions): bool
         return self::verifyHandle($path, $handle, $before, $errorMessage);
     }
 
-/**
+    /**
      * @return resource|false
      */
     private static function openStream(string $path, string $mode)
@@ -145,7 +145,7 @@ private static function changePermissions(string $path, int $permissions): bool
         }
     }
 
-/**
+    /**
      * @return resource
      * @throws FileLockException
      */
@@ -178,7 +178,7 @@ private static function changePermissions(string $path, int $permissions): bool
         return self::verifyHandle($path, $handle, null, $errorMessage);
     }
 
-/**
+    /**
      * @return array<string|int, int>|false
      */
     private static function pathMetadata(string $path): array|false
@@ -190,7 +190,7 @@ private static function changePermissions(string $path, int $permissions): bool
         }
     }
 
-/**
+    /**
      * @param resource $handle
      * @param array<string|int, int>|null $before
      * @return resource

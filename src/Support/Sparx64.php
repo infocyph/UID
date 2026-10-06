@@ -17,7 +17,7 @@ final class Sparx64
     /** @var array<int, array<int, int>> */
     private array $subkeys;
 
-public function __construct(#[\SensitiveParameter] string $key)
+    public function __construct(#[\SensitiveParameter] string $key)
     {
         if (strlen($key) !== 16) {
             throw new InvalidArgumentException('SPARX64 key must be exactly 16 bytes');
@@ -35,7 +35,7 @@ public function __construct(#[\SensitiveParameter] string $key)
         }
     }
 
-public function decrypt(string $block): string
+    public function decrypt(string $block): string
     {
         $state = self::unpackBlock($block);
         $last = self::BRANCHES * self::STEPS;
@@ -58,7 +58,7 @@ public function decrypt(string $block): string
         return self::packBlock($state);
     }
 
-public function encrypt(string $block): string
+    public function encrypt(string $block): string
     {
         $state = self::unpackBlock($block);
         for ($step = 0; $step < self::STEPS; ++$step) {
@@ -82,7 +82,7 @@ public function encrypt(string $block): string
         return self::packBlock($state);
     }
 
-/** @param array<int, int> $state */
+    /** @param array<int, int> $state */
     private static function linear(array &$state): void
     {
         $temporary = self::rotateLeft16($state[0] ^ $state[1], 8);
@@ -92,7 +92,7 @@ public function encrypt(string $block): string
         [$state[1], $state[3]] = [$state[3] & 0xffff, $state[1] & 0xffff];
     }
 
-/** @param array<int, int> $state */
+    /** @param array<int, int> $state */
     private static function linearInverse(array &$state): void
     {
         [$state[0], $state[2]] = [$state[2], $state[0]];
@@ -102,7 +102,7 @@ public function encrypt(string $block): string
         $state[3] = ($state[3] ^ $state[1] ^ $temporary) & 0xffff;
     }
 
-/** @param array<int, int> $state */
+    /** @param array<int, int> $state */
     private static function packBlock(array $state): string
     {
         $output = '';
@@ -113,7 +113,7 @@ public function encrypt(string $block): string
         return $output;
     }
 
-/** @param array<int, int> $key */
+    /** @param array<int, int> $key */
     private static function permuteKey(array &$key, int $counter): void
     {
         self::round($key[0], $key[1]);
@@ -129,26 +129,26 @@ public function encrypt(string $block): string
         $key[1] = $seven;
     }
 
-private static function rotateLeft16(int $value, int $bits): int
+    private static function rotateLeft16(int $value, int $bits): int
     {
         $value &= 0xffff;
 
         return (($value << $bits) | ($value >> (16 - $bits))) & 0xffff;
     }
 
-private static function round(int &$left, int &$right): void
+    private static function round(int &$left, int &$right): void
     {
         $left = (self::rotateLeft16($left, 9) + $right) & 0xffff;
         $right = (self::rotateLeft16($right, 2) ^ $left) & 0xffff;
     }
 
-private static function roundInverse(int &$left, int &$right): void
+    private static function roundInverse(int &$left, int &$right): void
     {
         $right = self::rotateLeft16($right ^ $left, 14);
         $left = self::rotateLeft16(($left - $right) & 0xffff, 7);
     }
 
-/** @return array<int, int> */
+    /** @return array<int, int> */
     private static function unpackBlock(string $block): array
     {
         if (strlen($block) !== 8) {
