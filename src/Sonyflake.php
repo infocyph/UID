@@ -39,7 +39,7 @@ final class Sonyflake
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, int>>|null */
     private static ?\WeakMap $lastWallTimeByProvider = null;
 
-/**
+    /**
      * Decodes one of bases: 16, 32, 36, 58, 62 into Sonyflake decimal.
      *
      * @throws SonyflakeException
@@ -54,7 +54,7 @@ final class Sonyflake
         return self::assertDecodedId($id);
     }
 
-/**
+    /**
      * Converts 8-byte Sonyflake binary data to decimal string.
      *
      * @throws SonyflakeException
@@ -69,7 +69,7 @@ final class Sonyflake
         return self::assertDecodedId($id);
     }
 
-/**
+    /**
      * Generates a unique identifier using the SonyFlake algorithm.
      *
      * @param int $machineId The machine identifier. Must be between 0 and the maximum machine ID.
@@ -86,7 +86,7 @@ final class Sonyflake
         );
     }
 
-/**
+    /**
      * Generates Sonyflake using configuration object.
      *
      * @throws SonyflakeException|FileLockException
@@ -103,7 +103,7 @@ final class Sonyflake
         );
     }
 
-/**
+    /**
      * Checks whether a Sonyflake ID string has a valid numeric shape.
      */
     public static function isValid(string $id): bool
@@ -113,7 +113,7 @@ final class Sonyflake
             && UnsignedDecimal::compare($id, (string) PHP_INT_MAX) <= 0;
     }
 
-/**
+    /**
      * Parse the given ID into components.
      *
      * @param string $id The ID to parse.
@@ -125,7 +125,7 @@ final class Sonyflake
         return self::parseWithEpoch($id, self::getStartTimeStamp($format), $format);
     }
 
-/**
+    /**
      * Parse Sonyflake using custom epoch in milliseconds.
      *
      * @return array{time: DateTimeImmutable, sequence: int, machine_id: int}
@@ -155,7 +155,7 @@ final class Sonyflake
         ];
     }
 
-/**
+    /**
      * Encodes Sonyflake bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws SonyflakeException
@@ -165,7 +165,7 @@ final class Sonyflake
         return BaseEncoder::encodeBytes(self::toBytes($id), $base);
     }
 
-/**
+    /**
      * Converts a Sonyflake decimal string to 8-byte binary representation.
      *
      * @throws SonyflakeException
@@ -183,7 +183,7 @@ final class Sonyflake
         );
     }
 
-/**
+    /**
      * @return array{0:int,1:int}
      */
     private static function allocateSequence(
@@ -227,7 +227,7 @@ final class Sonyflake
         }
     }
 
-private static function assertDecodedId(string $id): string
+    private static function assertDecodedId(string $id): string
     {
         if (!self::isValid($id)) {
             throw new SonyflakeException('Decoded Sonyflake ID exceeds the supported signed domain');
@@ -236,7 +236,7 @@ private static function assertDecodedId(string $id): string
         return $id;
     }
 
-private static function assertMachineId(int $machineId): void
+    private static function assertMachineId(int $machineId): void
     {
         $maximum = -1 ^ (-1 << self::MACHINE_BITS);
         if ($machineId < 0 || $machineId > $maximum) {
@@ -244,7 +244,7 @@ private static function assertMachineId(int $machineId): void
         }
     }
 
-/**
+    /**
      * @param callable():string $operation
      * @throws SonyflakeException
      */
@@ -257,7 +257,7 @@ private static function assertMachineId(int $machineId): void
         }
     }
 
-/**
+    /**
      * Calculates the elapsed time in 10ms units.
      */
     private static function elapsedTime(int $currentTime, int $startTimestamp): int
@@ -265,7 +265,7 @@ private static function assertMachineId(int $machineId): void
         return intdiv($currentTime - $startTimestamp, 10);
     }
 
-/**
+    /**
      * Ensures that the elapsed time does not exceed the maximum life cycle of the algorithm.
      *
      * @param int $elapsedTime The elapsed time in milliseconds.
@@ -282,7 +282,7 @@ private static function assertMachineId(int $machineId): void
         }
     }
 
-/**
+    /**
      * @return array{seconds:string,fraction:string,sequence:int,machine_id:int}
      */
     private static function extractParts(
@@ -306,7 +306,7 @@ private static function assertMachineId(int $machineId): void
         ];
     }
 
-/**
+    /**
      * @throws SonyflakeException|FileLockException
      */
     private static function generateInternal(
@@ -355,7 +355,7 @@ private static function assertMachineId(int $machineId): void
         return self::packId($elapsedTime, $machineId, $sequence, $format);
     }
 
-/**
+    /**
      * Retrieves the start timestamp.
      */
     private static function getStartTimeStamp(SonyflakeFormat $format): int
@@ -365,12 +365,12 @@ private static function assertMachineId(int $machineId): void
             : self::DEFAULT_EPOCH;
     }
 
-private static function nowMilliseconds(?GenerationContext $runtime): int
+    private static function nowMilliseconds(?GenerationContext $runtime): int
     {
         return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
     }
 
-private static function packId(
+    private static function packId(
         int $elapsedTime,
         int $machineId,
         int $sequence,
@@ -391,12 +391,12 @@ private static function packId(
         );
     }
 
-private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
+    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
     {
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
     }
 
-private static function resolveWallTime(
+    private static function resolveWallTime(
         int $currentTime,
         int $lastWallTime,
         ClockBackwardPolicy $policy,
@@ -412,7 +412,7 @@ private static function resolveWallTime(
         return self::waitUntilWallTime($lastWallTime, $runtime);
     }
 
-private static function waitUntilElapsed(
+    private static function waitUntilElapsed(
         int $elapsedTime,
         int $startTimestamp,
         ?GenerationContext $runtime,
@@ -435,7 +435,7 @@ private static function waitUntilElapsed(
         return $next;
     }
 
-private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime): int
+    private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime): int
     {
         $deadline = $runtime?->waitDeadlineNanoseconds()
             ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);

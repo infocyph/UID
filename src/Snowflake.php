@@ -38,7 +38,7 @@ final class Snowflake
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, array{timestamp:int, sequence:int}>>|null */
     private static ?\WeakMap $lastStateByProvider = null;
 
-/**
+    /**
      * Decodes one of bases: 16, 32, 36, 58, 62 into Snowflake decimal.
      *
      * @throws SnowflakeException
@@ -48,7 +48,7 @@ final class Snowflake
         return self::decodeNumericBase($encoded, $base);
     }
 
-/**
+    /**
      * Converts 8-byte Snowflake binary data to decimal string.
      *
      * @throws SnowflakeException
@@ -58,7 +58,7 @@ final class Snowflake
         return self::decodeNumericBytes($bytes);
     }
 
-/**
+    /**
      * Generates a unique snowflake ID.
      *
      * @param int $datacenter The ID of the datacenter (default: 0)
@@ -76,7 +76,7 @@ final class Snowflake
         );
     }
 
-/**
+    /**
      * Generates Snowflake using configuration object.
      *
      * @throws SnowflakeException|FileLockException
@@ -96,7 +96,7 @@ final class Snowflake
         );
     }
 
-/**
+    /**
      * Checks whether a Snowflake ID string has a valid numeric shape.
      */
     public static function isValid(string $id): bool
@@ -106,7 +106,7 @@ final class Snowflake
             && UnsignedDecimal::compare($id, (string) PHP_INT_MAX) <= 0;
     }
 
-/**
+    /**
      * Parse the given ID into components.
      *
      * @param string $id The ID to parse.
@@ -121,7 +121,7 @@ final class Snowflake
         );
     }
 
-/**
+    /**
      * Parse Snowflake ID using a custom epoch in milliseconds.
      *
      * @return array{time: DateTimeImmutable, sequence: int, worker_id: int, datacenter_id: int}
@@ -150,7 +150,7 @@ final class Snowflake
         ];
     }
 
-/**
+    /**
      * Encodes Snowflake bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws SnowflakeException
@@ -160,7 +160,7 @@ final class Snowflake
         return BaseEncoder::encodeBytes(self::toBytes($id), $base);
     }
 
-/**
+    /**
      * Converts a Snowflake decimal string to 8-byte binary representation.
      *
      * @throws SnowflakeException
@@ -170,7 +170,7 @@ final class Snowflake
         return self::encodeNumericBytes($id);
     }
 
-private static function assertDecodedId(string $id): string
+    private static function assertDecodedId(string $id): string
     {
         if (!self::isValid($id)) {
             throw new SnowflakeException('Decoded Snowflake ID exceeds the supported signed domain');
@@ -179,7 +179,7 @@ private static function assertDecodedId(string $id): string
         return $id;
     }
 
-/**
+    /**
      * @throws SnowflakeException
      */
     private static function assertNodeIds(int $datacenter, int $workerId): void
@@ -196,7 +196,7 @@ private static function assertDecodedId(string $id): string
         }
     }
 
-/**
+    /**
      * @throws SnowflakeException
      */
     private static function assertTimestampRange(int $currentTime, int $startTimestamp): void
@@ -212,7 +212,7 @@ private static function assertDecodedId(string $id): string
         }
     }
 
-private static function decodeNumericBase(string $encoded, int $base): string
+    private static function decodeNumericBase(string $encoded, int $base): string
     {
         $id = NumericConversion::decimalFromBase(
             $encoded,
@@ -224,7 +224,7 @@ private static function decodeNumericBase(string $encoded, int $base): string
         return self::assertDecodedId($id);
     }
 
-private static function decodeNumericBytes(string $bytes): string
+    private static function decodeNumericBytes(string $bytes): string
     {
         $id = NumericConversion::decimalFromBytes(
             $bytes,
@@ -236,7 +236,7 @@ private static function decodeNumericBytes(string $bytes): string
         return self::assertDecodedId($id);
     }
 
-private static function encodeNumericBytes(string $id): string
+    private static function encodeNumericBytes(string $id): string
     {
         return NumericConversion::bytesFromDecimal(
             $id,
@@ -248,7 +248,7 @@ private static function encodeNumericBytes(string $id): string
         );
     }
 
-/**
+    /**
      * @throws SnowflakeException|FileLockException
      */
     private static function generateInternal(
@@ -322,7 +322,7 @@ private static function encodeNumericBytes(string $id): string
             | ($sequence));
     }
 
-/**
+    /**
      * Retrieves the start timestamp.
      */
     private static function getStartTimeStamp(): int
@@ -330,7 +330,7 @@ private static function encodeNumericBytes(string $id): string
         return self::DEFAULT_EPOCH;
     }
 
-/**
+    /**
      * @return array{0:int, 1:int}
      * @throws FileLockException|SnowflakeException
      */
@@ -375,17 +375,17 @@ private static function encodeNumericBytes(string $id): string
         }
     }
 
-private static function nowMilliseconds(?GenerationContext $runtime): int
+    private static function nowMilliseconds(?GenerationContext $runtime): int
     {
         return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
     }
 
-private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
+    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
     {
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
     }
 
-/**
+    /**
      * @return array{0:string,1:string}
      */
     private static function timestampParts(int $timestamp): array
@@ -393,7 +393,7 @@ private static function resolveSequenceProvider(?SequenceProviderInterface $prov
         return [(string) intdiv($timestamp, 1000), (string) (($timestamp % 1000) * 1000)];
     }
 
-private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
+    private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
     {
         $deadline = $runtime?->waitDeadlineNanoseconds()
             ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);

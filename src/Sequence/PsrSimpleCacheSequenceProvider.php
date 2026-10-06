@@ -20,7 +20,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
     /** @var array<string, array{timestamp:int,sequence:int}> */
     private array $observedState = [];
 
-/**
+    /**
      * @param callable(string, callable():int):mixed|null $synchronizer
      */
     public function __construct(
@@ -45,7 +45,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         $this->synchronizer = $synchronizer ? $synchronizer(...) : null;
     }
 
-/**
+    /**
      * @throws FileLockException
      */
     public function next(string $type, int $machineId, int $timestamp): int
@@ -65,7 +65,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         }
     }
 
-/**
+    /**
      * @param array{timestamp:int,sequence:int}|null $state
      * @param array{timestamp:int,sequence:int}|null $observed
      */
@@ -82,7 +82,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         }
     }
 
-/**
+    /**
      * @param array{timestamp:int,sequence:int}|null $state
      */
     private static function nextSequence(?array $state, int $timestamp, string $key): int
@@ -107,7 +107,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         return $state['sequence'] + 1;
     }
 
-/**
+    /**
      * @return resource
      * @throws FileLockException
      */
@@ -124,7 +124,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         );
     }
 
-private function key(string $type, int $machineId): string
+    private function key(string $type, int $machineId): string
     {
         if (preg_match('/^[A-Za-z0-9_.]+$/D', $type) !== 1) {
             throw new InvalidArgumentException('Sequence type contains characters not guaranteed by PSR-16');
@@ -138,7 +138,7 @@ private function key(string $type, int $machineId): string
         return $key;
     }
 
-private function nextFromCacheState(string $key, int $timestamp): int
+    private function nextFromCacheState(string $key, int $timestamp): int
     {
         $state = $this->normalizeState($this->cache->get($key), $key);
         $observed = $this->observedState[$key] ?? null;
@@ -158,7 +158,7 @@ private function nextFromCacheState(string $key, int $timestamp): int
         return $sequence;
     }
 
-private function nextSafely(string $key, int $timestamp): int
+    private function nextSafely(string $key, int $timestamp): int
     {
         try {
             return $this->nextFromCacheState($key, $timestamp);
@@ -169,7 +169,7 @@ private function nextSafely(string $key, int $timestamp): int
         }
     }
 
-private function nextSynchronized(Closure $synchronizer, string $key, int $timestamp): int
+    private function nextSynchronized(Closure $synchronizer, string $key, int $timestamp): int
     {
         try {
             $sequence = $synchronizer(
@@ -189,7 +189,7 @@ private function nextSynchronized(Closure $synchronizer, string $key, int $times
         return $sequence;
     }
 
-/**
+    /**
      * @return array{timestamp:int,sequence:int}|null
      */
     private function normalizeState(mixed $state, string $key): ?array
@@ -215,7 +215,7 @@ private function nextSynchronized(Closure $synchronizer, string $key, int $times
         return ['timestamp' => $stateTimestamp, 'sequence' => $stateSequence];
     }
 
-private function storageFailure(string $key, Throwable $exception): FileLockException
+    private function storageFailure(string $key, Throwable $exception): FileLockException
     {
         return new FileLockException(
             'Failed to read/write sequence state from PSR cache for key: ' . $key,
