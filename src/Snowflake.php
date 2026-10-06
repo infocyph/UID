@@ -22,15 +22,15 @@ final class Snowflake
 {
     use GetSequence;
 
-    private const DATACENTER_BITS = 5;
+    private const int DATACENTER_BITS = 5;
 
-    private const DEFAULT_EPOCH = 1_577_836_800_000;
+    private const int DEFAULT_EPOCH = 1_577_836_800_000;
 
-    private const SEQUENCE_BITS = 12;
+    private const int SEQUENCE_BITS = 12;
 
-    private const TIMESTAMP_BITS = 41;
+    private const int TIMESTAMP_BITS = 41;
 
-    private const WORKER_BITS = 5;
+    private const int WORKER_BITS = 5;
 
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, array{timestamp:int, sequence:int}>>|null */
     private static ?\WeakMap $lastStateByProvider = null;
@@ -166,6 +166,16 @@ final class Snowflake
         return self::encodeNumericBytes($id);
     }
 
+
+    private static function assertDecodedId(string $id): string
+    {
+        if (!self::isValid($id)) {
+            throw new SnowflakeException('Decoded Snowflake ID exceeds the supported signed domain');
+        }
+
+        return $id;
+    }
+
     /**
      * @throws SnowflakeException
      */
@@ -223,14 +233,6 @@ final class Snowflake
         return self::assertDecodedId($id);
     }
 
-    private static function assertDecodedId(string $id): string
-    {
-        if (!self::isValid($id)) {
-            throw new SnowflakeException('Decoded Snowflake ID exceeds the supported signed domain');
-        }
-
-        return $id;
-    }
 
     private static function encodeNumericBytes(string $id): string
     {

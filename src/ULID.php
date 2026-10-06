@@ -13,15 +13,15 @@ use Infocyph\UID\Support\BaseEncoder;
 
 final class ULID
 {
-    private const ENCODING_CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    private const string ENCODING_CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
-    private const ENCODING_LENGTH = 32;
+    private const int ENCODING_LENGTH = 32;
 
-    private const MAX_TIMESTAMP = 281_474_976_710_655;
+    private const int MAX_TIMESTAMP = 281_474_976_710_655;
 
-    private const RANDOM_LENGTH = 16;
+    private const int RANDOM_LENGTH = 16;
 
-    private const TIME_LENGTH = 10;
+    private const int TIME_LENGTH = 10;
 
     private static int $lastGenTime = 0;
 

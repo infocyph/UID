@@ -6,7 +6,7 @@ namespace Infocyph\UID\Support;
 
 final class DecimalBytes
 {
-    private const MAX_BYTE_LENGTH = 1024;
+    private const int MAX_BYTE_LENGTH = 1024;
 
     public static function fromBytes(string $bytes): string
     {

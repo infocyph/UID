@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 final class BaseEncoder
 {
-    private const ALPHABETS = [
+    private const array ALPHABETS = [
         10 => '0123456789',
         16 => '0123456789abcdef',
         32 => '0123456789abcdefghijklmnopqrstuv',
@@ -17,7 +17,7 @@ final class BaseEncoder
         62 => '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
     ];
 
-    private const MAX_BYTE_LENGTH = 1024;
+    private const int MAX_BYTE_LENGTH = 1024;
 
     /**
      * Decodes one of supported bases (16/32/36/58/62) into bytes.

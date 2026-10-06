@@ -11,7 +11,7 @@ use Infocyph\UID\Support\BinaryUnpack;
 
 final class XID
 {
-    private const ALPHABET = '0123456789abcdefghijklmnopqrstuv';
+    private const string ALPHABET = '0123456789abcdefghijklmnopqrstuv';
 
     private static ?int $counter = null;
 

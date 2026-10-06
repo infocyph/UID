@@ -22,13 +22,13 @@ final class Sonyflake
 {
     use GetSequence;
 
-    private const DEFAULT_EPOCH = 1_577_836_800_000;
+    private const int DEFAULT_EPOCH = 1_577_836_800_000;
 
-    private const MACHINE_BITS = 16;
+    private const int MACHINE_BITS = 16;
 
-    private const SEQUENCE_BITS = 8;
+    private const int SEQUENCE_BITS = 8;
 
-    private const TIMESTAMP_BITS = 39;
+    private const int TIMESTAMP_BITS = 39;
 
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, int>>|null */
     private static ?\WeakMap $lastWallTimeByProvider = null;
@@ -170,6 +170,16 @@ final class Sonyflake
         );
     }
 
+
+    private static function assertDecodedId(string $id): string
+    {
+        if (!self::isValid($id)) {
+            throw new SonyflakeException('Decoded Sonyflake ID exceeds the supported signed domain');
+        }
+
+        return $id;
+    }
+
     /**
      * @param callable():string $operation
      * @throws SonyflakeException
@@ -183,14 +193,6 @@ final class Sonyflake
         }
     }
 
-    private static function assertDecodedId(string $id): string
-    {
-        if (!self::isValid($id)) {
-            throw new SonyflakeException('Decoded Sonyflake ID exceeds the supported signed domain');
-        }
-
-        return $id;
-    }
 
     /**
      * Calculates the elapsed time in 10ms units.

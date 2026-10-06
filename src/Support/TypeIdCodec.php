@@ -8,7 +8,7 @@ use InvalidArgumentException;
 
 final class TypeIdCodec
 {
-    private const ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz';
+    private const string ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz';
 
     public static function decode(string $suffix): string
     {
