@@ -13,11 +13,11 @@ use Infocyph\UID\Support\BinaryUnpack;
 
 final class KSUID
 {
-    private const EPOCH = 1_400_000_000;
+    private const int EPOCH = 1_400_000_000;
 
-    private const MAX_ENCODED = 'aWgEPTl1tmebfsQzFP4bxwgy80V';
+    private const string MAX_ENCODED = 'aWgEPTl1tmebfsQzFP4bxwgy80V';
 
-    private const MAX_TIMESTAMP_OFFSET = 0xffffffff;
+    private const int MAX_TIMESTAMP_OFFSET = 0xffffffff;
 
     /**
      * @throws Exception

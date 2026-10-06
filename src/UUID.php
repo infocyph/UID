@@ -14,26 +14,26 @@ use const STR_PAD_LEFT;
 
 final class UUID
 {
-    private const MAX_V7_TIMESTAMP = 281_474_976_710_655;
+    private const int MAX_V7_TIMESTAMP = 281_474_976_710_655;
 
-    private const NS_LIST = [
+    private const array NS_LIST = [
         'dns' => 0,
         'url' => 1,
         'oid' => 2,
         'x500' => 4,
     ];
 
-    private const RANDOM_LENGTH = [
+    private const array RANDOM_LENGTH = [
         6 => 2,
         7 => 4,
         8 => 1,
     ];
 
-    private const SECOND_INTERVALS = 10_000_000;
+    private const int SECOND_INTERVALS = 10_000_000;
 
-    private const SECOND_INTERVALS_78 = 10_000;
+    private const int SECOND_INTERVALS_78 = 10_000;
 
-    private const TIME_OFFSET = 0x01b21dd213814000;
+    private const int TIME_OFFSET = 0x01b21dd213814000;
 
     /** @var array<int, int> */
     private static array $subSec = [
@@ -137,7 +137,7 @@ final class UUID
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
         $data = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
 
-        return $trim ? $data : "\{$data\}";
+        return $trim ? $data : '{' . $data . '}';
     }
 
     /**

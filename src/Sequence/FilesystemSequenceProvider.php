@@ -11,9 +11,9 @@ use InvalidArgumentException;
 
 final class FilesystemSequenceProvider implements SequenceProviderInterface
 {
-    private const MAX_PATH_CACHE = 1024;
+    private const int MAX_PATH_CACHE = 1024;
 
-    private const MAX_SEQUENCE_STATE_BYTES = 64;
+    private const int MAX_SEQUENCE_STATE_BYTES = 64;
 
     private readonly string $baseDirectory;
 

@@ -9,7 +9,7 @@ use InvalidArgumentException;
 
 final class NanoID
 {
-    private const MAX_LENGTH = 1024;
+    private const int MAX_LENGTH = 1024;
 
     /**
      * Generates a NanoID string with the requested size.

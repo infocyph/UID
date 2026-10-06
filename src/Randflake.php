@@ -22,21 +22,21 @@ final class Randflake
 {
     use GetSequence;
 
-    public const EPOCH_OFFSET = 1_730_000_000;
+    public const int EPOCH_OFFSET = 1_730_000_000;
 
-    public const MAX_NODE = (1 << self::NODE_BITS) - 1;
+    public const int MAX_NODE = (1 << self::NODE_BITS) - 1;
 
-    public const MAX_SEQUENCE = (1 << self::SEQUENCE_BITS) - 1;
+    public const int MAX_SEQUENCE = (1 << self::SEQUENCE_BITS) - 1;
 
-    public const MAX_TIMESTAMP = self::EPOCH_OFFSET + self::MAX_TIMESTAMP_PART;
+    public const int MAX_TIMESTAMP = self::EPOCH_OFFSET + self::MAX_TIMESTAMP_PART;
 
-    public const MAX_TIMESTAMP_PART = (1 << self::TIMESTAMP_BITS) - 1;
+    public const int MAX_TIMESTAMP_PART = (1 << self::TIMESTAMP_BITS) - 1;
 
-    public const NODE_BITS = 17;
+    public const int NODE_BITS = 17;
 
-    public const SEQUENCE_BITS = 17;
+    public const int SEQUENCE_BITS = 17;
 
-    public const TIMESTAMP_BITS = 30;
+    public const int TIMESTAMP_BITS = 30;
 
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<int, int>>|null */
     private static ?\WeakMap $lastTimestampByProvider = null;

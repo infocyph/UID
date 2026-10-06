@@ -10,9 +10,9 @@ use InvalidArgumentException;
 
 final class CUID2
 {
-    private const INITIAL_COUNTER_MAX = 476_782_367;
+    private const int INITIAL_COUNTER_MAX = 476_782_367;
 
-    private const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+    private const string LETTERS = 'abcdefghijklmnopqrstuvwxyz';
 
     private static int $counter;
 
