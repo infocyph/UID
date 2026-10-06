@@ -112,7 +112,7 @@ final class BaseEncoder
             $carry >>= 8;
         }
 
-        return $bytes;
+        return array_values($bytes);
     }
 
     /**
@@ -136,7 +136,13 @@ final class BaseEncoder
         $unpacked = unpack('C*', $bytes);
         $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
 
-        return array_values($unpacked);
+        $number = [];
+        foreach ($unpacked as $byte) {
+            is_int($byte) || throw new \LogicException('Unable to unpack byte value');
+            $number[] = $byte;
+        }
+
+        return $number;
     }
 
     /**

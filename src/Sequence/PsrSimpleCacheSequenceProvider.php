@@ -53,7 +53,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         $key = $this->key($type, $machineId);
 
         if ($this->synchronizer !== null) {
-            return $this->nextSynchronized($key, $timestamp);
+            return $this->nextSynchronized($this->synchronizer, $key, $timestamp);
         }
 
         $lock = $this->acquireLock($key);
@@ -65,10 +65,10 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         }
     }
 
-    private function nextSynchronized(string $key, int $timestamp): int
+    private function nextSynchronized(Closure $synchronizer, string $key, int $timestamp): int
     {
         try {
-            $sequence = ($this->synchronizer)(
+            $sequence = $synchronizer(
                 $key,
                 fn(): int => $this->nextFromCacheState($key, $timestamp),
             );
@@ -147,7 +147,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         self::assertNotRegressed($state, $observed, $key);
         $sequence = self::nextSequence($state, $timestamp, $key);
         $nextState = ['timestamp' => $timestamp, 'sequence' => $sequence];
-        if (!$this->cache->set($key, $nextState, null)) {
+        if (!$this->cache->set($key, $nextState)) {
             throw new FileLockException('Failed to persist sequence state for key: ' . $key);
         }
 

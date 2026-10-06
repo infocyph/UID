@@ -24,7 +24,12 @@ final class FileLock
         ?GenerationContext $runtime = null,
     ) {
         $handle = self::openVerified($path, $openErrorMessage);
-        $timeout = $timeoutMicros ?? $runtime?->waitTimeoutMicros ?? self::DEFAULT_TIMEOUT_MICROS;
+        $timeout = $timeoutMicros;
+        if ($timeout === null) {
+            $timeout = $runtime === null
+                ? self::DEFAULT_TIMEOUT_MICROS
+                : $runtime->waitTimeoutMicros;
+        }
         $deadline = hrtime(true) + ($timeout * 1_000);
         $runtimeDeadline = $runtime?->runwire?->deadlineNanoseconds();
         if ($runtimeDeadline !== null) {
@@ -41,7 +46,11 @@ final class FileLock
                     throw new FileLockException($lockErrorMessage);
                 }
 
-                $runtime?->sleepMicroseconds(1_000) ?? usleep(1_000);
+                if ($runtime !== null) {
+                    $runtime->sleepMicroseconds(1_000);
+                } else {
+                    usleep(1_000);
+                }
             } while (hrtime(true) < $deadline);
         } catch (\Throwable $exception) {
             fclose($handle);
@@ -145,9 +154,7 @@ final class FileLock
     private static function pathMetadata(string $path): array|false
     {
         try {
-            $metadata = self::invokeFilesystem(static fn(): array|false => lstat($path));
-
-            return $metadata;
+            return self::invokeFilesystem(static fn(): array|false => lstat($path));
         } catch (ErrorException) {
             return false;
         }
