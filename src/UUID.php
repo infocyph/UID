@@ -550,41 +550,20 @@ final class UUID
      *
      * @return string|null The incremented value or null if overflow occurred.
      */
-    private static function incrementHexCounter(string $hex): ?string
+    private static function incrementV7Tail(string $tail): ?string
     {
-        $hex = strtolower($hex);
-        for ($index = strlen($hex) - 1; $index >= 0; --$index) {
-            if ($hex[$index] === 'f') {
-                $hex[$index] = '0';
+        $tail = strtolower($tail);
+        for ($index = strlen($tail) - 1; $index >= 1; --$index) {
+            $value = hexdec($tail[$index]);
+            $maximum = $index === 4 ? 3 : 15;
+            $value = $index === 4 ? $value & 3 : $value;
+            if ($value < $maximum) {
+                $tail[$index] = dechex($value + 1);
 
-                continue;
+                return $tail;
             }
 
-            $next = match ($hex[$index]) {
-                '0' => '1',
-                '1' => '2',
-                '2' => '3',
-                '3' => '4',
-                '4' => '5',
-                '5' => '6',
-                '6' => '7',
-                '7' => '8',
-                '8' => '9',
-                '9' => 'a',
-                'a' => 'b',
-                'b' => 'c',
-                'c' => 'd',
-                'd' => 'e',
-                'e' => 'f',
-                default => null,
-            };
-            if ($next === null) {
-                return null;
-            }
-
-            $hex[$index] = $next;
-
-            return $hex;
+            $tail[$index] = '0';
         }
 
         return null;
@@ -659,7 +638,7 @@ final class UUID
         }
 
         $unixTsMs = $state['timestamp'];
-        $tail = self::incrementHexCounter($state['tail']);
+        $tail = self::incrementV7Tail($state['tail']);
         if ($tail === null) {
             if ($isExplicitTimestamp) {
                 throw new UUIDException('Monotonic UUID v7 overflow for the provided timestamp');
@@ -800,6 +779,10 @@ final class UUID
      */
     private static function randomV7Tail(): string
     {
-        return bin2hex(random_bytes(self::randomLengthFor(7) + 6));
+        $tail = bin2hex(random_bytes(self::randomLengthFor(7) + 6));
+        $tail[0] = '0';
+        $tail[4] = dechex(hexdec($tail[4]) & 3);
+
+        return $tail;
     }
 }

@@ -40,10 +40,12 @@ final class Sonyflake
      */
     public static function fromBase(string $encoded, int $base): string
     {
-        return self::decodeNumeric(
+        $id = self::decodeNumeric(
             fn(): string => NumericIdCodec::decimalFromBase($encoded, $base, 8),
             null,
         );
+
+        return self::assertDecodedId($id);
     }
 
     /**
@@ -53,10 +55,12 @@ final class Sonyflake
      */
     public static function fromBytes(string $bytes): string
     {
-        return self::decodeNumeric(
+        $id = self::decodeNumeric(
             fn(): string => NumericIdCodec::decimalFromBytes($bytes, 8),
             'Sonyflake binary data must be exactly 8 bytes',
         );
+
+        return self::assertDecodedId($id);
     }
 
     /**
@@ -177,6 +181,15 @@ final class Sonyflake
         } catch (\InvalidArgumentException $exception) {
             throw new SonyflakeException($customMessage ?? $exception->getMessage(), 0, $exception);
         }
+    }
+
+    private static function assertDecodedId(string $id): string
+    {
+        if (!self::isValid($id)) {
+            throw new SonyflakeException('Decoded Sonyflake ID exceeds the supported signed domain');
+        }
+
+        return $id;
     }
 
     /**

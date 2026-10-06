@@ -201,22 +201,35 @@ final class Snowflake
 
     private static function decodeNumericBase(string $encoded, int $base): string
     {
-        return NumericConversion::decimalFromBase(
+        $id = NumericConversion::decimalFromBase(
             $encoded,
             $base,
             8,
             static fn(string $message, \InvalidArgumentException $exception): SnowflakeException => new SnowflakeException($message, 0, $exception),
         );
+
+        return self::assertDecodedId($id);
     }
 
     private static function decodeNumericBytes(string $bytes): string
     {
-        return NumericConversion::decimalFromBytes(
+        $id = NumericConversion::decimalFromBytes(
             $bytes,
             8,
             'Snowflake binary data must be exactly 8 bytes',
             static fn(string $message, \InvalidArgumentException $exception): SnowflakeException => new SnowflakeException($message, 0, $exception),
         );
+
+        return self::assertDecodedId($id);
+    }
+
+    private static function assertDecodedId(string $id): string
+    {
+        if (!self::isValid($id)) {
+            throw new SnowflakeException('Decoded Snowflake ID exceeds the supported signed domain');
+        }
+
+        return $id;
     }
 
     private static function encodeNumericBytes(string $id): string

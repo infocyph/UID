@@ -262,6 +262,12 @@ final class Randflake
             $sequenceValue = self::sequence($now, $nodeId, 'randflake', $resolvedSequenceProvider);
         } catch (SequenceTimestampException $exception) {
             $now = time();
+            if ($now < $leaseStart || $now > $leaseEnd) {
+                throw new RandflakeException('randflake: invalid lease, lease expired or not started yet', 0, $exception);
+            }
+            if ($now > self::MAX_TIMESTAMP) {
+                throw new RandflakeException('randflake: the randflake id is dead after 34 years of lifetime', 0, $exception);
+            }
             if ($now < $exception->lastTimestamp) {
                 throw new RandflakeException(
                     'randflake: timestamp consistency violation, the current time is less than the persisted time',

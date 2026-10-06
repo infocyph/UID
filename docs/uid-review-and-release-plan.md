@@ -173,29 +173,29 @@ durable backend where that guarantee is required.
 
 ### B. Generator, validation and utility correctness
 
-- [ ] Separate ULID random-mode work from its monotonic state. Make overflow
+- [x] Separate ULID random-mode work from its monotonic state. Make overflow
   state terminal for that timestamp; use a non-mutating overflow decision or
   commit a new tail only after successful increment. Check timestamp range again
   after any wait. Cover alternating modes and repeated calls after exceptions.
-- [ ] Increment only UUIDv7's usable 74 random bits, carrying across `rand_b`
+- [x] Increment only UUIDv7's usable 74 random bits, carrying across `rand_b`
   and `rand_a` while keeping version/variant fixed. Define full exhaustion and
   explicit timestamp behavior; preserve existing timestamp/output contracts.
-- [ ] Require exact end-of-input and protocol widths for R06. Align validation,
+- [x] Require exact end-of-input and protocol widths for R06. Align validation,
   parse and byte conversion. Preserve intentionally supported UUID input forms;
   do not turn every normalization helper into an unrelated strictness migration.
-- [ ] Revalidate Randflake lease, timestamp lifetime and rollback conditions on
+- [x] Revalidate Randflake lease, timestamp lifetime and rollback conditions on
   every resampled retry before consuming another allocation. Retain UID's
   documented inclusive lease end in a compatible release.
-- [ ] Reject decoded numeric IDs outside each family's signed/non-negative
+- [x] Reject decoded numeric IDs outside each family's signed/non-negative
   domain. Test zero, maximum valid value, first invalid value, all-`ff` bytes and
   every supported base, plus value-object construction.
-- [ ] Establish a total mixed-ID order for R11, for example numeric values first,
+- [x] Establish a total mixed-ID order for R11, for example numeric values first,
   numeric comparison within that group, and lexical comparison within the text
   group. Test transitivity and shuffled input permutations. Numeric-only and
   text-only ordering remain stable. Review changes to previously ambiguous mixed
   ordering against consumers before release; if its pairwise contract must be
   preserved, add explicit modes and schedule the default correction for a major.
-- [ ] Correct the PHP GUID brace fallback and test normalization/round trips.
+- [x] Correct the PHP GUID brace fallback and test normalization/round trips.
 - [ ] Keep provider-instance state weakly associated with the actual provider;
   replace Sonyflake's reusable object-ID keys. Bound reservation/state metadata
   without resetting live uniqueness or rollback guards. Do not retain empty
