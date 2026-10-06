@@ -20,7 +20,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
     /** @var array<string, array{timestamp:int,sequence:int}> */
     private array $observedState = [];
 
-    /**
+/**
      * @param callable(string, callable():int):mixed|null $synchronizer
      */
     public function __construct(
@@ -45,7 +45,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         $this->synchronizer = $synchronizer ? $synchronizer(...) : null;
     }
 
-    /**
+/**
      * @throws FileLockException
      */
     public function next(string $type, int $machineId, int $timestamp): int
@@ -65,47 +65,49 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         }
     }
 
-    private function nextSynchronized(Closure $synchronizer, string $key, int $timestamp): int
+/**
+     * @param array{timestamp:int,sequence:int}|null $state
+     * @param array{timestamp:int,sequence:int}|null $observed
+     */
+    private static function assertNotRegressed(?array $state, ?array $observed, string $key): void
     {
-        try {
-            $sequence = $synchronizer(
-                $key,
-                fn(): int => $this->nextFromCacheState($key, $timestamp),
+        if ($state === null || $observed === null) {
+            return;
+        }
+        if ($state['timestamp'] < $observed['timestamp']) {
+            throw new FileLockException('Cached sequence state regressed for key: ' . $key);
+        }
+        if ($state['timestamp'] === $observed['timestamp'] && $state['sequence'] < $observed['sequence']) {
+            throw new FileLockException('Cached sequence state regressed for key: ' . $key);
+        }
+    }
+
+/**
+     * @param array{timestamp:int,sequence:int}|null $state
+     */
+    private static function nextSequence(?array $state, int $timestamp, string $key): int
+    {
+        if ($state === null) {
+            return 1;
+        }
+        if ($state['timestamp'] > $timestamp) {
+            throw new SequenceTimestampException(
+                $state['timestamp'],
+                $timestamp,
+                'Sequence timestamp moved backwards for key: ' . $key,
             );
-        } catch (FileLockException $exception) {
-            throw $exception;
-        } catch (Throwable $exception) {
-            throw $this->storageFailure($key, $exception);
+        }
+        if ($state['timestamp'] !== $timestamp) {
+            return 1;
+        }
+        if ($state['sequence'] === PHP_INT_MAX) {
+            throw new FileLockException('Sequence value exhausted for key: ' . $key);
         }
 
-        if (!is_int($sequence) || $sequence < 1) {
-            throw new FileLockException('Sequence synchronizer must return a positive integer');
-        }
-
-        return $sequence;
+        return $state['sequence'] + 1;
     }
 
-    private function nextSafely(string $key, int $timestamp): int
-    {
-        try {
-            return $this->nextFromCacheState($key, $timestamp);
-        } catch (FileLockException $exception) {
-            throw $exception;
-        } catch (Throwable $exception) {
-            throw $this->storageFailure($key, $exception);
-        }
-    }
-
-    private function storageFailure(string $key, Throwable $exception): FileLockException
-    {
-        return new FileLockException(
-            'Failed to read/write sequence state from PSR cache for key: ' . $key,
-            0,
-            $exception,
-        );
-    }
-
-    /**
+/**
      * @return resource
      * @throws FileLockException
      */
@@ -122,7 +124,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         );
     }
 
-    private function key(string $type, int $machineId): string
+private function key(string $type, int $machineId): string
     {
         if (preg_match('/^[A-Za-z0-9_.]+$/D', $type) !== 1) {
             throw new InvalidArgumentException('Sequence type contains characters not guaranteed by PSR-16');
@@ -136,7 +138,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         return $key;
     }
 
-    private function nextFromCacheState(string $key, int $timestamp): int
+private function nextFromCacheState(string $key, int $timestamp): int
     {
         $state = $this->normalizeState($this->cache->get($key), $key);
         $observed = $this->observedState[$key] ?? null;
@@ -156,7 +158,38 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         return $sequence;
     }
 
-    /**
+private function nextSafely(string $key, int $timestamp): int
+    {
+        try {
+            return $this->nextFromCacheState($key, $timestamp);
+        } catch (FileLockException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw $this->storageFailure($key, $exception);
+        }
+    }
+
+private function nextSynchronized(Closure $synchronizer, string $key, int $timestamp): int
+    {
+        try {
+            $sequence = $synchronizer(
+                $key,
+                fn(): int => $this->nextFromCacheState($key, $timestamp),
+            );
+        } catch (FileLockException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw $this->storageFailure($key, $exception);
+        }
+
+        if (!is_int($sequence) || $sequence < 1) {
+            throw new FileLockException('Sequence synchronizer must return a positive integer');
+        }
+
+        return $sequence;
+    }
+
+/**
      * @return array{timestamp:int,sequence:int}|null
      */
     private function normalizeState(mixed $state, string $key): ?array
@@ -182,45 +215,13 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         return ['timestamp' => $stateTimestamp, 'sequence' => $stateSequence];
     }
 
-    /**
-     * @param array{timestamp:int,sequence:int}|null $state
-     * @param array{timestamp:int,sequence:int}|null $observed
-     */
-    private static function assertNotRegressed(?array $state, ?array $observed, string $key): void
+private function storageFailure(string $key, Throwable $exception): FileLockException
     {
-        if ($state === null || $observed === null) {
-            return;
-        }
-        if ($state['timestamp'] < $observed['timestamp']) {
-            throw new FileLockException('Cached sequence state regressed for key: ' . $key);
-        }
-        if ($state['timestamp'] === $observed['timestamp'] && $state['sequence'] < $observed['sequence']) {
-            throw new FileLockException('Cached sequence state regressed for key: ' . $key);
-        }
+        return new FileLockException(
+            'Failed to read/write sequence state from PSR cache for key: ' . $key,
+            0,
+            $exception,
+        );
     }
 
-    /**
-     * @param array{timestamp:int,sequence:int}|null $state
-     */
-    private static function nextSequence(?array $state, int $timestamp, string $key): int
-    {
-        if ($state === null) {
-            return 1;
-        }
-        if ($state['timestamp'] > $timestamp) {
-            throw new SequenceTimestampException(
-                $state['timestamp'],
-                $timestamp,
-                'Sequence timestamp moved backwards for key: ' . $key,
-            );
-        }
-        if ($state['timestamp'] !== $timestamp) {
-            return 1;
-        }
-        if ($state['sequence'] === PHP_INT_MAX) {
-            throw new FileLockException('Sequence value exhausted for key: ' . $key);
-        }
-
-        return $state['sequence'] + 1;
-    }
 }
