@@ -11,6 +11,7 @@ use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\SnowflakeException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
@@ -29,6 +30,8 @@ final class Snowflake
     private const int SEQUENCE_BITS = 12;
 
     private const int TIMESTAMP_BITS = 41;
+
+    private const int WAIT_TIMEOUT_MICROS = 1_000_000;
 
     private const int WORKER_BITS = 5;
 
@@ -70,6 +73,7 @@ final class Snowflake
             $workerId,
             self::getStartTimeStamp(),
             ClockBackwardPolicy::WAIT,
+            runtime: null,
         );
     }
 
@@ -89,6 +93,7 @@ final class Snowflake
             $customEpoch ?? self::getStartTimeStamp(),
             $config->clockBackwardPolicy,
             $config->sequenceProvider,
+            $config->runtime,
         );
     }
 
@@ -255,10 +260,11 @@ final class Snowflake
         int $startTimestamp,
         ClockBackwardPolicy $clockBackwardPolicy,
         ?SequenceProviderInterface $sequenceProvider = null,
+        ?GenerationContext $runtime = null,
     ): string {
         self::assertNodeIds($datacenter, $workerId);
 
-        $currentTime = (int) floor(microtime(true) * 1000);
+        $currentTime = self::nowMilliseconds($runtime);
         self::assertTimestampRange($currentTime, $startTimestamp);
 
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
@@ -280,6 +286,7 @@ final class Snowflake
                 $clockBackwardPolicy,
                 $resolvedSequenceProvider,
                 $sequenceType,
+                $runtime,
             );
 
             $lastState = $providerState[$stateKey] ?? null;
@@ -294,7 +301,7 @@ final class Snowflake
                 $currentTime < $lastState['timestamp']
                 || ($currentTime === $lastState['timestamp'] && $sequence <= $lastState['sequence'])
             ) {
-                $currentTime = self::waitUntil($lastState['timestamp'] + 1);
+                $currentTime = self::waitUntil($lastState['timestamp'] + 1, $runtime);
                 self::assertTimestampRange($currentTime, $startTimestamp);
 
                 continue;
@@ -338,6 +345,7 @@ final class Snowflake
         ClockBackwardPolicy $clockBackwardPolicy,
         SequenceProviderInterface $sequenceProvider,
         string $sequenceType,
+        ?GenerationContext $runtime,
     ): array {
         while (true) {
             try {
@@ -351,7 +359,7 @@ final class Snowflake
                     );
                 }
 
-                $currentTime = self::waitUntil($exception->lastTimestamp);
+                $currentTime = self::waitUntil($exception->lastTimestamp, $runtime);
                 self::assertTimestampRange($currentTime, $startTimestamp);
 
                 continue;
@@ -365,7 +373,7 @@ final class Snowflake
                 return [$currentTime, $allocation - 1];
             }
 
-            $currentTime = self::waitUntil($currentTime + 1);
+            $currentTime = self::waitUntil($currentTime + 1, $runtime);
             self::assertTimestampRange($currentTime, $startTimestamp);
         }
     }
@@ -383,12 +391,26 @@ final class Snowflake
         return [(string) intdiv($timestamp, 1000), (string) (($timestamp % 1000) * 1000)];
     }
 
-    private static function waitUntil(int $timestamp): int
+    private static function nowMilliseconds(?GenerationContext $runtime): int
     {
-        $now = (int) floor(microtime(true) * 1000);
-        while ($now < $timestamp) {
-            usleep(1000);
-            $now = (int) floor(microtime(true) * 1000);
+        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
+    }
+
+    private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
+    {
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
+
+        while (($now = self::nowMilliseconds($runtime)) < $timestamp) {
+            if (hrtime(true) >= $deadline) {
+                throw new SnowflakeException('Timed out waiting for a valid Snowflake timestamp');
+            }
+
+            if ($runtime !== null) {
+                $runtime->sleepMicroseconds(1_000);
+            } else {
+                usleep(1_000);
+            }
         }
 
         return $now;

@@ -11,6 +11,7 @@ use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\SonyflakeException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
@@ -29,6 +30,8 @@ final class Sonyflake
     private const int SEQUENCE_BITS = 8;
 
     private const int TIMESTAMP_BITS = 39;
+
+    private const int WAIT_TIMEOUT_MICROS = 1_000_000;
 
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, int>>|null */
     private static ?\WeakMap $lastWallTimeByProvider = null;
@@ -76,6 +79,7 @@ final class Sonyflake
             $machineId,
             self::getStartTimeStamp(),
             ClockBackwardPolicy::WAIT,
+            runtime: null,
         );
     }
 
@@ -91,6 +95,7 @@ final class Sonyflake
             $config->resolveCustomEpochMs() ?? self::getStartTimeStamp(),
             $config->clockBackwardPolicy,
             $config->sequenceProvider,
+            $config->runtime,
         );
     }
 
@@ -244,6 +249,7 @@ final class Sonyflake
         int $startTimestamp,
         ClockBackwardPolicy $clockBackwardPolicy,
         ?SequenceProviderInterface $sequenceProvider = null,
+        ?GenerationContext $runtime = null,
     ): string {
         $maxMachineID = -1 ^ (-1 << self::MACHINE_BITS);
         if ($machineId < 0 || $machineId > $maxMachineID) {
@@ -253,7 +259,7 @@ final class Sonyflake
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
         self::$lastWallTimeByProvider ??= new \WeakMap();
         $providerState = self::$lastWallTimeByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
-        $currentTime = (int) floor(microtime(true) * 1000);
+        $currentTime = self::nowMilliseconds($runtime);
         $domainKey = $startTimestamp . ':' . $machineId;
         $lastWallTime = $providerState[$domainKey] ?? 0;
         if ($currentTime < $lastWallTime) {
@@ -261,7 +267,7 @@ final class Sonyflake
                 throw new SonyflakeException('Clock moved backwards while generating Sonyflake ID');
             }
 
-            $currentTime = self::waitUntilWallTime($lastWallTime);
+            $currentTime = self::waitUntilWallTime($lastWallTime, $runtime);
         }
 
         $elapsedTime = self::elapsedTime($currentTime, $startTimestamp);
@@ -285,7 +291,7 @@ final class Sonyflake
                     );
                 }
 
-                $elapsedTime = self::waitUntilElapsed($exception->lastTimestamp, $startTimestamp);
+                $elapsedTime = self::waitUntilElapsed($exception->lastTimestamp, $startTimestamp, $runtime);
 
                 continue;
             }
@@ -300,7 +306,7 @@ final class Sonyflake
                 break;
             }
 
-            $elapsedTime = self::waitUntilElapsed($elapsedTime, $startTimestamp);
+            $elapsedTime = self::waitUntilElapsed($elapsedTime, $startTimestamp, $runtime);
         }
         $providerState[$domainKey] = max($currentTime, $startTimestamp + ($elapsedTime * 10));
 
@@ -324,23 +330,50 @@ final class Sonyflake
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
     }
 
-    private static function waitUntilElapsed(int $elapsedTime, int $startTimestamp): int
+    private static function nowMilliseconds(?GenerationContext $runtime): int
     {
-        $next = self::elapsedTime((int) floor(microtime(true) * 1000), $startTimestamp);
-        while ($next <= $elapsedTime) {
-            usleep(1000);
-            $next = self::elapsedTime((int) floor(microtime(true) * 1000), $startTimestamp);
+        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
+    }
+
+    private static function waitUntilElapsed(
+        int $elapsedTime,
+        int $startTimestamp,
+        ?GenerationContext $runtime,
+    ): int {
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
+
+        while (($next = self::elapsedTime(self::nowMilliseconds($runtime), $startTimestamp)) <= $elapsedTime) {
+            if (hrtime(true) >= $deadline) {
+                throw new SonyflakeException('Timed out waiting for the next Sonyflake timestamp');
+            }
+
+            if ($runtime !== null) {
+                $runtime->sleepMicroseconds(1_000);
+            } else {
+                usleep(1_000);
+            }
         }
 
         return $next;
     }
 
-    private static function waitUntilWallTime(int $lastTime): int
+    private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime): int
     {
-        do {
-            usleep(1000);
-            $currentTime = (int) floor(microtime(true) * 1000);
-        } while ($currentTime < $lastTime);
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
+
+        while (($currentTime = self::nowMilliseconds($runtime)) < $lastTime) {
+            if (hrtime(true) >= $deadline) {
+                throw new SonyflakeException('Timed out waiting for the Sonyflake clock to recover');
+            }
+
+            if ($runtime !== null) {
+                $runtime->sleepMicroseconds(1_000);
+            } else {
+                usleep(1_000);
+            }
+        }
 
         return $currentTime;
     }
