@@ -137,17 +137,17 @@ No claim of cryptographic certification is made for a full-library code review.
 
 ### A. Filesystem and authoritative allocation safety
 
-- [ ] Reproduce R01 using private fixtures, then protect the existing lock/state
+- [x] Reproduce R01 using private fixtures, then protect the existing lock/state
   owner against symlinks, non-regular files, unsafe ownership and precreation.
   Use an application-owned restricted directory where possible. Check file
   identity and ownership on the opened handle; a path check alone leaves a race.
   Never open an unverified target with truncating writes.
-- [ ] Preserve a stable lock inode while coordinating writers. Renaming a state
+- [x] Preserve a stable lock inode while coordinating writers. Renaming a state
   file underneath locks can let writers lock different inodes.
 - [ ] If secure default storage changes location, provide a coordinated migration
   that preserves sequence high-water marks. Mixed old/new paths or independent
   empty stores must not create two allocation authorities for the same domain.
-- [ ] Fix R08 with integer-safe bounds checked before increment/reservation,
+- [x] Fix R08 with integer-safe bounds checked before increment/reservation,
   including exhaustion, maximum allocation, cached-next and write failures.
 - [ ] For R02, define shared allocation state as authoritative, non-expiring and
   non-evicting while its timestamp can still be emitted. Require appropriately

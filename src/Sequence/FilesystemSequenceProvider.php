@@ -58,7 +58,11 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
             && $reservation['next'] <= $reservation['end']
         ) {
             $allocation = $reservation['next'];
-            $this->reservations[$fileLocation]['next'] = $allocation + 1;
+            if ($allocation === $reservation['end']) {
+                unset($this->reservations[$fileLocation]);
+            } else {
+                $this->reservations[$fileLocation]['next'] = $allocation + 1;
+            }
 
             return $allocation;
         }
@@ -76,19 +80,28 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
                 throw new SequenceTimestampException($lastTimestamp, $timestamp);
             }
 
+            if ($lastTimestamp === $timestamp && $lastAllocation === PHP_INT_MAX) {
+                throw new FileLockException('Sequence value exhausted');
+            }
             $allocation = $lastTimestamp === $timestamp ? $lastAllocation + 1 : 1;
-            if ($allocation > PHP_INT_MAX - $this->reservationSize + 1) {
+            $reservationOffset = $this->reservationSize - 1;
+            if ($allocation > PHP_INT_MAX - $reservationOffset) {
                 throw new FileLockException('Sequence value exhausted');
             }
 
-            $reservedEnd = $allocation + $this->reservationSize - 1;
+            $reservedEnd = $allocation + $reservationOffset;
             $state = $timestamp . ',' . $reservedEnd;
             $this->writeState($handle, $state, $oldLength);
-            $this->reservations[$fileLocation] = [
-                'timestamp' => $timestamp,
-                'next' => $allocation + 1,
-                'end' => $reservedEnd,
-            ];
+            if ($this->reservationSize > 1) {
+                if (!isset($this->reservations[$fileLocation]) && count($this->reservations) >= self::MAX_RESERVATIONS) {
+                    throw new FileLockException('Sequence reservation domain limit exceeded');
+                }
+                $this->reservations[$fileLocation] = [
+                    'timestamp' => $timestamp,
+                    'next' => $allocation + 1,
+                    'end' => $reservedEnd,
+                ];
+            }
 
             return $allocation;
         } finally {
