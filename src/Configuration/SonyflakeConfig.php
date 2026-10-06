@@ -6,6 +6,7 @@ namespace Infocyph\UID\Configuration;
 
 use DateTimeInterface;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
+use Infocyph\UID\Enums\SonyflakeFormat;
 use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 
@@ -26,6 +27,7 @@ final readonly class SonyflakeConfig
         public ?SequenceProviderInterface $sequenceProvider = null,
         public ClockBackwardPolicy $clockBackwardPolicy = ClockBackwardPolicy::WAIT,
         public ?GenerationContext $runtime = null,
+        public SonyflakeFormat $format = SonyflakeFormat::UID,
     ) {
         $this->machineIdResolver = $machineIdResolver ? $machineIdResolver(...) : null;
         $this->customEpoch = self::normalizeEpoch($customEpoch);

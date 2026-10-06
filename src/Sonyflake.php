@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Exception;
 use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
+use Infocyph\UID\Enums\SonyflakeFormat;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\SonyflakeException;
@@ -28,6 +29,8 @@ final class Sonyflake
     private const int MACHINE_BITS = 16;
 
     private const int SEQUENCE_BITS = 8;
+
+    private const int UPSTREAM_DEFAULT_EPOCH = 1_409_529_600_000;
 
     private const int TIMESTAMP_BITS = 39;
 
@@ -77,9 +80,10 @@ final class Sonyflake
     {
         return self::generateInternal(
             $machineId,
-            self::getStartTimeStamp(),
+            self::getStartTimeStamp(SonyflakeFormat::UID),
             ClockBackwardPolicy::WAIT,
             runtime: null,
+            format: SonyflakeFormat::UID,
         );
     }
 
@@ -92,10 +96,11 @@ final class Sonyflake
     {
         return self::generateInternal(
             $config->resolveMachineId(),
-            $config->resolveCustomEpochMs() ?? self::getStartTimeStamp(),
+            $config->resolveCustomEpochMs() ?? self::getStartTimeStamp($config->format),
             $config->clockBackwardPolicy,
             $config->sequenceProvider,
             $config->runtime,
+            $config->format,
         );
     }
 
@@ -116,9 +121,9 @@ final class Sonyflake
      * @return array{time: DateTimeImmutable, sequence: int, machine_id: int}
      * @throws Exception
      */
-    public static function parse(string $id): array
+    public static function parse(string $id, SonyflakeFormat $format = SonyflakeFormat::UID): array
     {
-        return self::parseWithEpoch($id, self::getStartTimeStamp());
+        return self::parseWithEpoch($id, self::getStartTimeStamp($format), $format);
     }
 
     /**
@@ -127,13 +132,17 @@ final class Sonyflake
      * @return array{time: DateTimeImmutable, sequence: int, machine_id: int}
      * @throws Exception
      */
-    public static function parseWithEpoch(string $id, int $startTimestamp): array
+    public static function parseWithEpoch(
+        string $id,
+        int $startTimestamp,
+        SonyflakeFormat $format = SonyflakeFormat::UID,
+    ): array
     {
         if (!self::isValid($id) || UnsignedDecimal::compare($id, (string) PHP_INT_MAX) === 1) {
             throw new SonyflakeException('Invalid Sonyflake ID string');
         }
 
-        $parts = self::extractParts($id, $startTimestamp);
+        $parts = self::extractParts($id, $startTimestamp, $format);
 
         return [
             'time' => new DateTimeImmutable(
@@ -227,8 +236,11 @@ final class Sonyflake
     /**
      * @return array{seconds:string,fraction:string,sequence:int,machine_id:int}
      */
-    private static function extractParts(string $id, int $startTimestamp): array
-    {
+    private static function extractParts(
+        string $id,
+        int $startTimestamp,
+        SonyflakeFormat $format,
+    ): array {
         $numericId = (int) $id;
         $elapsed = $numericId >> 24;
         $timestamp = $startTimestamp + ($elapsed * 10);
@@ -236,8 +248,12 @@ final class Sonyflake
         return [
             'seconds' => (string) intdiv($timestamp, 1000),
             'fraction' => (string) (($timestamp % 1000) * 1000),
-            'sequence' => $numericId & 0xff,
-            'machine_id' => ($numericId >> 8) & 0xffff,
+            'sequence' => $format === SonyflakeFormat::UPSTREAM
+                ? ($numericId >> 16) & 0xff
+                : $numericId & 0xff,
+            'machine_id' => $format === SonyflakeFormat::UPSTREAM
+                ? $numericId & 0xffff
+                : ($numericId >> 8) & 0xffff,
         ];
     }
 
@@ -250,6 +266,7 @@ final class Sonyflake
         ClockBackwardPolicy $clockBackwardPolicy,
         ?SequenceProviderInterface $sequenceProvider = null,
         ?GenerationContext $runtime = null,
+        SonyflakeFormat $format = SonyflakeFormat::UID,
     ): string {
         $maxMachineID = -1 ^ (-1 << self::MACHINE_BITS);
         if ($machineId < 0 || $machineId > $maxMachineID) {
@@ -272,7 +289,9 @@ final class Sonyflake
 
         $elapsedTime = self::elapsedTime($currentTime, $startTimestamp);
         self::ensureEffectiveRuntime($elapsedTime);
-        $sequenceType = 'sonyflake_' . $startTimestamp;
+        $sequenceType = $format === SonyflakeFormat::UID
+            ? 'sonyflake_' . $startTimestamp
+            : 'sonyflake_upstream_' . $startTimestamp;
 
         while (true) {
             try {
@@ -312,17 +331,23 @@ final class Sonyflake
 
         self::ensureEffectiveRuntime($elapsedTime);
 
-        return (string) ($elapsedTime << (self::MACHINE_BITS + self::SEQUENCE_BITS)
-            | ($machineId << self::SEQUENCE_BITS)
-            | ($sequence));
+        return (string) ($format === SonyflakeFormat::UPSTREAM
+            ? ($elapsedTime << (self::MACHINE_BITS + self::SEQUENCE_BITS)
+                | ($sequence << self::MACHINE_BITS)
+                | $machineId)
+            : ($elapsedTime << (self::MACHINE_BITS + self::SEQUENCE_BITS)
+                | ($machineId << self::SEQUENCE_BITS)
+                | $sequence));
     }
 
     /**
      * Retrieves the start timestamp.
      */
-    private static function getStartTimeStamp(): int
+    private static function getStartTimeStamp(SonyflakeFormat $format): int
     {
-        return self::DEFAULT_EPOCH;
+        return $format === SonyflakeFormat::UPSTREAM
+            ? self::UPSTREAM_DEFAULT_EPOCH
+            : self::DEFAULT_EPOCH;
     }
 
     private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
