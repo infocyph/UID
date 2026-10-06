@@ -82,7 +82,6 @@ final class Sonyflake
             $machineId,
             self::getStartTimeStamp(SonyflakeFormat::UID),
             ClockBackwardPolicy::WAIT,
-            runtime: null,
             format: SonyflakeFormat::UID,
         );
     }

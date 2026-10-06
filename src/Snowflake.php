@@ -73,7 +73,6 @@ final class Snowflake
             $workerId,
             self::getStartTimeStamp(),
             ClockBackwardPolicy::WAIT,
-            runtime: null,
         );
     }
 
