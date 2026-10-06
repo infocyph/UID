@@ -268,41 +268,89 @@ final class Sonyflake
         ?GenerationContext $runtime = null,
         SonyflakeFormat $format = SonyflakeFormat::UID,
     ): string {
-        $maxMachineID = -1 ^ (-1 << self::MACHINE_BITS);
-        if ($machineId < 0 || $machineId > $maxMachineID) {
-            throw new SonyflakeException("Invalid machine ID, must be between 0 ~ $maxMachineID.");
-        }
+        self::assertMachineId($machineId);
 
-        $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
+        $provider = self::resolveSequenceProvider($sequenceProvider);
         self::$lastWallTimeByProvider ??= new \WeakMap();
-        $providerState = self::$lastWallTimeByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
-        $currentTime = self::nowMilliseconds($runtime);
-        $domainKey = $startTimestamp . ':' . $machineId;
-        $lastWallTime = $providerState[$domainKey] ?? 0;
-        if ($currentTime < $lastWallTime) {
-            if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
-                throw new SonyflakeException('Clock moved backwards while generating Sonyflake ID');
-            }
 
-            $currentTime = self::waitUntilWallTime($lastWallTime, $runtime);
+        /** @var \ArrayObject<string, int>|null $providerState */
+        $providerState = self::$lastWallTimeByProvider[$provider] ?? null;
+        if ($providerState === null) {
+            /** @var \ArrayObject<string, int> $providerState */
+            $providerState = new \ArrayObject();
+            self::$lastWallTimeByProvider[$provider] = $providerState;
         }
 
+        $domainKey = $format->value . ':' . $startTimestamp . ':' . $machineId;
+        $currentTime = self::resolveWallTime(
+            self::nowMilliseconds($runtime),
+            $providerState[$domainKey] ?? 0,
+            $clockBackwardPolicy,
+            $runtime,
+        );
         $elapsedTime = self::elapsedTime($currentTime, $startTimestamp);
         self::ensureEffectiveRuntime($elapsedTime);
+
+        [$elapsedTime, $sequence] = self::allocateSequence(
+            $provider,
+            $machineId,
+            $startTimestamp,
+            $elapsedTime,
+            $clockBackwardPolicy,
+            $runtime,
+            $format,
+        );
+        $providerState[$domainKey] = max($currentTime, $startTimestamp + ($elapsedTime * 10));
+        self::ensureEffectiveRuntime($elapsedTime);
+
+        return self::packId($elapsedTime, $machineId, $sequence, $format);
+    }
+
+    private static function assertMachineId(int $machineId): void
+    {
+        $maximum = -1 ^ (-1 << self::MACHINE_BITS);
+        if ($machineId < 0 || $machineId > $maximum) {
+            throw new SonyflakeException("Invalid machine ID, must be between 0 ~ $maximum.");
+        }
+    }
+
+    private static function resolveWallTime(
+        int $currentTime,
+        int $lastWallTime,
+        ClockBackwardPolicy $policy,
+        ?GenerationContext $runtime,
+    ): int {
+        if ($currentTime >= $lastWallTime) {
+            return $currentTime;
+        }
+        if ($policy === ClockBackwardPolicy::THROW) {
+            throw new SonyflakeException('Clock moved backwards while generating Sonyflake ID');
+        }
+
+        return self::waitUntilWallTime($lastWallTime, $runtime);
+    }
+
+    /**
+     * @return array{0:int,1:int}
+     */
+    private static function allocateSequence(
+        SequenceProviderInterface $provider,
+        int $machineId,
+        int $startTimestamp,
+        int $elapsedTime,
+        ClockBackwardPolicy $policy,
+        ?GenerationContext $runtime,
+        SonyflakeFormat $format,
+    ): array {
         $sequenceType = $format === SonyflakeFormat::UID
             ? 'sonyflake_' . $startTimestamp
             : 'sonyflake_upstream_' . $startTimestamp;
 
         while (true) {
             try {
-                $sequence = self::sequence(
-                    $elapsedTime,
-                    $machineId,
-                    $sequenceType,
-                    $resolvedSequenceProvider,
-                );
+                $allocation = self::sequence($elapsedTime, $machineId, $sequenceType, $provider);
             } catch (SequenceTimestampException $exception) {
-                if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
+                if ($policy === ClockBackwardPolicy::THROW) {
                     throw new SonyflakeException(
                         'Clock moved backwards while generating Sonyflake ID',
                         0,
@@ -315,29 +363,36 @@ final class Sonyflake
                 continue;
             }
 
-            if ($sequence < 1) {
+            if ($allocation < 1) {
                 throw new SonyflakeException('Sonyflake sequence provider must return a positive allocation');
             }
-
-            if ($sequence <= (-1 ^ (-1 << self::SEQUENCE_BITS)) + 1) {
-                --$sequence;
-
-                break;
+            if ($allocation <= (-1 ^ (-1 << self::SEQUENCE_BITS)) + 1) {
+                return [$elapsedTime, $allocation - 1];
             }
 
             $elapsedTime = self::waitUntilElapsed($elapsedTime, $startTimestamp, $runtime);
         }
-        $providerState[$domainKey] = max($currentTime, $startTimestamp + ($elapsedTime * 10));
+    }
 
-        self::ensureEffectiveRuntime($elapsedTime);
-
-        return (string) ($format === SonyflakeFormat::UPSTREAM
-            ? ($elapsedTime << (self::MACHINE_BITS + self::SEQUENCE_BITS)
+    private static function packId(
+        int $elapsedTime,
+        int $machineId,
+        int $sequence,
+        SonyflakeFormat $format,
+    ): string {
+        if ($format === SonyflakeFormat::UPSTREAM) {
+            return (string) (
+                ($elapsedTime << (self::MACHINE_BITS + self::SEQUENCE_BITS))
                 | ($sequence << self::MACHINE_BITS)
-                | $machineId)
-            : ($elapsedTime << (self::MACHINE_BITS + self::SEQUENCE_BITS)
-                | ($machineId << self::SEQUENCE_BITS)
-                | $sequence));
+                | $machineId
+            );
+        }
+
+        return (string) (
+            ($elapsedTime << (self::MACHINE_BITS + self::SEQUENCE_BITS))
+            | ($machineId << self::SEQUENCE_BITS)
+            | $sequence
+        );
     }
 
     /**

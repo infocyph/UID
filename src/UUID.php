@@ -554,7 +554,7 @@ final class UUID
     {
         $tail = strtolower($tail);
         for ($index = strlen($tail) - 1; $index >= 1; --$index) {
-            $value = hexdec($tail[$index]);
+            $value = intval($tail[$index], 16);
             $maximum = $index === 4 ? 3 : 15;
             $value = $index === 4 ? $value & 3 : $value;
             if ($value < $maximum) {

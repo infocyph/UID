@@ -42,7 +42,7 @@ final class Randflake
 
     public const int TIMESTAMP_BITS = 30;
 
-    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<int, int>>|null */
+    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, array{timestamp:int,sequence:int}>>|null */
     private static ?\WeakMap $lastTimestampByProvider = null;
 
     /** @var array<string, array<int, int>> */
@@ -359,11 +359,62 @@ final class Randflake
         self::validateLeaseWindow($leaseStart, $leaseEnd, $format, $leaseEndExclusive);
         $secret = self::validateSecret($secret);
 
-        $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
-        self::$lastTimestampByProvider ??= new \WeakMap();
-        $providerState = self::$lastTimestampByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
+        $provider = self::resolveSequenceProvider($sequenceProvider);
+        $state = self::providerState($provider);
         $domainKey = $format->value . ':' . $nodeId;
         $now = self::nowSeconds($runtime);
+        self::assertGenerationTime($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive);
+
+        $last = $state[$domainKey] ?? null;
+        if ($last !== null && $now < $last['timestamp']) {
+            throw new RandflakeException(
+                'randflake: timestamp consistency violation, the current time is less than the last time',
+            );
+        }
+
+        [$now, $allocation] = self::allocateSequence(
+            $provider,
+            $nodeId,
+            $now,
+            $leaseStart,
+            $leaseEnd,
+            $format,
+            $leaseEndExclusive,
+            $runtime,
+        );
+        $sequence = self::normalizeAllocation($allocation, $last, $now);
+        $state[$domainKey] = ['timestamp' => $now, 'sequence' => $sequence];
+
+        return self::encodeGeneratedPayload($now, $nodeId, $sequence, $secret, $format);
+    }
+
+    /**
+     * @return \ArrayObject<string, array{timestamp:int,sequence:int}>
+     */
+    private static function providerState(SequenceProviderInterface $provider): \ArrayObject
+    {
+        self::$lastTimestampByProvider ??= new \WeakMap();
+
+        /** @var \ArrayObject<string, array{timestamp:int,sequence:int}>|null $state */
+        $state = self::$lastTimestampByProvider[$provider] ?? null;
+        if ($state !== null) {
+            return $state;
+        }
+
+        /** @var \ArrayObject<string, array{timestamp:int,sequence:int}> $state */
+        $state = new \ArrayObject();
+        self::$lastTimestampByProvider[$provider] = $state;
+
+        return $state;
+    }
+
+    private static function assertGenerationTime(
+        int $now,
+        int $leaseStart,
+        int $leaseEnd,
+        RandflakeFormat $format,
+        ?int $leaseEndExclusive,
+    ): void {
         if (!self::leaseContains($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive)) {
             throw new RandflakeException('randflake: invalid lease, lease expired or not started yet');
         }
@@ -371,28 +422,28 @@ final class Randflake
         if ($now > self::MAX_TIMESTAMP) {
             throw new RandflakeException('randflake: the randflake id is dead after 34 years of lifetime');
         }
+    }
 
-        $last = $providerState[$domainKey] ?? null;
-        $lastTimestamp = $last['timestamp'] ?? null;
-        if ($lastTimestamp !== null && $now < $lastTimestamp) {
-            throw new RandflakeException('randflake: timestamp consistency violation, the current time is less than the last time');
-        }
+    /**
+     * @return array{0:int,1:int}
+     */
+    private static function allocateSequence(
+        SequenceProviderInterface $provider,
+        int $nodeId,
+        int $now,
+        int $leaseStart,
+        int $leaseEnd,
+        RandflakeFormat $format,
+        ?int $leaseEndExclusive,
+        ?GenerationContext $runtime,
+    ): array {
+        $type = $format === RandflakeFormat::UID ? 'randflake' : 'randflake_upstream';
 
         try {
-            $sequenceValue = self::sequence(
-                $now,
-                $nodeId,
-                $format === RandflakeFormat::UID ? 'randflake' : 'randflake_upstream',
-                $resolvedSequenceProvider,
-            );
+            return [$now, self::sequence($now, $nodeId, $type, $provider)];
         } catch (SequenceTimestampException $exception) {
             $now = self::nowSeconds($runtime);
-            if (!self::leaseContains($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive)) {
-                throw new RandflakeException('randflake: invalid lease, lease expired or not started yet', 0, $exception);
-            }
-            if ($now > self::MAX_TIMESTAMP) {
-                throw new RandflakeException('randflake: the randflake id is dead after 34 years of lifetime', 0, $exception);
-            }
+            self::assertGenerationTime($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive);
             if ($now < $exception->lastTimestamp) {
                 throw new RandflakeException(
                     'randflake: timestamp consistency violation, the current time is less than the persisted time',
@@ -401,23 +452,21 @@ final class Randflake
                 );
             }
 
-            $sequenceValue = self::sequence(
-                $now,
-                $nodeId,
-                $format === RandflakeFormat::UID ? 'randflake' : 'randflake_upstream',
-                $resolvedSequenceProvider,
-            );
+            return [$now, self::sequence($now, $nodeId, $type, $provider)];
         }
-        if ($sequenceValue < 1) {
+    }
+
+    /**
+     * @param array{timestamp:int,sequence:int}|null $last
+     */
+    private static function normalizeAllocation(int $allocation, ?array $last, int $now): int
+    {
+        if ($allocation < 1) {
             throw new RandflakeException('randflake: sequence provider must return a positive integer');
         }
 
-        $sequence = $sequenceValue - 1;
-        if (
-            $last !== null
-            && $last['timestamp'] === $now
-            && $sequence <= $last['sequence']
-        ) {
+        $sequence = $allocation - 1;
+        if ($last !== null && $last['timestamp'] === $now && $sequence <= $last['sequence']) {
             throw new RandflakeException('randflake: sequence allocation regressed for the active provider domain');
         }
         if ($sequence > self::MAX_SEQUENCE) {
@@ -426,13 +475,21 @@ final class Randflake
             );
         }
 
-        $providerState[$domainKey] = ['timestamp' => $now, 'sequence' => $sequence];
+        return $sequence;
+    }
 
-        $plain = self::packPayload($now, $nodeId, $sequence);
+    private static function encodeGeneratedPayload(
+        int $timestamp,
+        int $nodeId,
+        int $sequence,
+        #[\SensitiveParameter] string $secret,
+        RandflakeFormat $format,
+    ): string {
+        $plain = self::packPayload($timestamp, $nodeId, $sequence);
         if ($format === RandflakeFormat::UPSTREAM) {
-            $cipher = self::sparx($secret)->encrypt(strrev($plain));
-
-            return SignedDecimal64::fromLittleEndianBytes($cipher);
+            return SignedDecimal64::fromLittleEndianBytes(
+                self::sparx($secret)->encrypt(strrev($plain)),
+            );
         }
 
         return DecimalBytes::fromBytes(self::permute($plain, $secret, false));
@@ -512,7 +569,7 @@ final class Randflake
 
     private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
     {
-        return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
+        return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider(reservationSize: 64);
     }
 
     private static function roundFunction(int $value, int $key): int

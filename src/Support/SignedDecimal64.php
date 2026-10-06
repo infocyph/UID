@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Infocyph\UID\Support;
 
 use InvalidArgumentException;
+use LogicException;
 
 final class SignedDecimal64
 {
@@ -88,7 +89,12 @@ final class SignedDecimal64
                 $borrow = 0;
             }
 
-            $result = chr(48 + $digit - $rightDigit) . $result;
+            $difference = $digit - $rightDigit;
+            if ($difference < 0 || $difference > 9) {
+                throw new LogicException('Signed decimal subtraction produced an invalid digit');
+            }
+
+            $result = (string) $difference . $result;
             --$leftIndex;
             --$rightIndex;
         }
