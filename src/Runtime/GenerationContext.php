@@ -11,7 +11,7 @@ final readonly class GenerationContext
 {
     private const int DEFAULT_WAIT_TIMEOUT_MICROS = 1_000_000;
 
-public function __construct(
+    public function __construct(
         public ?ClockInterface $clock = null,
         public ?RunwireBinding $runwire = null,
         public int $waitTimeoutMicros = self::DEFAULT_WAIT_TIMEOUT_MICROS,
@@ -21,12 +21,12 @@ public function __construct(
         }
     }
 
-public function assertActive(): void
+    public function assertActive(): void
     {
         $this->runwire?->assertActive();
     }
 
-public function nowMicroseconds(): int
+    public function nowMicroseconds(): int
     {
         $this->assertActive();
 
@@ -37,17 +37,17 @@ public function nowMicroseconds(): int
         return (int) $this->clock->now()->format('Uu');
     }
 
-public function nowMilliseconds(): int
+    public function nowMilliseconds(): int
     {
         return intdiv($this->nowMicroseconds(), 1_000);
     }
 
-public function nowSeconds(): int
+    public function nowSeconds(): int
     {
         return intdiv($this->nowMicroseconds(), 1_000_000);
     }
 
-public function sleepMicroseconds(int $microseconds): void
+    public function sleepMicroseconds(int $microseconds): void
     {
         $this->assertActive();
         if ($this->runwire !== null) {
@@ -60,7 +60,7 @@ public function sleepMicroseconds(int $microseconds): void
         usleep($microseconds);
     }
 
-public function waitDeadlineNanoseconds(): int
+    public function waitDeadlineNanoseconds(): int
     {
         $deadline = hrtime(true) + ($this->waitTimeoutMicros * 1_000);
         $runwireDeadline = $this->runwire?->deadlineNanoseconds();

@@ -28,7 +28,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
 
     private ?int $sourcePid = null;
 
-public function __construct(
+    public function __construct(
         ?string $baseDirectory = null,
         private readonly string $namespace = '',
         private readonly ?int $lockTimeoutMicros = null,
@@ -50,7 +50,7 @@ public function __construct(
         }
     }
 
-public function next(string $type, int $machineId, int $timestamp): int
+    public function next(string $type, int $machineId, int $timestamp): int
     {
         $fileLocation = $this->sequenceFileLocation($type, $machineId);
         $this->resetAfterFork();
@@ -76,14 +76,14 @@ public function next(string $type, int $machineId, int $timestamp): int
         }
     }
 
-private static function isCanonicalInteger(string $value): bool
+    private static function isCanonicalInteger(string $value): bool
     {
         return $value !== ''
             && ctype_digit($value)
             && ($value === '0' || $value[0] !== '0');
     }
 
-/**
+    /**
      * @param resource $handle
      */
     private function allocateLocked($handle, string $fileLocation, int $timestamp): int
@@ -109,7 +109,7 @@ private static function isCanonicalInteger(string $value): bool
         return $allocation;
     }
 
-/**
+    /**
      * @param resource $handle
      * @return array{0:int,1:int,2:int}
      */
@@ -152,7 +152,7 @@ private static function isCanonicalInteger(string $value): bool
         return [(int) $timestamp, (int) $allocation, $oldLength];
     }
 
-private function resetAfterFork(): void
+    private function resetAfterFork(): void
     {
         $pid = (int) getmypid();
         if ($pid === $this->sourcePid) {
@@ -163,7 +163,7 @@ private function resetAfterFork(): void
         $this->reservations = [];
     }
 
-private function sequenceFileLocation(string $type, int $machineId): string
+    private function sequenceFileLocation(string $type, int $machineId): string
     {
         $cacheKey = $type . ':' . $machineId;
         if (isset($this->pathCache[$cacheKey])) {
@@ -182,7 +182,7 @@ private function sequenceFileLocation(string $type, int $machineId): string
         return $this->pathCache[$cacheKey] = $this->baseDirectory . DIRECTORY_SEPARATOR . $name;
     }
 
-private function storeReservation(
+    private function storeReservation(
         string $fileLocation,
         int $timestamp,
         int $allocation,
@@ -203,7 +203,7 @@ private function storeReservation(
         ];
     }
 
-private function takeReservedAllocation(string $fileLocation, int $timestamp): ?int
+    private function takeReservedAllocation(string $fileLocation, int $timestamp): ?int
     {
         $reservation = $this->reservations[$fileLocation] ?? null;
         if (
@@ -224,7 +224,7 @@ private function takeReservedAllocation(string $fileLocation, int $timestamp): ?
         return $allocation;
     }
 
-/**
+    /**
      * @param resource $handle
      */
     private function writeState($handle, string $state, int $oldLength): void

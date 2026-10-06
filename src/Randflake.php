@@ -51,7 +51,7 @@ final class Randflake
     /** @var array<string, Sparx64> */
     private static array $sparxCache = [];
 
-/**
+    /**
      * @throws RandflakeException
      */
     public static function decodeString(
@@ -92,7 +92,7 @@ final class Randflake
         );
     }
 
-/**
+    /**
      * @throws RandflakeException
      */
     public static function encodeString(
@@ -111,7 +111,7 @@ final class Randflake
         );
     }
 
-/**
+    /**
      * @throws RandflakeException
      */
     public static function fromBase(
@@ -141,7 +141,7 @@ final class Randflake
         );
     }
 
-/**
+    /**
      * @throws RandflakeException
      */
     public static function fromBytes(
@@ -164,7 +164,7 @@ final class Randflake
         );
     }
 
-/**
+    /**
      * @throws RandflakeException|FileLockException
      */
     public static function generate(int $nodeId, int $leaseStart, int $leaseEnd, #[\SensitiveParameter] string $secret): string
@@ -181,7 +181,7 @@ final class Randflake
         );
     }
 
-/**
+    /**
      * @throws RandflakeException|FileLockException
      */
     public static function generateString(int $nodeId, int $leaseStart, int $leaseEnd, #[\SensitiveParameter] string $secret): string
@@ -189,7 +189,7 @@ final class Randflake
         return self::encodeString(self::generate($nodeId, $leaseStart, $leaseEnd, $secret));
     }
 
-/**
+    /**
      * @throws RandflakeException|FileLockException
      */
     public static function generateWithConfig(RandflakeConfig $config): string
@@ -208,7 +208,7 @@ final class Randflake
         );
     }
 
-/**
+    /**
      * @return array{timestamp: int, node_id: int, sequence: int}
      * @throws RandflakeException
      */
@@ -234,7 +234,7 @@ final class Randflake
         ];
     }
 
-/**
+    /**
      * @return array{timestamp: int, node_id: int, sequence: int}
      * @throws RandflakeException
      */
@@ -246,7 +246,7 @@ final class Randflake
         return self::inspect(self::decodeString($id, $format), $secret, $format);
     }
 
-public static function isValid(
+    public static function isValid(
         string $id,
         RandflakeFormat $format = RandflakeFormat::UID,
     ): bool {
@@ -259,7 +259,7 @@ public static function isValid(
             && UnsignedDecimal::compare($id, '18446744073709551615') <= 0;
     }
 
-/**
+    /**
      * @return array{time: DateTimeImmutable, node_id: int, sequence: int}
      * @throws Exception
      */
@@ -285,7 +285,7 @@ public static function isValid(
         ];
     }
 
-/**
+    /**
      * @return array{time: DateTimeImmutable, node_id: int, sequence: int}
      * @throws Exception
      */
@@ -297,7 +297,7 @@ public static function isValid(
         return self::parse(self::decodeString($id, $format), $secret, $format);
     }
 
-/**
+    /**
      * @throws RandflakeException
      */
     public static function toBase(
@@ -317,7 +317,7 @@ public static function isValid(
         );
     }
 
-/**
+    /**
      * @throws RandflakeException
      */
     public static function toBytes(
@@ -342,7 +342,7 @@ public static function isValid(
         );
     }
 
-/**
+    /**
      * @return array{0:int,1:int}
      */
     private static function allocateSequence(
@@ -374,7 +374,7 @@ public static function isValid(
         }
     }
 
-private static function assertGenerationTime(
+    private static function assertGenerationTime(
         int $now,
         int $leaseStart,
         int $leaseEnd,
@@ -390,7 +390,7 @@ private static function assertGenerationTime(
         }
     }
 
-private static function encodeGeneratedPayload(
+    private static function encodeGeneratedPayload(
         int $timestamp,
         int $nodeId,
         int $sequence,
@@ -407,7 +407,7 @@ private static function encodeGeneratedPayload(
         return DecimalBytes::fromBytes(self::permute($plain, $secret, false));
     }
 
-/**
+    /**
      * @throws RandflakeException|FileLockException
      */
     private static function generateInternal(
@@ -453,7 +453,7 @@ private static function encodeGeneratedPayload(
         return self::encodeGeneratedPayload($now, $nodeId, $sequence, $secret, $format);
     }
 
-/**
+    /**
      * @return array{0:int,1:int,2:int}
      * @throws RandflakeException
      */
@@ -481,7 +481,7 @@ private static function encodeGeneratedPayload(
         return [$timestamp, $nodeId, $sequence];
     }
 
-private static function leaseContains(
+    private static function leaseContains(
         int $timestamp,
         int $leaseStart,
         int $leaseEnd,
@@ -495,7 +495,7 @@ private static function leaseContains(
         return $timestamp >= $leaseStart && $timestamp <= $leaseEnd;
     }
 
-/**
+    /**
      * @param array{timestamp:int,sequence:int}|null $last
      */
     private static function normalizeAllocation(int $allocation, ?array $last, int $now): int
@@ -517,12 +517,12 @@ private static function leaseContains(
         return $sequence;
     }
 
-private static function nowSeconds(?GenerationContext $runtime): int
+    private static function nowSeconds(?GenerationContext $runtime): int
     {
         return $runtime?->nowSeconds() ?? time();
     }
 
-private static function packPayload(int $timestamp, int $nodeId, int $sequence): string
+    private static function packPayload(int $timestamp, int $nodeId, int $sequence): string
     {
         $timestampPart = $timestamp - self::EPOCH_OFFSET;
         $high = (($timestampPart & self::MAX_TIMESTAMP_PART) << 2) | (($nodeId >> 15) & 0x03);
@@ -531,7 +531,7 @@ private static function packPayload(int $timestamp, int $nodeId, int $sequence):
         return pack('N2', $high, $low);
     }
 
-/**
+    /**
      * Small secret-key permutation over 64-bit blocks to protect payload fields.
      */
     private static function permute(string $block, string $secret, bool $decrypt): string
@@ -561,7 +561,7 @@ private static function packPayload(int $timestamp, int $nodeId, int $sequence):
         return pack('N2', $left, $right);
     }
 
-/**
+    /**
      * @return \ArrayObject<string, array{timestamp:int,sequence:int}>
      */
     private static function providerState(SequenceProviderInterface $provider): \ArrayObject
@@ -581,12 +581,12 @@ private static function packPayload(int $timestamp, int $nodeId, int $sequence):
         return $state;
     }
 
-private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
+    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
     {
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider(reservationSize: 64);
     }
 
-private static function roundFunction(int $value, int $key): int
+    private static function roundFunction(int $value, int $key): int
     {
         $mask = 0xffffffff;
         $value &= $mask;
@@ -599,7 +599,7 @@ private static function roundFunction(int $value, int $key): int
         return $mixed & $mask;
     }
 
-/**
+    /**
      * @return array<int, int>
      */
     private static function roundKeys(string $secret): array
@@ -623,7 +623,7 @@ private static function roundFunction(int $value, int $key): int
         return self::$roundKeyCache[$fingerprint] = $keys;
     }
 
-private static function sparx(#[\SensitiveParameter] string $secret): Sparx64
+    private static function sparx(#[\SensitiveParameter] string $secret): Sparx64
     {
         $fingerprint = hash('sha256', $secret);
         if (isset(self::$sparxCache[$fingerprint])) {
@@ -637,7 +637,7 @@ private static function sparx(#[\SensitiveParameter] string $secret): Sparx64
         return self::$sparxCache[$fingerprint] = new Sparx64($secret);
     }
 
-/**
+    /**
      * @param array<array-key, mixed>|false $parts
      * @throws RandflakeException
      */
@@ -655,7 +655,7 @@ private static function sparx(#[\SensitiveParameter] string $secret): Sparx64
         return $value;
     }
 
-/**
+    /**
      * @return array{0:int,1:int,2:int}
      */
     private static function unpackPayload(string $payload): array
@@ -671,7 +671,7 @@ private static function sparx(#[\SensitiveParameter] string $secret): Sparx64
         return [$timestampPart + self::EPOCH_OFFSET, $nodeId, $sequence];
     }
 
-/**
+    /**
      * @throws RandflakeException
      */
     private static function validateLeaseWindow(
@@ -698,7 +698,7 @@ private static function sparx(#[\SensitiveParameter] string $secret): Sparx64
         }
     }
 
-/**
+    /**
      * @throws RandflakeException
      */
     private static function validateNode(int $nodeId): void
@@ -708,7 +708,7 @@ private static function sparx(#[\SensitiveParameter] string $secret): Sparx64
         }
     }
 
-/**
+    /**
      * @throws RandflakeException
      */
     private static function validateSecret(#[\SensitiveParameter] string $secret): string
