@@ -10,6 +10,8 @@ use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class SonyflakeConfig
 {
+    public ?int $customEpoch;
+
     use ResolvesCustomEpoch;
     use ResolvesMachineId;
 
@@ -19,10 +21,11 @@ final readonly class SonyflakeConfig
     public function __construct(
         public int $machineId = 0,
         ?callable $machineIdResolver = null,
-        public DateTimeInterface|int|null $customEpoch = null,
+        DateTimeInterface|int|null $customEpoch = null,
         public ?SequenceProviderInterface $sequenceProvider = null,
         public ClockBackwardPolicy $clockBackwardPolicy = ClockBackwardPolicy::WAIT,
     ) {
         $this->machineIdResolver = $machineIdResolver ? $machineIdResolver(...) : null;
+        $this->customEpoch = self::normalizeEpoch($customEpoch);
     }
 }

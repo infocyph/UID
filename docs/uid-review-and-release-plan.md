@@ -155,7 +155,7 @@ No claim of cryptographic certification is made for a full-library code review.
   those guarantees. Document backend default TTL, clearing, failover, restoration,
   machine ownership and restart requirements. Fail closed when known state is
   lost or allocations regress; a local guard alone is not a distributed fix.
-- [ ] Add repeated-allocation detection to Randflake's stable provider/domain
+- [x] Add repeated-allocation detection to Randflake's stable provider/domain
   state so ordinary same-instance state loss cannot emit a known duplicate.
   Cover restart/new-provider limitations explicitly. A durable external provider
   can use the existing `SequenceProviderInterface`/callback boundary.
@@ -196,7 +196,7 @@ durable backend where that guarantee is required.
   ordering against consumers before release; if its pairwise contract must be
   preserved, add explicit modes and schedule the default correction for a major.
 - [x] Correct the PHP GUID brace fallback and test normalization/round trips.
-- [ ] Keep provider-instance state weakly associated with the actual provider;
+- [x] Keep provider-instance state weakly associated with the actual provider;
   replace Sonyflake's reusable object-ID keys. Bound reservation/state metadata
   without resetting live uniqueness or rollback guards. Do not retain empty
   reservation bookkeeping for size 1 without a demonstrated need.
@@ -235,7 +235,7 @@ verify codecs and protocol envelopes rather than only self-round trips.
 - [ ] Fix R14 and publish explicit UID-specific Sonyflake/Randflake compatibility
   notes. Include identifier selection, collision budgets for short configurable
   outputs, unique storage constraints and independent authorization requirements.
-- [ ] Redact Randflake secret-bearing callable parameters with
+- [x] Redact Randflake secret-bearing callable parameters with
   `#[SensitiveParameter]`; consider configuration-object exposure separately.
   Attribute redaction does not hide a public property or authorize logging it.
 
@@ -388,7 +388,7 @@ clock, cancellation and worker tests execute for both modes where applicable.
 - [ ] Replace TBSL's tight rollback/rollover spin with bounded waiting. Use the
   passed scope's cooperative sleep where available and a bounded native wait
   otherwise. Measure short normal rollover behavior before selecting intervals.
-- [ ] Normalize custom epochs at configuration construction into immutable scalar
+- [x] Normalize custom epochs at configuration construction into immutable scalar
   milliseconds or immutable date values, and reuse the normalized result.
   Mutating a caller-owned `DateTime` later must not change an existing ID domain.
   Validate supported epoch/range boundaries and preserve parser metadata.

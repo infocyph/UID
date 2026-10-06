@@ -16,6 +16,9 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
 {
     private ?Closure $synchronizer;
 
+    /** @var \ArrayObject<string, array{timestamp:int,sequence:int}> */
+    private \ArrayObject $observedState;
+
     /**
      * @param callable(string, callable():int):mixed|null $synchronizer
      */
@@ -31,6 +34,7 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
         }
 
         $this->synchronizer = $synchronizer ? $synchronizer(...) : null;
+        $this->observedState = new \ArrayObject();
     }
 
     /**
@@ -114,6 +118,11 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
     private function nextFromCacheState(string $key, int $timestamp): int
     {
         $state = $this->cache->get($key);
+        $observed = $this->observedState[$key] ?? null;
+        if ($state === null && $observed !== null) {
+            throw new FileLockException('Cached sequence state was lost for key: ' . $key);
+        }
+
         $sequence = 1;
         if ($state !== null) {
             if (
@@ -125,6 +134,16 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
                 || $state['sequence'] < 1
             ) {
                 throw new FileLockException('Cached sequence state is malformed for key: ' . $key);
+            }
+
+            if (
+                $observed !== null
+                && (
+                    $state['timestamp'] < $observed['timestamp']
+                    || ($state['timestamp'] === $observed['timestamp'] && $state['sequence'] < $observed['sequence'])
+                )
+            ) {
+                throw new FileLockException('Cached sequence state regressed for key: ' . $key);
             }
 
             if ($state['timestamp'] > $timestamp) {
@@ -144,9 +163,12 @@ final readonly class PsrSimpleCacheSequenceProvider implements SequenceProviderI
             }
         }
 
-        if (!$this->cache->set($key, ['timestamp' => $timestamp, 'sequence' => $sequence])) {
+        $nextState = ['timestamp' => $timestamp, 'sequence' => $sequence];
+        if (!$this->cache->set($key, $nextState, null)) {
             throw new FileLockException('Failed to persist sequence state for key: ' . $key);
         }
+
+        $this->observedState[$key] = $nextState;
 
         return $sequence;
     }

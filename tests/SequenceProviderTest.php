@@ -224,3 +224,27 @@ test('filesystem sequence provider rejects unsafe keys and corrupted state', fun
         }
     }
 });
+
+
+test('psr-16 sequence provider fails closed after observed state loss', function () {
+    $cache = new SequenceTestCache();
+    $provider = new PsrSimpleCacheSequenceProvider($cache);
+    expect($provider->next('snowflake', 1, 100))->toBe(1);
+    $cache->clear();
+
+    expect(fn(): int => $provider->next('snowflake', 1, 100))
+        ->toThrow(\Infocyph\UID\Exceptions\FileLockException::class);
+});
+
+test('custom epochs are normalized at configuration construction', function () {
+    $epoch = new DateTime('2024-01-01T00:00:00+00:00');
+    $snowflake = new \Infocyph\UID\Configuration\SnowflakeConfig(customEpoch: $epoch);
+    $sonyflake = new \Infocyph\UID\Configuration\SonyflakeConfig(customEpoch: $epoch);
+    $snowflakeEpoch = $snowflake->resolveCustomEpochMs();
+    $sonyflakeEpoch = $sonyflake->resolveCustomEpochMs();
+
+    $epoch->modify('+1 day');
+
+    expect($snowflake->resolveCustomEpochMs())->toBe($snowflakeEpoch)
+        ->and($sonyflake->resolveCustomEpochMs())->toBe($sonyflakeEpoch);
+});

@@ -102,7 +102,7 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      */
-    public static function generate(int $nodeId, int $leaseStart, int $leaseEnd, string $secret): string
+    public static function generate(int $nodeId, int $leaseStart, int $leaseEnd, #[\SensitiveParameter] string $secret): string
     {
         return self::generateInternal(
             $nodeId,
@@ -116,7 +116,7 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      */
-    public static function generateString(int $nodeId, int $leaseStart, int $leaseEnd, string $secret): string
+    public static function generateString(int $nodeId, int $leaseStart, int $leaseEnd, #[\SensitiveParameter] string $secret): string
     {
         return self::encodeString(self::generate($nodeId, $leaseStart, $leaseEnd, $secret));
     }
@@ -139,7 +139,7 @@ final class Randflake
      * @return array{timestamp: int, node_id: int, sequence: int}
      * @throws RandflakeException
      */
-    public static function inspect(string $id, string $secret): array
+    public static function inspect(string $id, #[\SensitiveParameter] string $secret): array
     {
         if (!self::isValid($id)) {
             throw new RandflakeException('randflake: invalid id');
@@ -161,7 +161,7 @@ final class Randflake
      * @return array{timestamp: int, node_id: int, sequence: int}
      * @throws RandflakeException
      */
-    public static function inspectString(string $id, string $secret): array
+    public static function inspectString(string $id, #[\SensitiveParameter] string $secret): array
     {
         return self::inspect(self::decodeString($id), $secret);
     }
@@ -177,7 +177,7 @@ final class Randflake
      * @return array{time: DateTimeImmutable, node_id: int, sequence: int}
      * @throws Exception
      */
-    public static function parse(string $id, string $secret): array
+    public static function parse(string $id, #[\SensitiveParameter] string $secret): array
     {
         if (!self::isValid($id)) {
             throw new RandflakeException('randflake: invalid id');
@@ -199,7 +199,7 @@ final class Randflake
      * @return array{time: DateTimeImmutable, node_id: int, sequence: int}
      * @throws Exception
      */
-    public static function parseString(string $id, string $secret): array
+    public static function parseString(string $id, #[\SensitiveParameter] string $secret): array
     {
         return self::parse(self::decodeString($id), $secret);
     }
@@ -234,7 +234,7 @@ final class Randflake
         int $nodeId,
         int $leaseStart,
         int $leaseEnd,
-        string $secret,
+        #[\SensitiveParameter] string $secret,
         ?SequenceProviderInterface $sequenceProvider,
     ): string {
         self::validateNode($nodeId);
@@ -253,7 +253,8 @@ final class Randflake
             throw new RandflakeException('randflake: the randflake id is dead after 34 years of lifetime');
         }
 
-        $lastTimestamp = $providerState[$nodeId] ?? null;
+        $last = $providerState[$nodeId] ?? null;
+        $lastTimestamp = $last['timestamp'] ?? null;
         if ($lastTimestamp !== null && $now < $lastTimestamp) {
             throw new RandflakeException('randflake: timestamp consistency violation, the current time is less than the last time');
         }
@@ -283,13 +284,20 @@ final class Randflake
         }
 
         $sequence = $sequenceValue - 1;
+        if (
+            $last !== null
+            && $last['timestamp'] === $now
+            && $sequence <= $last['sequence']
+        ) {
+            throw new RandflakeException('randflake: sequence allocation regressed for the active provider domain');
+        }
         if ($sequence > self::MAX_SEQUENCE) {
             throw new RandflakeException(
                 "randflake: resource exhausted (generator can't handle current throughput, try using multiple randflake instances)",
             );
         }
 
-        $providerState[$nodeId] = $now;
+        $providerState[$nodeId] = ['timestamp' => $now, 'sequence' => $sequence];
 
         $plain = self::packPayload($now, $nodeId, $sequence);
         $cipher = self::permute($plain, $secret, false);
@@ -458,7 +466,7 @@ final class Randflake
     /**
      * @throws RandflakeException
      */
-    private static function validateSecret(string $secret): string
+    private static function validateSecret(#[\SensitiveParameter] string $secret): string
     {
         if (strlen($secret) !== 16) {
             throw new RandflakeException('randflake: invalid secret, secret must be 16 bytes long');

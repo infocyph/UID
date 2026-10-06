@@ -15,6 +15,8 @@ final readonly class SnowflakeConfig
 
     private ?Closure $nodeResolver;
 
+    public ?int $customEpoch;
+
     /**
      * @param callable():mixed|null $nodeResolver
      * @param DateTimeInterface|int|null $customEpoch Epoch in milliseconds or a date-time value.
@@ -23,11 +25,12 @@ final readonly class SnowflakeConfig
         public int $datacenterId = 0,
         public int $workerId = 0,
         ?callable $nodeResolver = null,
-        public DateTimeInterface|int|null $customEpoch = null,
+        DateTimeInterface|int|null $customEpoch = null,
         public ?SequenceProviderInterface $sequenceProvider = null,
         public ClockBackwardPolicy $clockBackwardPolicy = ClockBackwardPolicy::WAIT,
     ) {
         $this->nodeResolver = $nodeResolver ? $nodeResolver(...) : null;
+        $this->customEpoch = self::normalizeEpoch($customEpoch);
     }
 
     /**

@@ -30,8 +30,8 @@ final class Sonyflake
 
     private const TIMESTAMP_BITS = 39;
 
-    /** @var array<string, int> */
-    private static array $lastWallTimeByDomain = [];
+    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, int>>|null */
+    private static ?\WeakMap $lastWallTimeByProvider = null;
 
     /**
      * Decodes one of bases: 16, 32, 36, 58, 62 into Sonyflake decimal.
@@ -249,9 +249,11 @@ final class Sonyflake
         }
 
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
+        self::$lastWallTimeByProvider ??= new \WeakMap();
+        $providerState = self::$lastWallTimeByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
         $currentTime = (int) floor(microtime(true) * 1000);
-        $domainKey = $startTimestamp . ':' . $machineId . ':' . spl_object_id($resolvedSequenceProvider);
-        $lastWallTime = self::$lastWallTimeByDomain[$domainKey] ?? 0;
+        $domainKey = $startTimestamp . ':' . $machineId;
+        $lastWallTime = $providerState[$domainKey] ?? 0;
         if ($currentTime < $lastWallTime) {
             if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                 throw new SonyflakeException('Clock moved backwards while generating Sonyflake ID');
@@ -298,7 +300,7 @@ final class Sonyflake
 
             $elapsedTime = self::waitUntilElapsed($elapsedTime, $startTimestamp);
         }
-        self::$lastWallTimeByDomain[$domainKey] = max($currentTime, $startTimestamp + ($elapsedTime * 10));
+        $providerState[$domainKey] = max($currentTime, $startTimestamp + ($elapsedTime * 10));
 
         self::ensureEffectiveRuntime($elapsedTime);
 
