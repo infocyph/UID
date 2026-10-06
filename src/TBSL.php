@@ -23,7 +23,7 @@ final class TBSL
 
     private static int $lastTimeSequence = 0;
 
-/**
+    /**
      * Decodes one of bases: 16, 32, 36, 58, 62 into canonical TBSL.
      *
      * @throws Exception
@@ -33,7 +33,7 @@ final class TBSL
         return self::fromBytes(BaseEncoder::decodeToBytes($encoded, $base, 10));
     }
 
-/**
+    /**
      * Converts 10-byte TBSL binary data to uppercase TBSL string.
      *
      * @throws Exception
@@ -47,7 +47,7 @@ final class TBSL
         return strtoupper(bin2hex($bytes));
     }
 
-/**
+    /**
      * Generates a unique identifier using the TBSL algorithm.
      *
      * @param int $machineId 2-digit (0-99) machine identifier. Default is 0.
@@ -64,7 +64,7 @@ final class TBSL
         );
     }
 
-/**
+    /**
      * Generates TBSL using configuration object.
      *
      * @throws Exception
@@ -74,7 +74,7 @@ final class TBSL
         return self::generate($machineId, false);
     }
 
-public static function generateWithConfig(TBSLConfig $config): string
+    public static function generateWithConfig(TBSLConfig $config): string
     {
         return self::generateInternal(
             $config->resolveMachineId(),
@@ -85,7 +85,7 @@ public static function generateWithConfig(TBSLConfig $config): string
         );
     }
 
-/**
+    /**
      * Checks whether a TBSL string is valid.
      */
     public static function isValid(string $tbsl): bool
@@ -93,7 +93,7 @@ public static function generateWithConfig(TBSLConfig $config): string
         return (bool) preg_match('/^[0-9A-F]{20}$/D', $tbsl);
     }
 
-/**
+    /**
      * Parses a TBSL string and returns an array with its components.
      *
      * @param string $tbsl The TBSL string to parse.
@@ -119,7 +119,7 @@ public static function generateWithConfig(TBSLConfig $config): string
         ];
     }
 
-/**
+    /**
      * Encodes TBSL bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws Exception
@@ -129,7 +129,7 @@ public static function generateWithConfig(TBSLConfig $config): string
         return BaseEncoder::encodeBytes(self::toBytes($tbsl), $base);
     }
 
-/**
+    /**
      * Converts a TBSL string to 10-byte binary representation.
      *
      * @throws Exception
@@ -146,7 +146,7 @@ public static function generateWithConfig(TBSLConfig $config): string
         return $bytes;
     }
 
-/**
+    /**
      * @throws UIDException
      */
     private static function assertMachineId(int $machineId): void
@@ -156,7 +156,7 @@ public static function generateWithConfig(TBSLConfig $config): string
         }
     }
 
-/**
+    /**
      * @throws Exception
      */
     private static function generateInternal(
@@ -200,12 +200,12 @@ public static function generateWithConfig(TBSLConfig $config): string
         ));
     }
 
-private static function nowMicroseconds(?GenerationContext $runtime): int
+    private static function nowMicroseconds(?GenerationContext $runtime): int
     {
         return $runtime?->nowMicroseconds() ?? (int) floor(microtime(true) * 1_000_000);
     }
 
-/**
+    /**
      * Generates a sequence or random bytes based on the sequencing flag.
      *
      * @param int $machineId Machine identifier.
@@ -255,7 +255,7 @@ private static function nowMicroseconds(?GenerationContext $runtime): int
         } while (true);
     }
 
-private static function waitUntilNextTimeSequence(int $last, ?GenerationContext $runtime): int
+    private static function waitUntilNextTimeSequence(int $last, ?GenerationContext $runtime): int
     {
         $deadline = $runtime?->waitDeadlineNanoseconds()
             ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
