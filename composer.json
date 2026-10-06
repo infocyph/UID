@@ -37,12 +37,16 @@
     },
     "require-dev": {
         "infocyph/phpforge": "dev-main@dev",
+        "infocyph/runwire": "^2.1.1",
+        "psr/clock": "^1.0",
         "psr/simple-cache": "^3.0"
     },
     "replace": {
         "abmmhasan/uuid": "self.version"
     },
     "suggest": {
+        "infocyph/runwire": "Enables request-aware cooperative waits for coordinated generators.",
+        "psr/clock": "Enables injectable wall-clock sampling for coordinated generators.",
         "psr/simple-cache": "Required for the optional PSR-16 sequence provider."
     },
     "minimum-stability": "stable",
