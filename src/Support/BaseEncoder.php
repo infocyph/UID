@@ -44,20 +44,14 @@ final class BaseEncoder
 
     public static function encodeBytes(string $bytes, int $base): string
     {
-        $byteLength = strlen($bytes);
-        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
-            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
-        }
+        self::assertByteLength(strlen($bytes));
 
         if ($base === 16) {
             return ltrim(bin2hex($bytes), '0') ?: '0';
         }
 
         $alphabet = self::alphabet($base);
-        $unpacked = unpack('C*', $bytes);
-        $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
-
-        $number = array_values($unpacked);
+        $number = BinaryUnpack::bytes($bytes);
         $encoded = '';
         while ($number !== []) {
             $quotient = [];
@@ -83,6 +77,13 @@ final class BaseEncoder
     private static function alphabet(int $base): string
     {
         return self::ALPHABETS[$base] ?? throw new InvalidArgumentException('Unsupported base: ' . $base);
+    }
+
+    private static function assertByteLength(int $byteLength): void
+    {
+        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
+            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
+        }
     }
 
     private static function decodeRadix(string $encoded, int $base, int $bytesLength): string
