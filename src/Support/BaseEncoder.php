@@ -135,5 +135,4 @@ final class BaseEncoder
 
         return str_repeat("\0", $bytesLength - strlen($decoded)) . $decoded;
     }
-
 }
