@@ -412,5 +412,4 @@ final class Snowflake
 
         return $now;
     }
-
 }

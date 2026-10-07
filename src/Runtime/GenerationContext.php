@@ -67,5 +67,4 @@ final readonly class GenerationContext
 
         return $runwireDeadline === null ? $deadline : min($deadline, $runwireDeadline);
     }
-
 }

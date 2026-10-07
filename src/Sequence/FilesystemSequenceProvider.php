@@ -241,5 +241,4 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
 
         fflush($handle) || throw new FileLockException('Unable to flush sequence state');
     }
-
 }

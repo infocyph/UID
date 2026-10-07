@@ -223,5 +223,4 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
             $exception,
         );
     }
-
 }
