@@ -15,6 +15,8 @@ use Throwable;
 
 final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
 {
+    private const int MAX_OBSERVED_DOMAINS = 1024;
+
     private readonly ?Closure $synchronizer;
 
     /** @var array<string, array{timestamp:int,sequence:int}> */
@@ -51,6 +53,9 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
     public function next(string $type, int $machineId, int $timestamp): int
     {
         $key = $this->key($type, $machineId);
+        if (!isset($this->observedState[$key]) && count($this->observedState) >= self::MAX_OBSERVED_DOMAINS) {
+            throw new FileLockException('Observed PSR-16 sequence domain limit exceeded');
+        }
 
         if ($this->synchronizer !== null) {
             return $this->nextSynchronized($this->synchronizer, $key, $timestamp);
