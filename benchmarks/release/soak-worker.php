@@ -6,12 +6,12 @@ use Infocyph\Runwire\Coroutine\CoroutineRuntime;
 use Infocyph\Runwire\Coroutine\CoroutineScope;
 use Infocyph\Runwire\Exception\CancelledException;
 use Infocyph\Runwire\RequestContext;
-use Infocyph\Runwire\RuntimeCapabilities;
 use Infocyph\Runwire\Runtime\Enum\CancellationReason;
 use Infocyph\Runwire\Runtime\Enum\RuntimeDriver;
+use Infocyph\Runwire\RuntimeCapabilities;
 use Infocyph\Runwire\RuntimeContext;
-use Infocyph\UID\CUID2;
 use Infocyph\UID\Configuration\SnowflakeConfig;
+use Infocyph\UID\CUID2;
 use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Runtime\RunwireBinding;
 use Infocyph\UID\Sequence\InMemorySequenceProvider;
@@ -23,13 +23,11 @@ require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 $resultPath = getenv('UID_SOAK_RESULT');
 
 if (!is_string($resultPath) || $resultPath === '') {
-    fwrite(STDERR, "UID_SOAK_RESULT is required.\n");
-    exit(2);
+    throw new InvalidArgumentException('UID_SOAK_RESULT is required');
 }
 
 if (!function_exists('pcntl_signal') || !function_exists('pcntl_async_signals')) {
-    fwrite(STDERR, "The pcntl extension is required.\n");
-    exit(2);
+    throw new RuntimeException('The pcntl extension is required');
 }
 
 $running = true;

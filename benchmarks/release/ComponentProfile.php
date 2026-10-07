@@ -14,8 +14,7 @@ $release = $options['release'] ?? null;
 $output = $options['output'] ?? null;
 
 if (!is_string($root) || $root === '' || !is_string($release) || $release === '' || !is_string($output) || $output === '') {
-    fwrite(STDERR, "Usage: php ComponentProfile.php --target-root=DIR --release=NAME --output=FILE\n");
-    exit(2);
+    throw new InvalidArgumentException('Usage: php ComponentProfile.php --target-root=DIR --release=NAME --output=FILE');
 }
 
 require_once rtrim($root, '/') . '/vendor/autoload.php';

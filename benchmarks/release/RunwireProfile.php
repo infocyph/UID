@@ -5,8 +5,8 @@ declare(strict_types=1);
 use Infocyph\Runwire\Coroutine\CoroutineRuntime;
 use Infocyph\Runwire\Coroutine\CoroutineScope;
 use Infocyph\Runwire\RequestContext;
-use Infocyph\Runwire\RuntimeCapabilities;
 use Infocyph\Runwire\Runtime\Enum\RuntimeDriver;
+use Infocyph\Runwire\RuntimeCapabilities;
 use Infocyph\Runwire\RuntimeContext;
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Runtime\GenerationContext;
@@ -17,8 +17,7 @@ use Infocyph\UID\Snowflake;
 $output = $argv[1] ?? null;
 
 if (!is_string($output) || $output === '') {
-    fwrite(STDERR, "Usage: php RunwireProfile.php OUTPUT\n");
-    exit(2);
+    throw new InvalidArgumentException('Usage: php RunwireProfile.php OUTPUT');
 }
 
 /**

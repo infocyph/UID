@@ -8,13 +8,11 @@ $release = $options['release'] ?? null;
 $output = $options['output'] ?? null;
 
 if (!is_string($baseUrl) || $baseUrl === '' || !is_string($release) || $release === '' || !is_string($output) || $output === '') {
-    fwrite(STDERR, "Usage: php HostBenchmark.php --base-url=URL --release=NAME --output=FILE\n");
-    exit(2);
+    throw new InvalidArgumentException('Usage: php HostBenchmark.php --base-url=URL --release=NAME --output=FILE');
 }
 
 if (!extension_loaded('curl')) {
-    fwrite(STDERR, "The curl extension is required for host benchmarking.\n");
-    exit(2);
+    throw new RuntimeException('The curl extension is required for host benchmarking');
 }
 
 /**
@@ -131,7 +129,7 @@ function uidRunLoad(string $url, int $concurrency, int $operations, int $idsPerR
             }
 
             curl_multi_remove_handle($multi, $handle);
-            curl_close($handle);
+            unset($handle);
             --$active;
 
             if ($launched < $operations) {
@@ -324,4 +322,6 @@ file_put_contents(
     json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL,
 );
 
-exit($overallFailure ? 1 : 0);
+if ($overallFailure) {
+    throw new RuntimeException('Host benchmark produced unstable, erroneous or duplicate-bearing samples');
+}
