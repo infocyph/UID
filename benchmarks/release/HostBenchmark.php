@@ -145,7 +145,7 @@ function uidRunLoad(string $url, int $concurrency, int $operations, int $idsPerR
         }
     }
 
-    curl_multi_close($multi);
+    unset($multi);
     $seconds = max((hrtime(true) - $started) / 1_000_000_000, 0.000001);
 
     return [

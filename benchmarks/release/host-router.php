@@ -12,7 +12,7 @@ $stateDirectory = getenv('UID_STATE_DIR');
 
 if (!is_string($root) || $root === '' || !is_string($stateDirectory) || $stateDirectory === '') {
     http_response_code(500);
-    file_put_contents('php://output', json_encode(['error' => 'release benchmark environment is incomplete']);
+    file_put_contents('php://output', json_encode(['error' => 'release benchmark environment is incomplete'], JSON_THROW_ON_ERROR));
 
     return;
 }
