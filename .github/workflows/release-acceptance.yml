@@ -7,6 +7,7 @@ on:
       - "src/**"
       - "benchmarks/**"
       - "composer.json"
+      - "docs/uid-review-and-release-plan.md"
       - ".github/workflows/release-acceptance.yml"
 
 permissions:
@@ -49,6 +50,10 @@ jobs:
           composer --working-dir=.release-baseline install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
           composer --working-dir=.release-candidate install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
           mkdir -p .phpforge-report
+
+      - name: Run candidate release guard
+        shell: bash
+        run: composer ic:release:guard
 
       - name: Profile components against tag 5.0
         shell: bash
