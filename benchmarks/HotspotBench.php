@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Benchmarks;
 
+use Closure;
 use Infocyph\UID\Configuration\RandflakeConfig;
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Configuration\SonyflakeConfig;
@@ -28,6 +29,10 @@ use PhpBench\Attributes as Bench;
 
 final class HotspotBench
 {
+    private Closure $cuidFingerprint;
+
+    private Closure $resetCuidFingerprint;
+
     private string $opaque;
 
     private RandflakeConfig $randflakeConfig;
@@ -43,6 +48,26 @@ final class HotspotBench
         require_once __DIR__ . '/BenchBootstrap.php';
         BenchBootstrap::load();
 
+        $fingerprint = Closure::bind(
+            static fn(): string => CUID2::fingerprint(),
+            null,
+            CUID2::class,
+        );
+        $resetFingerprint = Closure::bind(
+            static function (): void {
+                CUID2::$fingerprint = null;
+            },
+            null,
+            CUID2::class,
+        );
+        if (!$fingerprint instanceof Closure || !$resetFingerprint instanceof Closure) {
+            throw new \LogicException('Unable to bind CUID2 benchmark helpers');
+        }
+
+        $this->cuidFingerprint = $fingerprint;
+        $this->resetCuidFingerprint = $resetFingerprint;
+        ($this->cuidFingerprint)();
+
         $provider = new FilesystemSequenceProvider(namespace: 'phpbench');
         [$leaseStart, $leaseEnd, $secret] = BenchBootstrap::randflakeContext();
         $this->snowflakeConfig = new SnowflakeConfig(sequenceProvider: $provider);
@@ -56,6 +81,26 @@ final class HotspotBench
     public function benchCuid2(): void
     {
         CUID2::generate();
+    }
+
+    #[Bench\Revs(100), Bench\Iterations(5)]
+    public function benchCuid2ColdGenerate(): void
+    {
+        ($this->resetCuidFingerprint)();
+        CUID2::generate();
+    }
+
+    #[Bench\Revs(100), Bench\Iterations(5)]
+    public function benchCuid2FingerprintCold(): void
+    {
+        ($this->resetCuidFingerprint)();
+        ($this->cuidFingerprint)();
+    }
+
+    #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchCuid2FingerprintWarm(): void
+    {
+        ($this->cuidFingerprint)();
     }
 
     #[Bench\Revs(1000), Bench\Iterations(5)]
