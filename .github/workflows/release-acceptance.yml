@@ -1,0 +1,162 @@
+name: UID 6 Release Acceptance
+
+on:
+  pull_request:
+    branches: ["main", "master"]
+    paths:
+      - "src/**"
+      - "benchmarks/**"
+      - "composer.json"
+      - ".github/workflows/release-acceptance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  release-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      XDEBUG_MODE: off
+    steps:
+      - name: Checkout candidate tooling
+        uses: actions/checkout@v7
+
+      - name: Checkout tag 5.0
+        uses: actions/checkout@v7
+        with:
+          ref: "5.0"
+          path: ".release-baseline"
+
+      - name: Checkout candidate target
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: ".release-candidate"
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:v2
+          extensions: ctype,curl,pcntl
+          coverage: none
+
+      - name: Install tooling and production targets
+        shell: bash
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          composer --working-dir=.release-baseline install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
+          composer --working-dir=.release-candidate install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
+          mkdir -p .phpforge-report
+
+      - name: Profile components against tag 5.0
+        shell: bash
+        run: |
+          php benchmarks/release/ComponentProfile.php             --target-root="$GITHUB_WORKSPACE/.release-baseline"             --release="5.0"             --output=".phpforge-report/component-baseline.json"
+          php benchmarks/release/ComponentProfile.php             --target-root="$GITHUB_WORKSPACE/.release-candidate"             --release="candidate"             --output=".phpforge-report/component-candidate.json"
+          php -r '
+            $b=json_decode(file_get_contents(".phpforge-report/component-baseline.json"),true,512,JSON_THROW_ON_ERROR);
+            $c=json_decode(file_get_contents(".phpforge-report/component-candidate.json"),true,512,JSON_THROW_ON_ERROR);
+            foreach ($b["metrics"] as $name=>$metric) {
+                if (!isset($c["metrics"][$name])) continue;
+                $before=$metric["median_ns"];
+                $after=$c["metrics"][$name]["median_ns"];
+                $change=$before > 0 ? (($after-$before)/$before)*100 : 0;
+                printf("%-36s %10.3f ns -> %10.3f ns (%+.2f%%)\n",$name,$before,$after,$change);
+            }
+          '
+
+      - name: Run contention matrix before and after
+        shell: bash
+        run: |
+          php -r '
+            require ".release-baseline/vendor/autoload.php";
+            require "benchmarks/ContentionMatrix.php";
+            Infocyph\UID\Benchmarks\ContentionMatrix::run([1,4,16],[1,8,64],200);
+          ' > .phpforge-report/contention-baseline.csv
+          php -r '
+            require ".release-candidate/vendor/autoload.php";
+            require "benchmarks/ContentionMatrix.php";
+            Infocyph\UID\Benchmarks\ContentionMatrix::run([1,4,16],[1,8,64],200);
+          ' > .phpforge-report/contention-candidate.csv
+          cat .phpforge-report/contention-baseline.csv
+          cat .phpforge-report/contention-candidate.csv
+
+      - name: Benchmark tag 5.0 host routes
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/uid-baseline-state"
+          UID_TARGET_ROOT="$GITHUB_WORKSPACE/.release-baseline"           UID_STATE_DIR="$RUNNER_TEMP/uid-baseline-state"           PHP_CLI_SERVER_WORKERS=64             php -S 127.0.0.1:18080 benchmarks/release/host-router.php             > .phpforge-report/baseline-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..50}; do
+            if curl --fail --silent http://127.0.0.1:18080/health >/dev/null; then break; fi
+            sleep 0.2
+          done
+          curl --fail --silent http://127.0.0.1:18080/health >/dev/null
+
+          php benchmarks/release/HostBenchmark.php             --base-url=http://127.0.0.1:18080             --release=5.0             --output=.phpforge-report/host-baseline.json
+
+          kill "$server_pid" 2>/dev/null || true
+          wait "$server_pid" 2>/dev/null || true
+          trap - EXIT
+
+      - name: Benchmark candidate host routes
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/uid-candidate-state"
+          UID_TARGET_ROOT="$GITHUB_WORKSPACE/.release-candidate"           UID_STATE_DIR="$RUNNER_TEMP/uid-candidate-state"           PHP_CLI_SERVER_WORKERS=64             php -S 127.0.0.1:18081 benchmarks/release/host-router.php             > .phpforge-report/candidate-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+
+          for attempt in {1..50}; do
+            if curl --fail --silent http://127.0.0.1:18081/health >/dev/null; then break; fi
+            sleep 0.2
+          done
+          curl --fail --silent http://127.0.0.1:18081/health >/dev/null
+
+          php benchmarks/release/HostBenchmark.php             --base-url=http://127.0.0.1:18081             --release=candidate             --output=.phpforge-report/host-candidate.json
+
+          kill "$server_pid" 2>/dev/null || true
+          wait "$server_pid" 2>/dev/null || true
+          trap - EXIT
+
+      - name: Enforce host benchmark contract and 2 percent budget
+        shell: bash
+        run: |
+          composer ic:benchmark:validate .phpforge-report/host-baseline.json
+          composer ic:benchmark:validate .phpforge-report/host-candidate.json
+          composer ic:benchmark:compare             .phpforge-report/host-baseline.json             .phpforge-report/host-candidate.json             --max-regression=2             --stable-environment
+
+      - name: Profile Runwire-bound path separately
+        shell: bash
+        run: |
+          php benchmarks/release/RunwireProfile.php .phpforge-report/runwire-profile.json
+          cat .phpforge-report/runwire-profile.json
+
+      - name: Run five-minute persistent-worker soak
+        shell: bash
+        env:
+          UID_SOAK_RESULT: ${{ github.workspace }}/.phpforge-report/uid-soak-internal.json
+        run: |
+          composer ic:soak:worker             --duration=300             --warmup=10             --sample-interval=2             --max-growth-mb=32             --report=.phpforge-report/phpforge-soak.json             -- php benchmarks/release/soak-worker.php
+
+          php -r '
+            $result=json_decode(file_get_contents(".phpforge-report/uid-soak-internal.json"),true,512,JSON_THROW_ON_ERROR);
+            if (($result["status"] ?? null) !== "passed") {
+                fwrite(STDERR,json_encode($result,JSON_PRETTY_PRINT).PHP_EOL);
+                exit(1);
+            }
+            echo json_encode($result,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES),PHP_EOL;
+          '
+
+      - name: Upload release acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: uid-6-release-acceptance
+          path: .phpforge-report
+          retention-days: 14
+          if-no-files-found: error
