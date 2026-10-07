@@ -24,154 +24,73 @@ final class BaseEncoder
         if ($encoded === '') {
             throw new InvalidArgumentException('Encoded value must not be empty');
         }
-
-        self::assertByteLength($bytesLength);
-        if ($base === 16) {
-            return self::decodeHex($encoded, $bytesLength);
-        }
-
-        return self::decodeRadix($encoded, $base, $bytesLength);
-    }
-
-    public static function encodeBytes(string $bytes, int $base): string
-    {
-        self::assertByteLength(strlen($bytes));
-        if ($base === 16) {
-            return ltrim(bin2hex($bytes), '0') ?: '0';
-        }
-
-        $alphabet = self::alphabet($base);
-        if (trim($bytes, "\0") === '') {
-            return $alphabet[0];
-        }
-
-        return self::encodeRadix(self::unpackBytes($bytes), $base, $alphabet);
-    }
-
-    private static function alphabet(int $base): string
-    {
-        return self::ALPHABETS[$base] ?? throw new InvalidArgumentException('Unsupported base: ' . $base);
-    }
-
-    /**
-     * @param array<int, int> $bytes
-     * @param-out array<int, int> $bytes
-     */
-    private static function appendDigit(array &$bytes, int $base, int $digit): void
-    {
-        $carry = $digit;
-        for ($index = count($bytes) - 1; $index >= 0; --$index) {
-            $value = ($bytes[$index] * $base) + $carry;
-            $bytes[$index] = $value & 0xff;
-            $carry = $value >> 8;
-        }
-
-        while ($carry > 0) {
-            array_unshift($bytes, $carry & 0xff);
-            $carry >>= 8;
-        }
-    }
-
-    private static function assertByteLength(int $byteLength): void
-    {
-        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
+        if ($bytesLength < 1 || $bytesLength > self::MAX_BYTE_LENGTH) {
             throw new InvalidArgumentException('Byte length must be between 1 and 1024');
         }
-    }
 
-    /**
-     * @param list<int> $bytes
-     */
-    private static function byteString(array $bytes): string
-    {
-        $decoded = '';
-        foreach ($bytes as $byte) {
-            $decoded .= chr($byte & 0xff);
+        if ($base === 16) {
+            if (strlen($encoded) > $bytesLength * 2 || preg_match('/^[0-9a-f]+$/D', $encoded) !== 1) {
+                throw new InvalidArgumentException('Invalid character for base 16');
+            }
+
+            $decoded = hex2bin(str_pad($encoded, $bytesLength * 2, '0', STR_PAD_LEFT));
+            $decoded !== false || throw new InvalidArgumentException('Unable to decode base 16 value');
+
+            return $decoded;
         }
 
-        return $decoded;
-    }
-
-    private static function decodeHex(string $encoded, int $bytesLength): string
-    {
-        if (strlen($encoded) > $bytesLength * 2 || preg_match('/^[0-9a-f]+$/D', $encoded) !== 1) {
-            throw new InvalidArgumentException('Invalid character for base 16');
-        }
-
-        $decoded = hex2bin(str_pad($encoded, $bytesLength * 2, '0', STR_PAD_LEFT));
-        $decoded !== false || throw new InvalidArgumentException('Unable to decode base 16 value');
-
-        return $decoded;
-    }
-
-    private static function decodeRadix(string $encoded, int $base, int $bytesLength): string
-    {
         $alphabet = self::alphabet($base);
         $maximumLength = (int) ceil(($bytesLength * 8) / log($base, 2));
         if (strlen($encoded) > $maximumLength) {
             throw new InvalidArgumentException('Encoded value exceeds target byte length');
         }
 
-        /** @var list<int> $bytes */
         $bytes = [0];
         $length = strlen($encoded);
+
         for ($index = 0; $index < $length; ++$index) {
             $digit = strpos($alphabet, $encoded[$index]);
             if ($digit === false) {
                 throw new InvalidArgumentException('Invalid character for base ' . $base);
             }
 
-            self::appendDigit($bytes, $base, $digit);
+            $carry = $digit;
+            for ($byteIndex = count($bytes) - 1; $byteIndex >= 0; --$byteIndex) {
+                $value = ($bytes[$byteIndex] * $base) + $carry;
+                $bytes[$byteIndex] = $value & 0xff;
+                $carry = $value >> 8;
+            }
+
+            while ($carry > 0) {
+                array_unshift($bytes, $carry & 0xff);
+                $carry >>= 8;
+            }
+
             if (count($bytes) > $bytesLength) {
                 throw new InvalidArgumentException('Encoded value exceeds target byte length');
             }
         }
 
-        $decoded = self::byteString(array_values($bytes));
+        $decoded = '';
+        foreach ($bytes as $byte) {
+            $decoded .= chr($byte);
+        }
 
         return str_repeat("\0", $bytesLength - strlen($decoded)) . $decoded;
     }
 
-    /**
-     * @param list<int> $number
-     */
-    private static function divide(array &$number, int $base): int
+    public static function encodeBytes(string $bytes, int $base): string
     {
-        $quotient = [];
-        $remainder = 0;
-        foreach ($number as $byte) {
-            $value = ($remainder << 8) | $byte;
-            $digit = intdiv($value, $base);
-            $remainder = $value % $base;
-            if ($quotient !== [] || $digit !== 0) {
-                $quotient[] = $digit;
-            }
+        $byteLength = strlen($bytes);
+        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
+            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
         }
 
-        $number = $quotient;
-
-        return $remainder;
-    }
-
-    /**
-     * @param list<int> $number
-     */
-    private static function encodeRadix(array $number, int $base, string $alphabet): string
-    {
-        $encoded = '';
-        while ($number !== []) {
-            $remainder = self::divide($number, $base);
-            $encoded = $alphabet[$remainder] . $encoded;
+        if ($base === 16) {
+            return ltrim(bin2hex($bytes), '0') ?: '0';
         }
 
-        return $encoded;
-    }
-
-    /**
-     * @return list<int>
-     */
-    private static function unpackBytes(string $bytes): array
-    {
+        $alphabet = self::alphabet($base);
         $unpacked = unpack('C*', $bytes);
         $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
 
@@ -181,6 +100,34 @@ final class BaseEncoder
             $number[] = $byte;
         }
 
-        return $number;
+        if (trim($bytes, "\0") === '') {
+            return $alphabet[0];
+        }
+
+        $encoded = '';
+        while ($number !== []) {
+            $quotient = [];
+            $remainder = 0;
+
+            foreach ($number as $byte) {
+                $value = ($remainder << 8) | $byte;
+                $digit = intdiv($value, $base);
+                $remainder = $value % $base;
+
+                if ($quotient !== [] || $digit !== 0) {
+                    $quotient[] = $digit;
+                }
+            }
+
+            $encoded = $alphabet[$remainder] . $encoded;
+            $number = $quotient;
+        }
+
+        return $encoded;
+    }
+
+    private static function alphabet(int $base): string
+    {
+        return self::ALPHABETS[$base] ?? throw new InvalidArgumentException('Unsupported base: ' . $base);
     }
 }
