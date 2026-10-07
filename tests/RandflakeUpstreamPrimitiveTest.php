@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Infocyph\UID\Support\SignedDecimal64;
+use Infocyph\UID\Support\DecimalBytes;
 use Infocyph\UID\Support\Sparx64;
 
 test('signed 64-bit decimal conversion preserves boundary bit patterns', function (): void {
@@ -12,8 +12,8 @@ test('signed 64-bit decimal conversion preserves boundary bit patterns', functio
         '-1',
         '-9223372036854775808',
     ] as $value) {
-        expect(SignedDecimal64::fromLittleEndianBytes(
-            SignedDecimal64::toLittleEndianBytes($value),
+        expect(DecimalBytes::fromLittleEndianSigned64(
+            DecimalBytes::toLittleEndianSigned64($value),
         ))->toBe($value);
     }
 });

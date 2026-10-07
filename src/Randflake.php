@@ -18,7 +18,6 @@ use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\DecimalBytes;
 use Infocyph\UID\Support\GetSequence;
 use Infocyph\UID\Support\NumericConversion;
-use Infocyph\UID\Support\SignedDecimal64;
 use Infocyph\UID\Support\Sparx64;
 use Infocyph\UID\Support\UnsignedDecimal;
 
@@ -70,7 +69,7 @@ final class Randflake
 
             try {
                 $bytes = BaseEncoder::decodeToBytes($id, 32, 8);
-                $decoded = SignedDecimal64::fromLittleEndianBytes(strrev($bytes));
+                $decoded = DecimalBytes::fromLittleEndianSigned64(strrev($bytes));
             } catch (\InvalidArgumentException $exception) {
                 throw new RandflakeException('randflake: invalid id', 0, $exception);
             }
@@ -127,7 +126,7 @@ final class Randflake
             }
 
             try {
-                return SignedDecimal64::fromLittleEndianBytes(
+                return DecimalBytes::fromLittleEndianSigned64(
                     strrev(BaseEncoder::decodeToBytes($encoded, $base, 8)),
                 );
             } catch (\InvalidArgumentException $exception) {
@@ -152,7 +151,7 @@ final class Randflake
     ): string {
         if ($format === RandflakeFormat::UPSTREAM) {
             try {
-                return SignedDecimal64::fromLittleEndianBytes($bytes);
+                return DecimalBytes::fromLittleEndianSigned64($bytes);
             } catch (\InvalidArgumentException $exception) {
                 throw new RandflakeException('randflake: invalid id', 0, $exception);
             }
@@ -265,7 +264,7 @@ final class Randflake
         RandflakeFormat $format = RandflakeFormat::UID,
     ): bool {
         if ($format === RandflakeFormat::UPSTREAM) {
-            return SignedDecimal64::isValid($id);
+            return DecimalBytes::isSigned64($id);
         }
 
         return $id !== ''
@@ -342,7 +341,7 @@ final class Randflake
     ): string {
         if ($format === RandflakeFormat::UPSTREAM) {
             try {
-                return SignedDecimal64::toLittleEndianBytes($id);
+                return DecimalBytes::toLittleEndianSigned64($id);
             } catch (\InvalidArgumentException $exception) {
                 throw new RandflakeException('randflake: invalid id', 0, $exception);
             }
@@ -416,7 +415,7 @@ final class Randflake
     ): string {
         $plain = self::packPayload($timestamp, $nodeId, $sequence);
         if ($format === RandflakeFormat::UPSTREAM) {
-            return SignedDecimal64::fromLittleEndianBytes(
+            return DecimalBytes::fromLittleEndianSigned64(
                 self::sparx($secret)->encrypt(strrev($plain)),
             );
         }
