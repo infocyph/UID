@@ -207,7 +207,7 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:18080/health >/dev/null
 
-          php benchmarks/release/HostBenchmark.php             --base-url=http://127.0.0.1:18080             --release=5.0             --output=.phpforge-report/host-baseline.json             --route="$ROUTE"             --concurrency="$CONCURRENCY"             --duration=60             --repetitions=3             --ids-per-response="$IDS_PER_RESPONSE"             --warmup=5
+          php benchmarks/release/HostBenchmark.php             --base-url=http://127.0.0.1:18080             --release=5.0             --output=.phpforge-report/host-baseline.json             --route="$ROUTE"             --concurrency="$CONCURRENCY"             --duration=60             --repetitions=3             --ids-per-response="$IDS_PER_RESPONSE"             --warmup=500
 
           kill "$server_pid" 2>/dev/null || true
           wait "$server_pid" 2>/dev/null || true
@@ -230,7 +230,7 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:18081/health >/dev/null
 
-          php benchmarks/release/HostBenchmark.php             --base-url=http://127.0.0.1:18081             --release=candidate             --output=.phpforge-report/host-candidate.json             --route="$ROUTE"             --concurrency="$CONCURRENCY"             --duration=60             --repetitions=3             --ids-per-response="$IDS_PER_RESPONSE"             --warmup=5
+          php benchmarks/release/HostBenchmark.php             --base-url=http://127.0.0.1:18081             --release=candidate             --output=.phpforge-report/host-candidate.json             --route="$ROUTE"             --concurrency="$CONCURRENCY"             --duration=60             --repetitions=3             --ids-per-response="$IDS_PER_RESPONSE"             --warmup=500
 
           kill "$server_pid" 2>/dev/null || true
           wait "$server_pid" 2>/dev/null || true
