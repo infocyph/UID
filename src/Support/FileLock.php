@@ -72,13 +72,13 @@ final class FileLock
      * @param array<string|int, int> $metadata
      * @throws FileLockException
      */
-    private static function assertSafeMetadata(array $metadata, string $errorMessage): void
+    private static function assertSafeMetadata(array $metadata, string $errorMessage, ?int $ownerId): void
     {
         if (($metadata['mode'] & 0170000) !== 0100000) {
             throw new FileLockException($errorMessage);
         }
 
-        if (function_exists('posix_geteuid') && $metadata['uid'] !== posix_geteuid()) {
+        if ($ownerId !== null && $metadata['uid'] !== $ownerId) {
             throw new FileLockException($errorMessage);
         }
     }
@@ -100,6 +100,7 @@ final class FileLock
      */
     private static function openVerified(string $path, string $errorMessage)
     {
+        $ownerId = function_exists('posix_geteuid') ? posix_geteuid() : null;
         set_error_handler(
             static function (int $severity, string $message, string $file, int $line): never {
                 throw new ErrorException($message, 0, $severity, $file, $line);
@@ -107,7 +108,7 @@ final class FileLock
         );
 
         try {
-            return self::openVerifiedWithHandler($path, $errorMessage);
+            return self::openVerifiedWithHandler($path, $errorMessage, $ownerId);
         } catch (ErrorException $exception) {
             throw new FileLockException($errorMessage, 0, $exception);
         } finally {
@@ -120,7 +121,7 @@ final class FileLock
      * @throws FileLockException
      * @throws ErrorException
      */
-    private static function openVerifiedWithHandler(string $path, string $errorMessage)
+    private static function openVerifiedWithHandler(string $path, string $errorMessage, ?int $ownerId)
     {
         try {
             $before = lstat($path);
@@ -129,11 +130,11 @@ final class FileLock
         }
 
         if ($before !== false) {
-            self::assertSafeMetadata($before, $errorMessage);
+            self::assertSafeMetadata($before, $errorMessage, $ownerId);
             $handle = fopen($path, 'r+b');
             is_resource($handle) || throw new FileLockException($errorMessage);
 
-            return self::verifyHandle($path, $handle, $before, $errorMessage);
+            return self::verifyHandle($path, $handle, $before, $errorMessage, $ownerId);
         }
 
         try {
@@ -141,18 +142,18 @@ final class FileLock
         } catch (ErrorException) {
             $before = lstat($path);
             $before !== false || throw new FileLockException($errorMessage);
-            self::assertSafeMetadata($before, $errorMessage);
+            self::assertSafeMetadata($before, $errorMessage, $ownerId);
 
             $handle = fopen($path, 'r+b');
             is_resource($handle) || throw new FileLockException($errorMessage);
 
-            return self::verifyHandle($path, $handle, $before, $errorMessage);
+            return self::verifyHandle($path, $handle, $before, $errorMessage, $ownerId);
         }
 
         is_resource($handle) || throw new FileLockException($errorMessage);
         chmod($path, 0600) || throw new FileLockException($errorMessage);
 
-        return self::verifyHandle($path, $handle, null, $errorMessage);
+        return self::verifyHandle($path, $handle, null, $errorMessage, $ownerId);
     }
 
     private static function runtimeTimeout(?GenerationContext $runtime): int
@@ -167,7 +168,7 @@ final class FileLock
      * @param array<string|int, int>|null $before
      * @return resource
      */
-    private static function verifyHandle(string $path, $handle, ?array $before, string $errorMessage)
+    private static function verifyHandle(string $path, $handle, ?array $before, string $errorMessage, ?int $ownerId)
     {
         try {
             $after = fstat($handle);
@@ -176,8 +177,8 @@ final class FileLock
                 throw new FileLockException($errorMessage);
             }
 
-            self::assertSafeMetadata($after, $errorMessage);
-            self::assertSafeMetadata($pathState, $errorMessage);
+            self::assertSafeMetadata($after, $errorMessage, $ownerId);
+            self::assertSafeMetadata($pathState, $errorMessage, $ownerId);
             self::assertSameFile($after, $pathState, $errorMessage);
             if ($before !== null) {
                 self::assertSameFile($before, $after, $errorMessage);

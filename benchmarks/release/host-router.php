@@ -25,7 +25,22 @@ $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 
 try {
     if ($path === '/health') {
-        file_put_contents('php://output', json_encode(['ok' => true], JSON_THROW_ON_ERROR));
+        $opcache = function_exists('opcache_get_status') ? opcache_get_status(false) : false;
+        $extensions = get_loaded_extensions();
+        sort($extensions, SORT_STRING);
+        file_put_contents('php://output', json_encode([
+            'ok' => true,
+            'runtime' => [
+                'php_version' => PHP_VERSION,
+                'php_sapi' => PHP_SAPI,
+                'memory_limit' => (string) ini_get('memory_limit'),
+                'extensions' => $extensions,
+                'opcache' => is_array($opcache) && ($opcache['opcache_enabled'] ?? false),
+                'opcache_validate_timestamps' => (string) ini_get('opcache.validate_timestamps'),
+                'opcache_optimization_level' => (string) ini_get('opcache.optimization_level'),
+                'jit' => (string) ini_get('opcache.jit'),
+            ],
+        ], JSON_THROW_ON_ERROR));
 
         return;
     }

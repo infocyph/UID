@@ -19,6 +19,15 @@ final class BaseEncoder
 
     private const int MAX_BYTE_LENGTH = 1024;
 
+    /** @var array<int, array{int, int}> */
+    private const array RADIX_GROUPS = [
+        10 => [1_000_000_000, 9],
+        32 => [1_073_741_824, 6],
+        36 => [60_466_176, 5],
+        58 => [656_356_768, 5],
+        62 => [916_132_832, 5],
+    ];
+
     public static function decodeToBytes(string $encoded, int $base, int $bytesLength): string
     {
         if ($encoded === '') {
@@ -51,23 +60,27 @@ final class BaseEncoder
         }
 
         $alphabet = self::alphabet($base);
-        $number = BinaryUnpack::bytes($bytes);
+        [$radix, $width] = self::RADIX_GROUPS[$base];
+        $padding = (4 - strlen($bytes) % 4) % 4;
+        $number = BinaryUnpack::words(str_repeat("\0", $padding) . $bytes);
         $encoded = '';
         while ($number !== []) {
             $quotient = [];
             $remainder = 0;
 
-            foreach ($number as $byte) {
-                $value = ($remainder << 8) | $byte;
-                $digit = intdiv($value, $base);
-                $remainder = $value % $base;
+            foreach ($number as $word) {
+                // Each radix is at most 2^30, keeping the combined value below 2^62.
+                $value = ($remainder << 32) | $word;
+                $digit = intdiv($value, $radix);
+                $remainder = $value % $radix;
 
                 if ($quotient !== [] || $digit !== 0) {
                     $quotient[] = $digit;
                 }
             }
 
-            $encoded = $alphabet[$remainder] . $encoded;
+            $chunk = self::encodeGroup($remainder, $base, $alphabet);
+            $encoded = ($quotient === [] ? $chunk : str_pad($chunk, $width, $alphabet[0], STR_PAD_LEFT)) . $encoded;
             $number = $quotient;
         }
 
@@ -126,5 +139,16 @@ final class BaseEncoder
         }
 
         return str_repeat("\0", $bytesLength - strlen($decoded)) . $decoded;
+    }
+
+    private static function encodeGroup(int $value, int $base, string $alphabet): string
+    {
+        $encoded = '';
+        do {
+            $encoded = $alphabet[$value % $base] . $encoded;
+            $value = intdiv($value, $base);
+        } while ($value > 0);
+
+        return $encoded;
     }
 }

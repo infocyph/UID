@@ -55,3 +55,28 @@ test('filesystem sequence fails closed at integer exhaustion', function (): void
         }
     }
 });
+
+test('filesystem sequence rejects noncanonical and overflowing state without rewriting it', function (string $contents): void {
+    $directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uid-state-' . bin2hex(random_bytes(6));
+    mkdir($directory, 0700);
+    $state = $directory . DIRECTORY_SEPARATOR . 'uid-test-1.seq';
+    file_put_contents($state, $contents);
+
+    try {
+        $provider = new FilesystemSequenceProvider($directory);
+        expect(fn(): int => $provider->next('test', 1, PHP_INT_MAX))->toThrow(FileLockException::class)
+            ->and(file_get_contents($state))->toBe($contents);
+    } finally {
+        unlink($state);
+        rmdir($directory);
+    }
+})->with([
+    'timestamp overflow' => '9223372036854775808,0',
+    'allocation overflow' => '0,9223372036854775808',
+    'timestamp leading zero' => '01,1',
+    'allocation leading zero' => '1,01',
+    'signed allocation' => '1,+1',
+    'trailing newline' => "1,1\n",
+    'extra field' => '1,1,1',
+    'empty field' => '1,',
+]);

@@ -62,6 +62,20 @@ inside it. Those measurements are not comparable algorithm baselines, so no
 misleading percentage delta is reported. This report is the first isolated v5
 baseline; future releases should compare against it using the checked-in harness.
 
+Release Host Comparison
+-----------------------
+
+The release acceptance workflow compares production-only, authoritative
+autoloaders against tag ``5.0`` on one runner. Both HTTP servers enable OPcache
+and disable JIT. Warm-up covers at least twice the configured worker count before
+four balanced AB/BA trials of 60 seconds at each route and concurrency level.
+The benchmark records each server's actual cache state and rejects mismatched
+runtimes or disabled OPcache. Cold component profiles remain separate diagnostics.
+
+The host gate retains the 2% successful-RPM regression limit and requires stable
+trials without response errors, timeouts or duplicate IDs within responses. Both
+result files are retained even when a stability check fails.
+
 Correctness gates took priority over throughput: the multi-process test suite
 for Snowflake, Sonyflake, Randflake, TBSL, and sequence reservations produced
 zero duplicates and zero lock errors.

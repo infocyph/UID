@@ -435,10 +435,20 @@ do not assert an improvement solely from historical microsecond timings.
 
 ## Performance and release gates
 
-Current ordinary hosted evidence: Security & Standards run `37563316186` on
-`6b89b29972f43f3e1943d086339e5b18ee711a7d` passed clean install, component
+Current committed hosted evidence: Security & Standards run `37572646512` on
+`6a302ef2c72f9d0e499b4cbc6ff6c97d971819a9` passed clean install, component
 benchmarks on PHP 8.4/8.5, analysis on PHP 8.4/8.5, and all four stable/lowest QA
 lanes. This is implementation QA evidence, not host-RPM or soak certification.
+
+Release Acceptance run `37572646018` on that revision passed diagnostics and the
+persistent-worker soak, but six host lanes exceeded the 2% RPM budget: CUID2 batch
+at concurrency 1, 5, 20 and 50, and Snowflake contention at concurrency 1 and 5.
+Working-tree remediation adds grouped radix encoding with independent legacy
+vectors, omits unused default-provider reservation bookkeeping, reduces repeated
+lock ownership lookups, and corrects warm host cache
+configuration and median/report handling. All final hosted gates must run again
+on the revision containing these changes; earlier soak or QA results do not
+certify the modified candidate.
 
 - [ ] Measure corrected code against tag `5.0` with matching runtimes, dependencies,
   hardware and deployment configuration. Separate pure-generator, filesystem,

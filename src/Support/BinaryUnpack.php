@@ -43,6 +43,18 @@ final class BinaryUnpack
     }
 
     /**
+     * @return list<int>
+     */
+    public static function words(string $bytes): array
+    {
+        /** @var array<int, int>|false $unpacked */
+        $unpacked = unpack('N*', $bytes);
+        $unpacked !== false || throw new \LogicException('Unable to unpack word value');
+
+        return array_values($unpacked);
+    }
+
+    /**
      * @param array<int|string, mixed>|false $unpacked
      * @throws \Exception
      */

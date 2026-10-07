@@ -311,9 +311,10 @@ function uidRunDuration(
 }
 
 /**
+ * @param array<string, mixed> $serverRuntime
  * @return array<string, mixed>
  */
-function uidEnvironment(string $release): array
+function uidEnvironment(string $release, array $serverRuntime): array
 {
     $cpuModel = 'unknown';
     $cpuInfo = is_readable('/proc/cpuinfo') ? file_get_contents('/proc/cpuinfo') : false;
@@ -336,6 +337,7 @@ function uidEnvironment(string $release): array
         'xdebug' => extension_loaded('xdebug'),
         'extensions' => $extensions,
         'runner' => (string) (getenv('RUNNER_NAME') ?: 'github-actions'),
+        'server_runtime' => $serverRuntime,
     ];
 
     $fingerprintSource = $environment;
@@ -426,6 +428,7 @@ function uidAccumulate(array &$aggregate, array $result): void
  *   duplicates:int,
  *   elapsed:float
  * } $aggregate
+ * @param array<string, mixed> $serverRuntime
  * @return array<string, mixed>
  */
 function uidBuildDocument(
@@ -437,9 +440,13 @@ function uidBuildDocument(
     int $idsPerResponse,
     int $warmup,
     array $aggregate,
+    array $serverRuntime,
 ): array {
-    sort($aggregate['rpms'], SORT_NUMERIC);
-    $medianRpm = uidPercentile($aggregate['rpms'], 0.50);
+    // Balanced AB/BA trials always have an even sample count.
+    $sortedRpms = $aggregate['rpms'];
+    sort($sortedRpms, SORT_NUMERIC);
+    $middle = intdiv(count($sortedRpms), 2);
+    $medianRpm = ($sortedRpms[$middle - 1] + $sortedRpms[$middle]) / 2;
     $spread = $medianRpm > 0
         ? ((uidPercentile($aggregate['rpms'], 0.75) - uidPercentile($aggregate['rpms'], 0.25)) / $medianRpm) * 100
         : 100.0;
@@ -452,7 +459,7 @@ function uidBuildDocument(
     return [
         'schema_version' => 1,
         'generated_at' => gmdate('Y-m-d\TH:i:s\Z'),
-        'environment' => uidEnvironment($release),
+        'environment' => uidEnvironment($release, $serverRuntime),
         'workloads' => [[
             'name' => $route . '-c' . $concurrency,
             'type' => 'http',
@@ -467,6 +474,7 @@ function uidBuildDocument(
             'duration_seconds' => $duration * $repetitions,
             'concurrency' => $concurrency,
             'result' => [
+                'trial_successful_rpm' => $aggregate['rpms'],
                 'attempted_operations' => $aggregate['attempted'],
                 'successful_operations' => $aggregate['successful'],
                 'failed_operations' => $aggregate['failed'],
@@ -507,6 +515,33 @@ $urls = [
     'baseline' => rtrim($baselineUrl, '/') . '/' . ltrim($route, '/'),
     'candidate' => rtrim($candidateUrl, '/') . '/' . ltrim($route, '/'),
 ];
+
+/** @return array<string, mixed> */
+function uidServerRuntime(string $url): array
+{
+    $handle = uidCreateHandle(rtrim($url, '/') . '/health');
+    $body = curl_exec($handle);
+    $httpCode = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+    if (!is_string($body) || $httpCode !== 200) {
+        throw new RuntimeException('Unable to read benchmark server runtime');
+    }
+
+    $health = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+    $runtime = is_array($health) ? ($health['runtime'] ?? null) : null;
+    if (!is_array($runtime)) {
+        throw new RuntimeException('Benchmark server runtime is missing');
+    }
+
+    return $runtime;
+}
+
+$serverRuntime = uidServerRuntime($baselineUrl);
+if ($serverRuntime !== uidServerRuntime($candidateUrl)) {
+    throw new RuntimeException('Benchmark server runtimes do not match');
+}
+if (($serverRuntime['opcache'] ?? false) !== true) {
+    throw new RuntimeException('Warm host benchmark requires OPcache on both servers');
+}
 
 foreach ($urls as $url) {
     $warmupResult = uidRunOperations($url, $concurrency, $warmup, $idsPerResponse);
@@ -549,6 +584,7 @@ $baselineDocument = uidBuildDocument(
     $idsPerResponse,
     $warmup,
     $aggregates['baseline'],
+    $serverRuntime,
 );
 $candidateDocument = uidBuildDocument(
     'candidate',
@@ -559,6 +595,7 @@ $candidateDocument = uidBuildDocument(
     $idsPerResponse,
     $warmup,
     $aggregates['candidate'],
+    $serverRuntime,
 );
 
 foreach ([
@@ -569,7 +606,9 @@ foreach ([
         $path,
         json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL,
     );
+}
 
+foreach ([$baselineDocument, $candidateDocument] as $document) {
     $result = $document['workloads'][0]['result'];
     if (($result['stability']['status'] ?? null) !== 'stable') {
         throw new RuntimeException('Host benchmark did not reach a stable valid state');

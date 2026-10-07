@@ -53,11 +53,12 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
     public function next(string $type, int $machineId, int $timestamp): int
     {
         $fileLocation = $this->sequenceFileLocation($type, $machineId);
-        $this->resetAfterFork();
-
-        $reserved = $this->takeReservedAllocation($fileLocation, $timestamp);
-        if ($reserved !== null) {
-            return $reserved;
+        if ($this->reservationSize > 1) {
+            $this->resetAfterFork();
+            $reserved = $this->takeReservedAllocation($fileLocation, $timestamp);
+            if ($reserved !== null) {
+                return $reserved;
+            }
         }
 
         $handle = FileLock::acquire(
@@ -74,13 +75,6 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
             flock($handle, LOCK_UN);
             fclose($handle);
         }
-    }
-
-    private static function isCanonicalInteger(string $value): bool
-    {
-        return $value !== ''
-            && ctype_digit($value)
-            && ($value === '0' || $value[0] !== '0');
     }
 
     /**
@@ -129,22 +123,15 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
             return [0, 0, 0];
         }
 
-        $comma = strpos($state, ',');
-        if ($comma === false || str_contains(substr($state, $comma + 1), ',')) {
+        if (preg_match('/\A(0|[1-9][0-9]{0,18}),(0|[1-9][0-9]{0,18})\z/', $state, $parts) !== 1) {
             throw new FileLockException('Sequence state is malformed');
         }
 
-        $timestamp = substr($state, 0, $comma);
-        $allocation = substr($state, $comma + 1);
-        if (!self::isCanonicalInteger($timestamp) || !self::isCanonicalInteger($allocation)) {
-            throw new FileLockException('Sequence state is malformed');
-        }
-
+        $timestamp = $parts[1];
+        $allocation = $parts[2];
         if (
-            strlen($timestamp) > 19
-            || strlen($allocation) > 19
-            || (strlen($timestamp) === 19 && $timestamp > (string) PHP_INT_MAX)
-            || (strlen($allocation) === 19 && $allocation > (string) PHP_INT_MAX)
+            (strlen($timestamp) === 19 && strcmp($timestamp, (string) PHP_INT_MAX) > 0)
+            || (strlen($allocation) === 19 && strcmp($allocation, (string) PHP_INT_MAX) > 0)
         ) {
             throw new FileLockException('Sequence state is malformed');
         }
