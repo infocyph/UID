@@ -24,21 +24,55 @@ final class BaseEncoder
         if ($encoded === '') {
             throw new InvalidArgumentException('Encoded value must not be empty');
         }
-        if ($bytesLength < 1 || $bytesLength > self::MAX_BYTE_LENGTH) {
-            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
-        }
+        self::assertByteLength($bytesLength);
+
+        return $base === 16
+            ? self::decodeHex($encoded, $bytesLength)
+            : self::decodeRadix($encoded, $base, $bytesLength);
+    }
+
+    public static function encodeBytes(string $bytes, int $base): string
+    {
+        self::assertByteLength(strlen($bytes));
 
         if ($base === 16) {
-            if (strlen($encoded) > $bytesLength * 2 || preg_match('/^[0-9a-f]+$/D', $encoded) !== 1) {
-                throw new InvalidArgumentException('Invalid character for base 16');
-            }
-
-            $decoded = hex2bin(str_pad($encoded, $bytesLength * 2, '0', STR_PAD_LEFT));
-            $decoded !== false || throw new InvalidArgumentException('Unable to decode base 16 value');
-
-            return $decoded;
+            return ltrim(bin2hex($bytes), '0') ?: '0';
         }
 
+        $alphabet = self::alphabet($base);
+        if (trim($bytes, "\0") === '') {
+            return $alphabet[0];
+        }
+
+        return self::encodeRadix(self::unpackBytes($bytes), $base, $alphabet);
+    }
+
+    private static function alphabet(int $base): string
+    {
+        return self::ALPHABETS[$base] ?? throw new InvalidArgumentException('Unsupported base: ' . $base);
+    }
+
+    private static function assertByteLength(int $byteLength): void
+    {
+        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
+            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
+        }
+    }
+
+    private static function decodeHex(string $encoded, int $bytesLength): string
+    {
+        if (strlen($encoded) > $bytesLength * 2 || preg_match('/^[0-9a-f]+$/D', $encoded) !== 1) {
+            throw new InvalidArgumentException('Invalid character for base 16');
+        }
+
+        $decoded = hex2bin(str_pad($encoded, $bytesLength * 2, '0', STR_PAD_LEFT));
+        $decoded !== false || throw new InvalidArgumentException('Unable to decode base 16 value');
+
+        return $decoded;
+    }
+
+    private static function decodeRadix(string $encoded, int $base, int $bytesLength): string
+    {
         $alphabet = self::alphabet($base);
         $maximumLength = (int) ceil(($bytesLength * 8) / log($base, 2));
         if (strlen($encoded) > $maximumLength) {
@@ -79,32 +113,13 @@ final class BaseEncoder
         return str_repeat("\0", $bytesLength - strlen($decoded)) . $decoded;
     }
 
-    public static function encodeBytes(string $bytes, int $base): string
+    /**
+     * @param list<int> $number
+     */
+    private static function encodeRadix(array $number, int $base, string $alphabet): string
     {
-        $byteLength = strlen($bytes);
-        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
-            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
-        }
-
-        if ($base === 16) {
-            return ltrim(bin2hex($bytes), '0') ?: '0';
-        }
-
-        $alphabet = self::alphabet($base);
-        $unpacked = unpack('C*', $bytes);
-        $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
-
-        $number = [];
-        foreach ($unpacked as $byte) {
-            is_int($byte) || throw new \LogicException('Unable to unpack byte value');
-            $number[] = $byte;
-        }
-
-        if (trim($bytes, "\0") === '') {
-            return $alphabet[0];
-        }
-
         $encoded = '';
+
         while ($number !== []) {
             $quotient = [];
             $remainder = 0;
@@ -126,8 +141,20 @@ final class BaseEncoder
         return $encoded;
     }
 
-    private static function alphabet(int $base): string
+    /**
+     * @return list<int>
+     */
+    private static function unpackBytes(string $bytes): array
     {
-        return self::ALPHABETS[$base] ?? throw new InvalidArgumentException('Unsupported base: ' . $base);
+        $unpacked = unpack('C*', $bytes);
+        $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
+
+        $number = [];
+        foreach ($unpacked as $byte) {
+            is_int($byte) || throw new \LogicException('Unable to unpack byte value');
+            $number[] = $byte;
+        }
+
+        return $number;
     }
 }
