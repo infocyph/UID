@@ -195,7 +195,8 @@ final class Randflake
         int $nodeId,
         int $leaseStart,
         int $leaseEnd,
-        #[\SensitiveParameter] string $secret,
+        #[\SensitiveParameter]
+        string $secret,
     ): string {
         return self::encodeString(self::generate($nodeId, $leaseStart, $leaseEnd, $secret));
     }
@@ -225,7 +226,8 @@ final class Randflake
      */
     public static function inspect(
         string $id,
-        #[\SensitiveParameter] string $secret,
+        #[\SensitiveParameter]
+        string $secret,
         RandflakeFormat $format = RandflakeFormat::UID,
     ): array {
         if (!self::isValid($id, $format)) {
@@ -251,7 +253,8 @@ final class Randflake
      */
     public static function inspectString(
         string $id,
-        #[\SensitiveParameter] string $secret,
+        #[\SensitiveParameter]
+        string $secret,
         RandflakeFormat $format = RandflakeFormat::UID,
     ): array {
         return self::inspect(self::decodeString($id, $format), $secret, $format);
@@ -276,7 +279,8 @@ final class Randflake
      */
     public static function parse(
         string $id,
-        #[\SensitiveParameter] string $secret,
+        #[\SensitiveParameter]
+        string $secret,
         RandflakeFormat $format = RandflakeFormat::UID,
     ): array {
         if (!self::isValid($id, $format)) {
@@ -302,7 +306,8 @@ final class Randflake
      */
     public static function parseString(
         string $id,
-        #[\SensitiveParameter] string $secret,
+        #[\SensitiveParameter]
+        string $secret,
         RandflakeFormat $format = RandflakeFormat::UID,
     ): array {
         return self::parse(self::decodeString($id, $format), $secret, $format);
@@ -405,7 +410,8 @@ final class Randflake
         int $timestamp,
         int $nodeId,
         int $sequence,
-        #[\SensitiveParameter] string $secret,
+        #[\SensitiveParameter]
+        string $secret,
         RandflakeFormat $format,
     ): string {
         $plain = self::packPayload($timestamp, $nodeId, $sequence);
@@ -425,7 +431,8 @@ final class Randflake
         int $nodeId,
         int $leaseStart,
         int $leaseEnd,
-        #[\SensitiveParameter] string $secret,
+        #[\SensitiveParameter]
+        string $secret,
         ?SequenceProviderInterface $sequenceProvider,
         ?GenerationContext $runtime,
         RandflakeFormat $format,
