@@ -23,6 +23,24 @@ jobs:
       - name: Checkout candidate tooling
         uses: actions/checkout@v7
 
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          tools: composer:v2
+          extensions: ctype,curl,pcntl
+          coverage: none
+
+      - name: Install candidate tooling
+        shell: bash
+        run: |
+          composer install --no-interaction --prefer-dist --no-progress
+          mkdir -p .phpforge-report
+
+      - name: Run candidate release guard
+        shell: bash
+        run: composer ic:release:guard
+
       - name: Checkout tag 5.0
         uses: actions/checkout@v7
         with:
@@ -35,25 +53,11 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           path: ".release-candidate"
 
-      - name: Setup PHP 8.4
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.4"
-          tools: composer:v2
-          extensions: ctype,curl,pcntl
-          coverage: none
-
-      - name: Install tooling and production targets
+      - name: Install production targets
         shell: bash
         run: |
-          composer install --no-interaction --prefer-dist --no-progress
           composer --working-dir=.release-baseline install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
           composer --working-dir=.release-candidate install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
-          mkdir -p .phpforge-report
-
-      - name: Run candidate release guard
-        shell: bash
-        run: composer ic:release:guard
 
       - name: Profile components against tag 5.0
         shell: bash
