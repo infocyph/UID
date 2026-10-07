@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 $options = getopt('', [
-    'base-url:',
-    'release:',
-    'output:',
+    'baseline-url:',
+    'candidate-url:',
+    'baseline-output:',
+    'candidate-output:',
     'route:',
     'concurrency:',
     'duration:',
@@ -14,9 +15,10 @@ $options = getopt('', [
     'warmup:',
 ]);
 
-$baseUrl = $options['base-url'] ?? null;
-$release = $options['release'] ?? null;
-$output = $options['output'] ?? null;
+$baselineUrl = $options['baseline-url'] ?? null;
+$candidateUrl = $options['candidate-url'] ?? null;
+$baselineOutput = $options['baseline-output'] ?? null;
+$candidateOutput = $options['candidate-output'] ?? null;
 $route = $options['route'] ?? null;
 $concurrency = filter_var($options['concurrency'] ?? null, FILTER_VALIDATE_INT);
 $duration = filter_var($options['duration'] ?? null, FILTER_VALIDATE_INT);
@@ -25,12 +27,14 @@ $idsPerResponse = filter_var($options['ids-per-response'] ?? null, FILTER_VALIDA
 $warmup = filter_var($options['warmup'] ?? null, FILTER_VALIDATE_INT);
 
 if (
-    !is_string($baseUrl)
-    || $baseUrl === ''
-    || !is_string($release)
-    || $release === ''
-    || !is_string($output)
-    || $output === ''
+    !is_string($baselineUrl)
+    || $baselineUrl === ''
+    || !is_string($candidateUrl)
+    || $candidateUrl === ''
+    || !is_string($baselineOutput)
+    || $baselineOutput === ''
+    || !is_string($candidateOutput)
+    || $candidateOutput === ''
     || !is_string($route)
     || $route === ''
     || !is_int($concurrency)
@@ -38,13 +42,14 @@ if (
     || !is_int($duration)
     || $duration < 1
     || !is_int($repetitions)
-    || $repetitions < 3
+    || $repetitions < 4
+    || ($repetitions % 2) !== 0
     || !is_int($idsPerResponse)
     || $idsPerResponse < 1
     || !is_int($warmup)
     || $warmup < 1
 ) {
-    throw new InvalidArgumentException('Invalid fixed-duration host benchmark configuration');
+    throw new InvalidArgumentException('Invalid paired fixed-duration host benchmark configuration');
 }
 
 if (!extension_loaded('curl')) {
@@ -343,105 +348,230 @@ function uidEnvironment(string $release): array
     return $environment;
 }
 
-$url = rtrim($baseUrl, '/') . '/' . ltrim($route, '/');
-$warmupResult = uidRunOperations($url, $concurrency, $warmup, $idsPerResponse);
-
-if (
-    $warmupResult['failed'] !== 0
-    || $warmupResult['timeouts'] !== 0
-    || $warmupResult['duplicates'] !== 0
-) {
-    throw new RuntimeException('Host benchmark warmup produced invalid responses');
+/**
+ * @return array{
+ *   rpms:list<float>,
+ *   latencies:list<float>,
+ *   attempted:int,
+ *   successful:int,
+ *   failed:int,
+ *   timeouts:int,
+ *   duplicates:int,
+ *   elapsed:float
+ * }
+ */
+function uidEmptyAggregate(): array
+{
+    return [
+        'rpms' => [],
+        'latencies' => [],
+        'attempted' => 0,
+        'successful' => 0,
+        'failed' => 0,
+        'timeouts' => 0,
+        'duplicates' => 0,
+        'elapsed' => 0.0,
+    ];
 }
 
-$rpms = [];
-$latencies = [];
-$attempted = 0;
-$successful = 0;
-$failed = 0;
-$timeouts = 0;
-$duplicates = 0;
-$elapsedSeconds = 0.0;
+/**
+ * @param array{
+ *   rpms:list<float>,
+ *   latencies:list<float>,
+ *   attempted:int,
+ *   successful:int,
+ *   failed:int,
+ *   timeouts:int,
+ *   duplicates:int,
+ *   elapsed:float
+ * } $aggregate
+ * @param array{
+ *   attempted:int,
+ *   successful:int,
+ *   failed:int,
+ *   timeouts:int,
+ *   rpm:float,
+ *   latencies:list<float>,
+ *   duplicates:int,
+ *   elapsed_seconds:float
+ * } $result
+ */
+function uidAccumulate(array &$aggregate, array $result): void
+{
+    $aggregate['rpms'][] = $result['rpm'];
+    $aggregate['attempted'] += $result['attempted'];
+    $aggregate['successful'] += $result['successful'];
+    $aggregate['failed'] += $result['failed'];
+    $aggregate['timeouts'] += $result['timeouts'];
+    $aggregate['duplicates'] += $result['duplicates'];
+    $aggregate['elapsed'] += $result['elapsed_seconds'];
 
-for ($repetition = 0; $repetition < $repetitions; ++$repetition) {
-    $result = uidRunDuration($url, $concurrency, $duration, $idsPerResponse);
-    $rpms[] = $result['rpm'];
-    $attempted += $result['attempted'];
-    $successful += $result['successful'];
-    $failed += $result['failed'];
-    $timeouts += $result['timeouts'];
-    $duplicates += $result['duplicates'];
-    $elapsedSeconds += $result['elapsed_seconds'];
-
-    $remaining = UID_MAX_LATENCY_SAMPLES - count($latencies);
+    $remaining = UID_MAX_LATENCY_SAMPLES - count($aggregate['latencies']);
     if ($remaining > 0) {
-        $latencies = [...$latencies, ...array_slice($result['latencies'], 0, $remaining)];
+        $aggregate['latencies'] = [
+            ...$aggregate['latencies'],
+            ...array_slice($result['latencies'], 0, $remaining),
+        ];
     }
 }
 
-sort($rpms, SORT_NUMERIC);
-$medianRpm = uidPercentile($rpms, 0.50);
-$spread = $medianRpm > 0
-    ? ((uidPercentile($rpms, 0.75) - uidPercentile($rpms, 0.25)) / $medianRpm) * 100
-    : 100.0;
-$stable = $spread <= 15.0 && $failed === 0 && $duplicates === 0 && $timeouts === 0;
-$name = $route . '-c' . $concurrency;
+/**
+ * @param array{
+ *   rpms:list<float>,
+ *   latencies:list<float>,
+ *   attempted:int,
+ *   successful:int,
+ *   failed:int,
+ *   timeouts:int,
+ *   duplicates:int,
+ *   elapsed:float
+ * } $aggregate
+ * @return array<string, mixed>
+ */
+function uidBuildDocument(
+    string $release,
+    string $route,
+    int $concurrency,
+    int $duration,
+    int $repetitions,
+    int $idsPerResponse,
+    int $warmup,
+    array $aggregate,
+): array {
+    sort($aggregate['rpms'], SORT_NUMERIC);
+    $medianRpm = uidPercentile($aggregate['rpms'], 0.50);
+    $spread = $medianRpm > 0
+        ? ((uidPercentile($aggregate['rpms'], 0.75) - uidPercentile($aggregate['rpms'], 0.25)) / $medianRpm) * 100
+        : 100.0;
+    $stable = $spread <= 15.0
+        && $aggregate['failed'] === 0
+        && $aggregate['duplicates'] === 0
+        && $aggregate['timeouts'] === 0;
+    $latencies = $aggregate['latencies'];
 
-$document = [
-    'schema_version' => 1,
-    'generated_at' => gmdate('Y-m-d\TH:i:s\Z'),
-    'environment' => uidEnvironment($release),
-    'workloads' => [[
-        'name' => $name,
-        'type' => 'http',
-        'metadata' => [
-            'route' => '/' . ltrim($route, '/'),
-            'trial_duration_seconds' => $duration,
-            'ids_per_response' => $idsPerResponse,
-        ],
-        'repetitions' => $repetitions,
-        'warmup_operations' => $warmup,
-        'duration_seconds' => $duration * $repetitions,
-        'concurrency' => $concurrency,
-        'result' => [
-            'attempted_operations' => $attempted,
-            'successful_operations' => $successful,
-            'failed_operations' => $failed,
-            'timeouts' => $timeouts,
-            'duplicate_ids' => $duplicates,
-            'successful_rpm' => round($medianRpm, 5),
-            'error_rate' => $attempted === 0 ? 0.0 : $failed / $attempted,
-            'measured_elapsed_seconds' => round($elapsedSeconds, 5),
-            'latency_ms' => [
-                'minimum' => $latencies === [] ? null : round(min($latencies), 5),
-                'average' => $latencies === [] ? null : round(uidAverage($latencies), 5),
-                'p50' => $latencies === [] ? null : round(uidPercentile($latencies, 0.50), 5),
-                'p95' => $latencies === [] ? null : round(uidPercentile($latencies, 0.95), 5),
-                'p99' => $latencies === [] ? null : round(uidPercentile($latencies, 0.99), 5),
-                'maximum' => $latencies === [] ? null : round(max($latencies), 5),
+    return [
+        'schema_version' => 1,
+        'generated_at' => gmdate('Y-m-d\TH:i:s\Z'),
+        'environment' => uidEnvironment($release),
+        'workloads' => [[
+            'name' => $route . '-c' . $concurrency,
+            'type' => 'http',
+            'metadata' => [
+                'route' => '/' . ltrim($route, '/'),
+                'trial_duration_seconds' => $duration,
+                'ids_per_response' => $idsPerResponse,
+                'paired_trial_order' => 'AB/BA',
             ],
-            'cpu' => [
-                'average_percent' => null,
-                'peak_percent' => null,
+            'repetitions' => $repetitions,
+            'warmup_operations' => $warmup,
+            'duration_seconds' => $duration * $repetitions,
+            'concurrency' => $concurrency,
+            'result' => [
+                'attempted_operations' => $aggregate['attempted'],
+                'successful_operations' => $aggregate['successful'],
+                'failed_operations' => $aggregate['failed'],
+                'timeouts' => $aggregate['timeouts'],
+                'duplicate_ids' => $aggregate['duplicates'],
+                'successful_rpm' => round($medianRpm, 5),
+                'error_rate' => $aggregate['attempted'] === 0
+                    ? 0.0
+                    : $aggregate['failed'] / $aggregate['attempted'],
+                'measured_elapsed_seconds' => round($aggregate['elapsed'], 5),
+                'latency_ms' => [
+                    'minimum' => $latencies === [] ? null : round(min($latencies), 5),
+                    'average' => $latencies === [] ? null : round(uidAverage($latencies), 5),
+                    'p50' => $latencies === [] ? null : round(uidPercentile($latencies, 0.50), 5),
+                    'p95' => $latencies === [] ? null : round(uidPercentile($latencies, 0.95), 5),
+                    'p99' => $latencies === [] ? null : round(uidPercentile($latencies, 0.99), 5),
+                    'maximum' => $latencies === [] ? null : round(max($latencies), 5),
+                ],
+                'cpu' => [
+                    'average_percent' => null,
+                    'peak_percent' => null,
+                ],
+                'memory' => [
+                    'average_mb' => null,
+                    'peak_mb' => null,
+                    'growth_mb' => null,
+                ],
+                'stability' => [
+                    'status' => $stable ? 'stable' : 'unstable',
+                    'spread_percent' => round($spread, 5),
+                ],
             ],
-            'memory' => [
-                'average_mb' => null,
-                'peak_mb' => null,
-                'growth_mb' => null,
-            ],
-            'stability' => [
-                'status' => $stable ? 'stable' : 'unstable',
-                'spread_percent' => round($spread, 5),
-            ],
-        ],
-    ]],
+        ]],
+    ];
+}
+
+$urls = [
+    'baseline' => rtrim($baselineUrl, '/') . '/' . ltrim($route, '/'),
+    'candidate' => rtrim($candidateUrl, '/') . '/' . ltrim($route, '/'),
 ];
 
-file_put_contents(
-    $output,
-    json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL,
+foreach ($urls as $url) {
+    $warmupResult = uidRunOperations($url, $concurrency, $warmup, $idsPerResponse);
+    if (
+        $warmupResult['failed'] !== 0
+        || $warmupResult['timeouts'] !== 0
+        || $warmupResult['duplicates'] !== 0
+    ) {
+        throw new RuntimeException('Host benchmark warmup produced invalid responses');
+    }
+}
+
+$aggregates = [
+    'baseline' => uidEmptyAggregate(),
+    'candidate' => uidEmptyAggregate(),
+];
+
+for ($repetition = 0; $repetition < $repetitions; ++$repetition) {
+    $order = ($repetition % 2) === 0
+        ? ['baseline', 'candidate']
+        : ['candidate', 'baseline'];
+
+    foreach ($order as $target) {
+        $result = uidRunDuration(
+            $urls[$target],
+            $concurrency,
+            $duration,
+            $idsPerResponse,
+        );
+        uidAccumulate($aggregates[$target], $result);
+    }
+}
+
+$baselineDocument = uidBuildDocument(
+    '5.0',
+    $route,
+    $concurrency,
+    $duration,
+    $repetitions,
+    $idsPerResponse,
+    $warmup,
+    $aggregates['baseline'],
+);
+$candidateDocument = uidBuildDocument(
+    'candidate',
+    $route,
+    $concurrency,
+    $duration,
+    $repetitions,
+    $idsPerResponse,
+    $warmup,
+    $aggregates['candidate'],
 );
 
-if (!$stable) {
-    throw new RuntimeException('Host benchmark did not reach a stable valid state');
+foreach ([
+    $baselineOutput => $baselineDocument,
+    $candidateOutput => $candidateDocument,
+] as $path => $document) {
+    file_put_contents(
+        $path,
+        json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL,
+    );
+
+    $result = $document['workloads'][0]['result'];
+    if (($result['stability']['status'] ?? null) !== 'stable') {
+        throw new RuntimeException('Host benchmark did not reach a stable valid state');
+    }
 }
