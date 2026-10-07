@@ -190,7 +190,7 @@ jobs:
           composer --working-dir=.release-candidate install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
           mkdir -p .phpforge-report "$RUNNER_TEMP/uid-baseline-state" "$RUNNER_TEMP/uid-candidate-state"
 
-      - name: Benchmark tag 5.0
+      - name: Run interleaved paired host benchmark
         shell: bash
         env:
           ROUTE: ${{ matrix.route }}
@@ -199,45 +199,46 @@ jobs:
         run: |
           WARMUP=$(( CONCURRENCY * 2 ))
           if [ "$WARMUP" -lt 20 ]; then WARMUP=20; fi
-          UID_TARGET_ROOT="$GITHUB_WORKSPACE/.release-baseline"           UID_STATE_DIR="$RUNNER_TEMP/uid-baseline-state"           PHP_CLI_SERVER_WORKERS=64             php -S 127.0.0.1:18080 benchmarks/release/host-router.php             > .phpforge-report/baseline-server.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
 
-          for attempt in {1..50}; do
-            if curl --fail --silent http://127.0.0.1:18080/health >/dev/null; then break; fi
-            sleep 0.2
+          UID_TARGET_ROOT="$GITHUB_WORKSPACE/.release-baseline" \
+          UID_STATE_DIR="$RUNNER_TEMP/uid-baseline-state" \
+          PHP_CLI_SERVER_WORKERS=64 \
+            php -S 127.0.0.1:18080 benchmarks/release/host-router.php \
+            > .phpforge-report/baseline-server.log 2>&1 &
+          baseline_pid=$!
+
+          UID_TARGET_ROOT="$GITHUB_WORKSPACE/.release-candidate" \
+          UID_STATE_DIR="$RUNNER_TEMP/uid-candidate-state" \
+          PHP_CLI_SERVER_WORKERS=64 \
+            php -S 127.0.0.1:18081 benchmarks/release/host-router.php \
+            > .phpforge-report/candidate-server.log 2>&1 &
+          candidate_pid=$!
+
+          trap 'kill "$baseline_pid" "$candidate_pid" 2>/dev/null || true' EXIT
+
+          for port in 18080 18081; do
+            for attempt in {1..50}; do
+              if curl --fail --silent "http://127.0.0.1:$port/health" >/dev/null; then break; fi
+              sleep 0.2
+            done
+            curl --fail --silent "http://127.0.0.1:$port/health" >/dev/null
           done
-          curl --fail --silent http://127.0.0.1:18080/health >/dev/null
 
-          php benchmarks/release/HostBenchmark.php             --base-url=http://127.0.0.1:18080             --release=5.0             --output=.phpforge-report/host-baseline.json             --route="$ROUTE"             --concurrency="$CONCURRENCY"             --duration=60             --repetitions=3             --ids-per-response="$IDS_PER_RESPONSE"             --warmup="$WARMUP"
+          php benchmarks/release/HostBenchmark.php \
+            --baseline-url=http://127.0.0.1:18080 \
+            --candidate-url=http://127.0.0.1:18081 \
+            --baseline-output=.phpforge-report/host-baseline.json \
+            --candidate-output=.phpforge-report/host-candidate.json \
+            --route="$ROUTE" \
+            --concurrency="$CONCURRENCY" \
+            --duration=60 \
+            --repetitions=4 \
+            --ids-per-response="$IDS_PER_RESPONSE" \
+            --warmup="$WARMUP"
 
-          kill "$server_pid" 2>/dev/null || true
-          wait "$server_pid" 2>/dev/null || true
-          trap - EXIT
-
-      - name: Benchmark candidate
-        shell: bash
-        env:
-          ROUTE: ${{ matrix.route }}
-          CONCURRENCY: ${{ matrix.concurrency }}
-          IDS_PER_RESPONSE: ${{ matrix.ids_per_response }}
-        run: |
-          WARMUP=$(( CONCURRENCY * 2 ))
-          if [ "$WARMUP" -lt 20 ]; then WARMUP=20; fi
-          UID_TARGET_ROOT="$GITHUB_WORKSPACE/.release-candidate"           UID_STATE_DIR="$RUNNER_TEMP/uid-candidate-state"           PHP_CLI_SERVER_WORKERS=64             php -S 127.0.0.1:18081 benchmarks/release/host-router.php             > .phpforge-report/candidate-server.log 2>&1 &
-          server_pid=$!
-          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-
-          for attempt in {1..50}; do
-            if curl --fail --silent http://127.0.0.1:18081/health >/dev/null; then break; fi
-            sleep 0.2
-          done
-          curl --fail --silent http://127.0.0.1:18081/health >/dev/null
-
-          php benchmarks/release/HostBenchmark.php             --base-url=http://127.0.0.1:18081             --release=candidate             --output=.phpforge-report/host-candidate.json             --route="$ROUTE"             --concurrency="$CONCURRENCY"             --duration=60             --repetitions=3             --ids-per-response="$IDS_PER_RESPONSE"             --warmup="$WARMUP"
-
-          kill "$server_pid" 2>/dev/null || true
-          wait "$server_pid" 2>/dev/null || true
+          kill "$baseline_pid" "$candidate_pid" 2>/dev/null || true
+          wait "$baseline_pid" 2>/dev/null || true
+          wait "$candidate_pid" 2>/dev/null || true
           trap - EXIT
 
       - name: Enforce 2 percent host budget
