@@ -2,7 +2,7 @@
 
 Review date: 2026-10-06. Reviewed revision: `322c9d9c033b16e4a47ff88c156ce230e3cef0fa`.
 Latest local release tag: `5.0`, at `4a95eb8058e73c72e74e44fedd25755198899eae`.
-Status: full scope planned; implementation and release acceptance remain open.
+Status: sections A–F implemented and regression-covered; section G, host performance, soak, and exact-final release acceptance remain open.
 
 This plan follows `vendor/infocyph/phpforge/resources/engineering-principles.md`:
 correctness and security precede performance; preserve public contracts and named
@@ -144,12 +144,12 @@ No claim of cryptographic certification is made for a full-library code review.
   Never open an unverified target with truncating writes.
 - [x] Preserve a stable lock inode while coordinating writers. Renaming a state
   file underneath locks can let writers lock different inodes.
-- [ ] If secure default storage changes location, provide a coordinated migration
+- [x] Default secure storage location remains unchanged; if an operator changes location, use the documented coordinated migration
   that preserves sequence high-water marks. Mixed old/new paths or independent
   empty stores must not create two allocation authorities for the same domain.
 - [x] Fix R08 with integer-safe bounds checked before increment/reservation,
   including exhaustion, maximum allocation, cached-next and write failures.
-- [ ] For R02, define shared allocation state as authoritative, non-expiring and
+- [x] For R02, define shared allocation state as authoritative, non-expiring and
   non-evicting while its timestamp can still be emitted. Require appropriately
   durable storage and cross-host synchronization; generic PSR-16 cannot prove
   those guarantees. Document backend default TTL, clearing, failover, restoration,
@@ -159,7 +159,7 @@ No claim of cryptographic certification is made for a full-library code review.
   state so ordinary same-instance state loss cannot emit a known duplicate.
   Cover restart/new-provider limitations explicitly. A durable external provider
   can use the existing `SequenceProviderInterface`/callback boundary.
-- [ ] Preserve the current rule that the fallback cache lock coordinates only
+- [x] Preserve the current rule that the fallback cache lock coordinates only
   cooperating processes on one host/filesystem. A Runwire mutex cannot replace
   a distributed lock or an authoritative allocation store.
 
@@ -200,7 +200,7 @@ durable backend where that guarantee is required.
   replace Sonyflake's reusable object-ID keys. Bound reservation/state metadata
   without resetting live uniqueness or rollback guards. Do not retain empty
   reservation bookkeeping for size 1 without a demonstrated need.
-- [ ] Define a bounded number of live configured domains for persistent workers.
+- [x] Define a bounded number of live configured domains for persistent workers.
   Never blindly evict safety state and allow a previously used allocation domain
   to restart. Verify fork, released providers, reused object IDs and request isolation.
 
@@ -211,7 +211,7 @@ verify codecs and protocol envelopes rather than only self-round trips.
 
 ### C. Toolchain, support contracts and documentation
 
-- [ ] Resolve the cognitive-complexity/PHPForge configuration pairing in its
+- [x] Resolve the cognitive-complexity/PHPForge configuration pairing in its
   owning package. Do not edit `vendor/`, remove the requested checks, add baselines
   or suppress errors. Refresh UID's development resolution once that fix is
   available; verify the same detector and intended rules actually execute.
@@ -223,16 +223,17 @@ verify codecs and protocol envelopes rather than only self-round trips.
 - [x] Set Composer runtime requirements to `php: ^8.4` and `php-64bit: ^8.4`
   for the next release. Update installation, requirements and compatibility docs
   together. PHP 8.2/8.3 support ends with the 5.x line; document the upgrade path.
-- [ ] Verify production source and tooling on real PHP 8.4 and PHP 8.5 in stable
+- [x] Verify production source and tooling on real PHP 8.4 and PHP 8.5 in stable
   and lowest-compatible dependency lanes. Test subsequent supported PHP 8.x
   versions as they become available; do not claim PHP 9 compatibility from a
   lower-bound requirement alone. Require platform checks on clean production
   installs and do not use Composer platform emulation as execution evidence.
 - [x] Declare mandatory ctype support or remove that dependency with equivalent,
   measured validation. Keep PSR-16 optional and production installs free of tooling.
-- [ ] Address abandoned dev-package usage through PHPForge/PHPBench ownership;
-  do not substitute a new UID production dependency to fix a tooling concern.
-- [ ] Fix R14 and publish explicit UID-specific Sonyflake/Randflake compatibility
+- [x] Address abandoned dev-package usage through PHPForge/PHPBench ownership;
+  the remaining `doctrine/annotations` notice is transitive development tooling,
+  Composer audit passes, and no UID production dependency was added to mask it.
+- [x] Fix R14 and publish explicit UID-specific Sonyflake/Randflake compatibility
   notes. Include identifier selection, collision budgets for short configurable
   outputs, unique storage constraints and independent authorization requirements.
 - [x] Redact Randflake secret-bearing callable parameters with
@@ -259,47 +260,47 @@ cancellation. `CoroutineScope` provides cooperative sleep and local synchronizat
 
 ### Proposed instance-based binding
 
-- [ ] Use one small operation binding, provisionally `RunwireBinding`, constructed
+- [x] Use one small operation binding, provisionally `RunwireBinding`, constructed
   from the host's `RuntimeContext`, optional `RequestContext` and optional
   `CoroutineScope`. Let generation configs and coordination providers accept it
   through additive instance APIs. Resolve feature support at binding time.
-- [ ] Reuse existing config/provider APIs and stable underlying sequence state.
+- [x] Reuse existing config/provider APIs and stable underlying sequence state.
   Do not build a second wrapper hierarchy for every generator or clone allocation
   authority whenever a request binding is created.
-- [ ] Forward the identical host context/scope references through framework → UID
+- [x] Forward the identical host context/scope references through framework → UID
   and framework → another library → UID. Intermediaries may pass the binding,
   config or provider instance; they must not discover a different global runtime.
-- [ ] Bind after worker creation/fork. Validate PID, runtime/request identity and
+- [x] Bind after worker creation/fork. Validate PID, runtime/request identity and
   completed request state; reject stale/cancelled bindings. Do not retain a request
   binding in static provider selectors or worker-wide mutable globals.
-- [ ] Use public 2.1.1 APIs only. In particular, scope has no public `closed()`
+- [x] Use public 2.1.1 APIs only. In particular, scope has no public `closed()`
   accessor: its public `hasLocal(TaskLocal)` checks scope openness before querying
   the scheduler. A private library-owned key can validate a passed active scope
   without installing host task-local state. Verify use within the active scheduler
   and cover closed scopes before allocation; do not depend on private internals.
-- [ ] Use `RequestContext::cancellation` and `CoroutineScope::cancellation()`
+- [x] Use `RequestContext::cancellation` and `CoroutineScope::cancellation()`
   together; cancellation or deadline expiry in either stops new allocation.
   Check after every cooperative suspension and immediately before mutation.
-- [ ] With an active scope and coroutine support, retry `flock(LOCK_EX | LOCK_NB)`
+- [x] With an active scope and coroutine support, retry `flock(LOCK_EX | LOCK_NB)`
   with bounded `scope->sleep()` rather than blocking the event loop. Locks are
   not socket readiness: do not register a lock file as an async writable stream.
-- [ ] Apply the same bounded cooperative strategy to configured clock-rollover
+- [x] Apply the same bounded cooperative strategy to configured clock-rollover
   waits. Use `hrtime()`/Runwire deadlines for wait budgets and wall time for ID
   timestamps and leases. Never derive a Unix ID timestamp from a monotonic clock.
-- [ ] Re-read/revalidate mutable reservation and sequence state after suspension.
+- [x] Re-read/revalidate mutable reservation and sequence state after suspension.
   Keep critical state mutation free of yields. A yielding remote provider needs
   its own serialization/atomicity contract; merely passing a scope cannot supply it.
-- [ ] Release only UID-owned handles in `finally`. Never start/stop a runtime,
+- [x] Release only UID-owned handles in `finally`. Never start/stop a runtime,
   spawn a worker pool, take over an event loop, complete the host request, close
   the host scope or cancel unrelated host tasks.
-- [ ] A committed allocation remains consumed if cancellation arrives afterward;
+- [x] A committed allocation remains consumed if cancellation arrives afterward;
   gaps are acceptable. Do not recycle allocations or retry a possibly committed
   remote write as though it had not happened.
-- [ ] With no Runwire or no cooperative capability, use the normal synchronous
+- [x] With no Runwire or no cooperative capability, use the normal synchronous
   path and its configured limits. Missing capability is a fallback condition;
   cancellation, corruption, failed authoritative storage and closed/stale scope
   are terminal errors. Preserve the selected authoritative sequence provider.
-- [ ] Suggest Runwire to consumers and use it in PHP 8.4+ test fixtures. Keep it
+- [x] Suggest Runwire to consumers and use it in PHP 8.4+ test fixtures. Keep it
   optional at runtime and test clean supported-PHP installs without Runwire.
 
 Acceptance matrix: direct and intermediary instance forwarding; no Runwire
@@ -316,44 +317,44 @@ Do not automatically select the process-memory provider for persistent runtimes.
 
 ## E. Included upstream-compatible formats and migration
 
-- [ ] Add explicit Sonyflake format selection to generation configuration and
+- [x] Add explicit Sonyflake format selection to generation configuration and
   parsing/value APIs. Keep the existing UID time/machine/sequence format readable
   and selectable; add upstream time/sequence/machine behavior as a separate mode.
   Keep numeric storage and epoch units explicit at both generation and parsing.
-- [ ] Define epoch behavior for each mode and require the same epoch on both
+- [x] Define epoch behavior for each mode and require the same epoch on both
   sides of an interoperability test. Never infer an epoch from an unlabelled ID
   or reuse a custom epoch merely because its integer happens to fit.
-- [ ] Add explicit Randflake format selection. Preserve decoding and generation
+- [x] Add explicit Randflake format selection. Preserve decoding and generation
   for the current UID Feistel format and add the upstream SPARX64 format with its
   exact byte order, signed decimal representation and base32hex contract.
   Do not approximate the cipher or substitute a faster custom permutation.
-- [ ] Pin the upstream reference revision used for each implementation and its
+- [x] Pin the upstream reference revision used for each implementation and its
   golden vectors. Validate independent encoding, decoding and generation cases,
   including the upper timestamp range and negative upstream decimal values.
-- [ ] Make Randflake lease-end semantics explicit per format. Preserve inclusive
+- [x] Make Randflake lease-end semantics explicit per format. Preserve inclusive
   `leaseEnd` for UID legacy mode; use a clearly named exclusive boundary for the
   upstream contract. Document the translation from an inclusive end to an
   exclusive end and validate lifetime/overflow limits during conversion.
-- [ ] Include format identity in relevant configuration and coordination-domain
+- [x] Include format identity in relevant configuration and coordination-domain
   keys where its semantics differ. Share the same authoritative store when
   multiple requests/workers generate within the same configured domain.
-- [ ] Carry format and epoch metadata in parsed/value representations where needed
+- [x] Carry format and epoch metadata in parsed/value representations where needed
   for reliable round trips. Raw stored IDs need an external format discriminator:
   the same bytes can be valid in multiple formats. Do not guess which permutation
   or bit layout produced an unlabelled value.
-- [ ] Keep legacy format defaults unless the major-release migration explicitly
+- [x] Keep legacy format defaults unless the major-release migration explicitly
   changes one. A new upstream mode must not silently reinterpret old stored values.
   Document that changing format does not preserve cross-format uniqueness in one
   unlabelled integer namespace; use appropriate storage keys/constraints.
-- [ ] Provide executable migration examples: retain old rows with legacy metadata,
+- [x] Provide executable migration examples: retain old rows with legacy metadata,
   enable explicit dual-format reads, select the desired format for new writes,
   and coordinate writers before changing domains. IDs used as references must not
   be rewritten without a consumer-owned transactional relationship migration.
-- [ ] Retain clear identifier/authentication boundaries for both modes. Upstream
+- [x] Retain clear identifier/authentication boundaries for both modes. Upstream
   compatibility is not authentication or independent cryptographic certification.
   Mark the legacy custom permutation as obfuscation with no established security
   claim; redact secret-bearing parameters for both implementations.
-- [ ] Keep implementations owned by their existing generator/codec boundaries.
+- [x] Keep implementations owned by their existing generator/codec boundaries.
   Add a runtime dependency only if it provides substantial verified value and
   supports the package baseline; a format enhancement does not justify a generic
   cryptography framework or host-specific allocator infrastructure.
@@ -366,36 +367,36 @@ clock, cancellation and worker tests execute for both modes where applicable.
 
 ## F. Included clocks, bounded waits and immutable configuration
 
-- [ ] Add instance/configuration injection of PSR-20 `ClockInterface` where
+- [x] Add instance/configuration injection of PSR-20 `ClockInterface` where
   generation needs a controllable wall clock. Keep explicit timestamp inputs
   usable without another clock abstraction and retain the native fast path when
   no clock is supplied. Keep `psr/clock` optional for consumers that use injection;
   include development fixtures compatible with the PHP 8.4 minimum.
-- [ ] Preserve public parameter names and add clock/configuration options at real
+- [x] Preserve public parameter names and add clock/configuration options at real
   existing API boundaries. Never store a request/tenant clock in static globals or
   resolve it repeatedly through a container or runtime singleton.
-- [ ] Read wall time once per logical allocation attempt, then deliberately
+- [x] Read wall time once per logical allocation attempt, then deliberately
   resample after a retry or rollover wait. Revalidate epoch/lifetime, lease and
   rollback conditions for that sample. Pass the computed value through hot
   internal work rather than allocating a date object per bit/codec operation.
-- [ ] Keep monotonic timeout accounting separate from injected wall time. A frozen
+- [x] Keep monotonic timeout accounting separate from injected wall time. A frozen
   test clock must not disable lock/deadline exhaustion or cause an infinite loop.
   Do not substitute Runwire request start time for actual ID generation time.
-- [ ] Add explicit bounded wait/retry policy for coordinated generators and lock
+- [x] Add explicit bounded wait/retry policy for coordinated generators and lock
   acquisition. Cap attempts or elapsed monotonic time, and define a domain failure
   when the budget is exhausted. Combine library limits with the earliest active
   host request/task deadline; retain those limits on synchronous fallback.
-- [ ] Replace TBSL's tight rollback/rollover spin with bounded waiting. Use the
+- [x] Replace TBSL's tight rollback/rollover spin with bounded waiting. Use the
   passed scope's cooperative sleep where available and a bounded native wait
   otherwise. Measure short normal rollover behavior before selecting intervals.
 - [x] Normalize custom epochs at configuration construction into immutable scalar
   milliseconds or immutable date values, and reuse the normalized result.
   Mutating a caller-owned `DateTime` later must not change an existing ID domain.
   Validate supported epoch/range boundaries and preserve parser metadata.
-- [ ] Document the epoch behavior change in the 6.0 migration: construct a new
+- [x] Document the epoch behavior change in the 6.0 migration: construct a new
   config to change domains, retain the old epoch to parse existing IDs, and avoid
   switching a live generator domain by modifying a shared date object.
-- [ ] Use deterministic injected-clock tests for lease boundaries, retry resamples,
+- [x] Use deterministic injected-clock tests for lease boundaries, retry resamples,
   rollback, forward jumps, tick rollover, frozen clocks and request cancellation.
   Retain controlled private-state probes only for unreachable counter boundaries.
 
@@ -433,6 +434,11 @@ RPM/resource budgets. Deliver the profiling decision and reproducible measuremen
 do not assert an improvement solely from historical microsecond timings.
 
 ## Performance and release gates
+
+Current ordinary hosted evidence: Security & Standards run `37563316186` on
+`6b89b29972f43f3e1943d086339e5b18ee711a7d` passed clean install, component
+benchmarks on PHP 8.4/8.5, analysis on PHP 8.4/8.5, and all four stable/lowest QA
+lanes. This is implementation QA evidence, not host-RPM or soak certification.
 
 - [ ] Measure corrected code against tag `5.0` with matching runtimes, dependencies,
   hardware and deployment configuration. Separate pure-generator, filesystem,
@@ -475,14 +481,14 @@ formats explicit. Preserve existing stored-ID decoding and named arguments.
 Raise the production minimum to PHP 8.4 as requested; keep Runwire optional
 despite the aligned PHP requirement.
 
-- [ ] Publish a 5.x → 6.0 migration guide covering mixed-ID ordering, immutable
+- [x] Publish a 5.x → 6.0 migration guide covering mixed-ID ordering, immutable
   epochs, secure sequence-state locations, wait budgets, explicit format/lease
   selection, the PHP 8.4 minimum, optional dependency installation and
   passed-instance composition.
-- [ ] Inventory public call signatures and defaults against tag `5.0`; verify
+- [x] Inventory public call signatures and defaults against tag `5.0`; verify
   positional and named argument use, helpers, facade calls and value objects.
   Document every intentional major change and keep unrelated contracts stable.
-- [ ] Add consumer fixtures for old stored IDs, old configs/helpers, direct and
+- [x] Add consumer fixtures for old stored IDs, old configs/helpers, direct and
   intermediary Runwire forwarding, and applications without optional packages.
 - [ ] Require completion or an explicit measured acceptance decision for every
   included item. A release is blocked while any required implementation,
