@@ -24,6 +24,7 @@ the canonical input and restore the canonical output type:
 - ``ULID::toBase($ulid, $base)`` / ``ULID::fromBase($encoded, $base)``
 - ``Snowflake::toBase($id, $base)`` / ``Snowflake::fromBase($encoded, $base)``
 - ``Sonyflake::toBase($id, $base)`` / ``Sonyflake::fromBase($encoded, $base)``
+- ``Randflake::toBase($id, $base, $format)`` / ``Randflake::fromBase($encoded, $base, $format)``
 - ``TBSL::toBase($id, $base)`` / ``TBSL::fromBase($encoded, $base)``
 
 .. code-block:: php
