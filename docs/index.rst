@@ -15,7 +15,7 @@ It supports:
 - TBSL
 - NanoID and CUID2
 - KSUID and XID
-- RandomId and NanoID
+- RandomId
 - Opaque and deterministic IDs
 
 .. toctree::
