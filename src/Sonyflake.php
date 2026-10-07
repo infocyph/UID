@@ -28,6 +28,8 @@ final class Sonyflake
 
     private const int MACHINE_BITS = 16;
 
+    private const int MAX_PROVIDER_DOMAINS = 1024;
+
     private const int SEQUENCE_BITS = 8;
 
     private const int UPSTREAM_DEFAULT_EPOCH = 1_409_529_600_000;
@@ -320,17 +322,8 @@ final class Sonyflake
         self::assertMachineId($machineId);
 
         $provider = self::resolveSequenceProvider($sequenceProvider);
-        self::$lastWallTimeByProvider ??= new \WeakMap();
-
-        /** @var \ArrayObject<string, int>|null $providerState */
-        $providerState = self::$lastWallTimeByProvider[$provider] ?? null;
-        if ($providerState === null) {
-            /** @var \ArrayObject<string, int> $providerState */
-            $providerState = new \ArrayObject();
-            self::$lastWallTimeByProvider[$provider] = $providerState;
-        }
-
         $domainKey = $format->value . ':' . $startTimestamp . ':' . $machineId;
+        $providerState = self::providerState($provider, $domainKey);
         $currentTime = self::resolveWallTime(
             self::nowMilliseconds($runtime),
             $providerState[$domainKey] ?? 0,
@@ -389,6 +382,30 @@ final class Sonyflake
             | ($machineId << self::SEQUENCE_BITS)
             | $sequence
         );
+    }
+
+    /**
+     * @return \ArrayObject<string, int>
+     */
+    private static function providerState(
+        SequenceProviderInterface $provider,
+        string $domainKey,
+    ): \ArrayObject {
+        self::$lastWallTimeByProvider ??= new \WeakMap();
+
+        /** @var \ArrayObject<string, int>|null $state */
+        $state = self::$lastWallTimeByProvider[$provider] ?? null;
+        if ($state === null) {
+            /** @var \ArrayObject<string, int> $state */
+            $state = new \ArrayObject();
+            self::$lastWallTimeByProvider[$provider] = $state;
+        }
+
+        if (!isset($state[$domainKey]) && count($state) >= self::MAX_PROVIDER_DOMAINS) {
+            throw new SonyflakeException('Sonyflake provider domain limit exceeded');
+        }
+
+        return $state;
     }
 
     private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface

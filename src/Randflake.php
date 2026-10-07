@@ -42,6 +42,8 @@ final class Randflake
 
     public const int TIMESTAMP_BITS = 30;
 
+    private const int MAX_PROVIDER_DOMAINS = 1024;
+
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, array{timestamp:int,sequence:int}>>|null */
     private static ?\WeakMap $lastTimestampByProvider = null;
 
@@ -425,8 +427,8 @@ final class Randflake
         $secret = self::validateSecret($secret);
 
         $provider = self::resolveSequenceProvider($sequenceProvider);
-        $state = self::providerState($provider);
         $domainKey = $format->value . ':' . $nodeId;
+        $state = self::providerState($provider, $domainKey);
         $now = self::nowSeconds($runtime);
         self::assertGenerationTime($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive);
 
@@ -564,19 +566,23 @@ final class Randflake
     /**
      * @return \ArrayObject<string, array{timestamp:int,sequence:int}>
      */
-    private static function providerState(SequenceProviderInterface $provider): \ArrayObject
-    {
+    private static function providerState(
+        SequenceProviderInterface $provider,
+        string $domainKey,
+    ): \ArrayObject {
         self::$lastTimestampByProvider ??= new \WeakMap();
 
         /** @var \ArrayObject<string, array{timestamp:int,sequence:int}>|null $state */
         $state = self::$lastTimestampByProvider[$provider] ?? null;
-        if ($state !== null) {
-            return $state;
+        if ($state === null) {
+            /** @var \ArrayObject<string, array{timestamp:int,sequence:int}> $state */
+            $state = new \ArrayObject();
+            self::$lastTimestampByProvider[$provider] = $state;
         }
 
-        /** @var \ArrayObject<string, array{timestamp:int,sequence:int}> $state */
-        $state = new \ArrayObject();
-        self::$lastTimestampByProvider[$provider] = $state;
+        if (!isset($state[$domainKey]) && count($state) >= self::MAX_PROVIDER_DOMAINS) {
+            throw new RandflakeException('randflake: provider domain limit exceeded');
+        }
 
         return $state;
     }

@@ -31,6 +31,8 @@ final class Snowflake
 
     private const int TIMESTAMP_BITS = 41;
 
+    private const int MAX_PROVIDER_DOMAINS = 1024;
+
     private const int WAIT_TIMEOUT_MICROS = 1_000_000;
 
     private const int WORKER_BITS = 5;
@@ -267,8 +269,7 @@ final class Snowflake
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
         $sequenceKey = ($datacenter << self::WORKER_BITS) | $workerId;
         $stateKey = $startTimestamp . ':' . $sequenceKey;
-        self::$lastStateByProvider ??= new \WeakMap();
-        $providerState = self::$lastStateByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
+        $providerState = self::providerState($resolvedSequenceProvider, $stateKey);
         $maxSequence = -1 ^ (-1 << self::SEQUENCE_BITS);
         $sequenceType = $startTimestamp === self::DEFAULT_EPOCH
             ? 'snowflake'
@@ -378,6 +379,30 @@ final class Snowflake
     private static function nowMilliseconds(?GenerationContext $runtime): int
     {
         return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
+    }
+
+    /**
+     * @return \ArrayObject<string, array{timestamp:int, sequence:int}>
+     */
+    private static function providerState(
+        SequenceProviderInterface $provider,
+        string $stateKey,
+    ): \ArrayObject {
+        self::$lastStateByProvider ??= new \WeakMap();
+
+        /** @var \ArrayObject<string, array{timestamp:int, sequence:int}>|null $state */
+        $state = self::$lastStateByProvider[$provider] ?? null;
+        if ($state === null) {
+            /** @var \ArrayObject<string, array{timestamp:int, sequence:int}> $state */
+            $state = new \ArrayObject();
+            self::$lastStateByProvider[$provider] = $state;
+        }
+
+        if (!isset($state[$stateKey]) && count($state) >= self::MAX_PROVIDER_DOMAINS) {
+            throw new SnowflakeException('Snowflake provider domain limit exceeded');
+        }
+
+        return $state;
     }
 
     private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
