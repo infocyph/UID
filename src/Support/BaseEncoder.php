@@ -53,14 +53,11 @@ final class BaseEncoder
         return self::ALPHABETS[$base] ?? throw new InvalidArgumentException('Unsupported base: ' . $base);
     }
 
-    /**
-     * @param list<int> $bytes
-     */
     private static function appendDigit(array &$bytes, int $base, int $digit): void
     {
         $carry = $digit;
         for ($index = count($bytes) - 1; $index >= 0; --$index) {
-            $value = ($bytes[$index] * $base) + $carry;
+            $value = (((int) $bytes[$index]) * $base) + $carry;
             $bytes[$index] = $value & 0xff;
             $carry = $value >> 8;
         }
@@ -78,14 +75,11 @@ final class BaseEncoder
         }
     }
 
-    /**
-     * @param list<int> $bytes
-     */
     private static function byteString(array $bytes): string
     {
         $decoded = '';
         foreach ($bytes as $byte) {
-            $decoded .= chr($byte & 0xff);
+            $decoded .= chr(((int) $byte) & 0xff);
         }
 
         return $decoded;
