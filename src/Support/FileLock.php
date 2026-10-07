@@ -220,6 +220,7 @@ final class FileLock
             return $handle;
         } catch (\Throwable $exception) {
             fclose($handle);
+
             throw $exception;
         }
     }

@@ -203,7 +203,8 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      */
-    public static function generateWithConfig(RandflakeConfig $config): string {
+    public static function generateWithConfig(RandflakeConfig $config): string
+    {
         return self::generateInternal(
             $config->nodeId,
             $config->leaseStart,
@@ -508,7 +509,8 @@ final class Randflake
     /**
      * @param array{timestamp:int,sequence:int}|null $last
      */
-    private static function normalizeAllocation(int $allocation, ?array $last, int $now): int {
+    private static function normalizeAllocation(int $allocation, ?array $last, int $now): int
+    {
         if ($allocation < 1) {
             throw new RandflakeException('randflake: sequence provider must return a positive integer');
         }
@@ -526,11 +528,13 @@ final class Randflake
         return $sequence;
     }
 
-    private static function nowSeconds(?GenerationContext $runtime): int {
+    private static function nowSeconds(?GenerationContext $runtime): int
+    {
         return $runtime?->nowSeconds() ?? time();
     }
 
-    private static function packPayload(int $timestamp, int $nodeId, int $sequence): string {
+    private static function packPayload(int $timestamp, int $nodeId, int $sequence): string
+    {
         $timestampPart = $timestamp - self::EPOCH_OFFSET;
         $high = (($timestampPart & self::MAX_TIMESTAMP_PART) << 2) | (($nodeId >> 15) & 0x03);
         $low = (($nodeId & 0x7fff) << 17) | ($sequence & self::MAX_SEQUENCE);
@@ -541,7 +545,8 @@ final class Randflake
     /**
      * Small secret-key permutation over 64-bit blocks to protect payload fields.
      */
-    private static function permute(string $block, string $secret, bool $decrypt): string {
+    private static function permute(string $block, string $secret, bool $decrypt): string
+    {
         $parts = unpack('Nleft/Nright', $block);
         $left = self::unpackedInt($parts, 'left');
         $right = self::unpackedInt($parts, 'right');
@@ -591,11 +596,13 @@ final class Randflake
         return $state;
     }
 
-    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface {
+    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
+    {
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider(reservationSize: 64);
     }
 
-    private static function roundFunction(int $value, int $key): int {
+    private static function roundFunction(int $value, int $key): int
+    {
         $mask = 0xffffffff;
         $value &= $mask;
         $leftRot = (($value << 5) | ($value >> 27)) & $mask;
@@ -610,7 +617,8 @@ final class Randflake
     /**
      * @return array<int, int>
      */
-    private static function roundKeys(string $secret): array {
+    private static function roundKeys(string $secret): array
+    {
         $fingerprint = hash('sha256', $secret);
         if (isset(self::$roundKeyCache[$fingerprint])) {
             return self::$roundKeyCache[$fingerprint];
@@ -630,7 +638,10 @@ final class Randflake
         return self::$roundKeyCache[$fingerprint] = $keys;
     }
 
-    private static function sparx(#[\SensitiveParameter] string $secret): Sparx64 {
+    private static function sparx(
+        #[\SensitiveParameter]
+        string $secret,
+    ): Sparx64 {
         $fingerprint = hash('sha256', $secret);
         if (isset(self::$sparxCache[$fingerprint])) {
             return self::$sparxCache[$fingerprint];
@@ -647,7 +658,8 @@ final class Randflake
      * @param array<array-key, mixed>|false $parts
      * @throws RandflakeException
      */
-    private static function unpackedInt(array|false $parts, string $key): int {
+    private static function unpackedInt(array|false $parts, string $key): int
+    {
         if ($parts === false) {
             throw new RandflakeException('randflake: invalid id');
         }
@@ -663,7 +675,8 @@ final class Randflake
     /**
      * @return array{0:int,1:int,2:int}
      */
-    private static function unpackPayload(string $payload): array {
+    private static function unpackPayload(string $payload): array
+    {
         $parts = unpack('Nhigh/Nlow', $payload);
         $high = self::unpackedInt($parts, 'high');
         $low = self::unpackedInt($parts, 'low');
@@ -705,7 +718,8 @@ final class Randflake
     /**
      * @throws RandflakeException
      */
-    private static function validateNode(int $nodeId): void {
+    private static function validateNode(int $nodeId): void
+    {
         if ($nodeId < 0 || $nodeId > self::MAX_NODE) {
             throw new RandflakeException('randflake: invalid node id, node id must be between 0 and 131071');
         }
@@ -714,7 +728,10 @@ final class Randflake
     /**
      * @throws RandflakeException
      */
-    private static function validateSecret(#[\SensitiveParameter] string $secret): string {
+    private static function validateSecret(
+        #[\SensitiveParameter]
+        string $secret,
+    ): string {
         if (strlen($secret) !== 16) {
             throw new RandflakeException('randflake: invalid secret, secret must be 16 bytes long');
         }
