@@ -20,6 +20,8 @@ All-in-one unique ID toolkit for PHP.
 - Value objects and comparator utilities
 - Binary conversion and base encoders (`10`, `16`, `32`, `36`, `58`, `62`)
 - Pluggable sequence providers (filesystem, memory, PSR-16 cache, callback)
+- Explicit legacy/upstream Sonyflake and Randflake compatibility modes
+- Optional PSR-20 clocks and Runwire 2.1.1+ cooperative wait integration
 
 ## Requirements
 
@@ -76,7 +78,7 @@ $decoded = UUID::fromBase($base58, 58);
 ```
 
 The shared byte-level encoder is available as
-`Infocyph\UID\Support\BaseEncoder` for bases `16`, `32`, `36`, `58`, and `62`.
+`Infocyph\UID\Support\BaseEncoder` for bases `10`, `16`, `32`, `36`, `58`, and `62`.
 
 ## References
 
