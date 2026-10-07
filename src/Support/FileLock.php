@@ -117,54 +117,45 @@ final class FileLock
         );
 
         try {
-            return self::openVerifiedWithHandler($path, $errorMessage, $ownerId);
+            // Refresh metadata; handle identity checks also fence cached path resolution.
+            clearstatcache();
+
+            try {
+                $before = lstat($path);
+            } catch (ErrorException) {
+                $before = false;
+            }
+
+            if ($before !== false) {
+                self::assertSafeMetadata($before, $errorMessage, $ownerId);
+                $handle = fopen($path, 'r+b');
+                is_resource($handle) || throw new FileLockException($errorMessage);
+
+                return self::verifyHandle($path, $handle, $before, $errorMessage, $ownerId);
+            }
+
+            try {
+                $handle = fopen($path, 'x+b');
+            } catch (ErrorException) {
+                $before = lstat($path);
+                $before !== false || throw new FileLockException($errorMessage);
+                self::assertSafeMetadata($before, $errorMessage, $ownerId);
+
+                $handle = fopen($path, 'r+b');
+                is_resource($handle) || throw new FileLockException($errorMessage);
+
+                return self::verifyHandle($path, $handle, $before, $errorMessage, $ownerId);
+            }
+
+            is_resource($handle) || throw new FileLockException($errorMessage);
+            chmod($path, 0600) || throw new FileLockException($errorMessage);
+
+            return self::verifyHandle($path, $handle, null, $errorMessage, $ownerId);
         } catch (ErrorException $exception) {
             throw new FileLockException($errorMessage, 0, $exception);
         } finally {
             restore_error_handler();
         }
-    }
-
-    /**
-     * @return resource
-     * @throws FileLockException
-     * @throws ErrorException
-     */
-    private static function openVerifiedWithHandler(string $path, string $errorMessage, ?int $ownerId)
-    {
-        clearstatcache(true, $path);
-
-        try {
-            $before = lstat($path);
-        } catch (ErrorException) {
-            $before = false;
-        }
-
-        if ($before !== false) {
-            self::assertSafeMetadata($before, $errorMessage, $ownerId);
-            $handle = fopen($path, 'r+b');
-            is_resource($handle) || throw new FileLockException($errorMessage);
-
-            return self::verifyHandle($path, $handle, $before, $errorMessage, $ownerId);
-        }
-
-        try {
-            $handle = fopen($path, 'x+b');
-        } catch (ErrorException) {
-            $before = lstat($path);
-            $before !== false || throw new FileLockException($errorMessage);
-            self::assertSafeMetadata($before, $errorMessage, $ownerId);
-
-            $handle = fopen($path, 'r+b');
-            is_resource($handle) || throw new FileLockException($errorMessage);
-
-            return self::verifyHandle($path, $handle, $before, $errorMessage, $ownerId);
-        }
-
-        is_resource($handle) || throw new FileLockException($errorMessage);
-        chmod($path, 0600) || throw new FileLockException($errorMessage);
-
-        return self::verifyHandle($path, $handle, null, $errorMessage, $ownerId);
     }
 
     /**
@@ -176,7 +167,7 @@ final class FileLock
     {
         try {
             $after = fstat($handle);
-            clearstatcache(true, $path);
+            clearstatcache();
             $pathState = lstat($path);
             if ($after === false || $pathState === false) {
                 throw new FileLockException($errorMessage);

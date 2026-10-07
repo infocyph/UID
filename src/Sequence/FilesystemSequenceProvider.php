@@ -102,7 +102,9 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         $reservedEnd = $allocation + $reservationOffset;
         $runtime?->assertActive();
         $this->writeState($handle, $timestamp . ',' . $reservedEnd, $oldLength);
-        $this->storeReservation($fileLocation, $timestamp, $allocation, $reservedEnd);
+        if ($this->reservationSize > 1) {
+            $this->storeReservation($fileLocation, $timestamp, $allocation, $reservedEnd);
+        }
 
         return $allocation;
     }
@@ -179,10 +181,6 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         int $allocation,
         int $reservedEnd,
     ): void {
-        if ($this->reservationSize === 1) {
-            return;
-        }
-
         if (!isset($this->reservations[$fileLocation]) && count($this->reservations) >= self::MAX_RESERVATIONS) {
             throw new FileLockException('Sequence reservation domain limit exceeded');
         }

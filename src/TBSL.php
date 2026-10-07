@@ -235,7 +235,7 @@ final class TBSL
         bool $enableSequence,
         int $timeSequence,
         ClockBackwardPolicy $clockBackwardPolicy,
-        ?SequenceProviderInterface $sequenceProvider = null,
+        SequenceProviderInterface $sequenceProvider,
         ?GenerationContext $runtime = null,
     ): array {
         if (!$enableSequence) {

@@ -88,6 +88,51 @@ test('filesystem sequence rejects symlink state without touching its target', fu
     }
 });
 
+test('cached parent resolution cannot allocate through an externally replaced directory link', function (): void {
+    expect(function_exists('pcntl_fork'))->toBeTrue();
+    $directory = sys_get_temp_dir() . '/uid-parent-race-' . bin2hex(random_bytes(6));
+    mkdir($directory, 0700);
+    mkdir($directory . '/first', 0700);
+    mkdir($directory . '/second', 0700);
+    $first = $directory . '/first/uid-test-1.seq';
+    $second = $directory . '/second/uid-test-1.seq';
+    $alias = $directory . '/current';
+    $path = $alias . '/uid-test-1.seq';
+    file_put_contents($first, '100,1');
+    file_put_contents($second, '100,100');
+    symlink($directory . '/first', $alias);
+    $provider = new FilesystemSequenceProvider($alias);
+    expect(realpath($path))->toBe($first);
+    lstat($path);
+
+    $pid = pcntl_fork();
+    if ($pid < 0) {
+        throw new RuntimeException('Unable to fork directory replacement fixture');
+    }
+    if ($pid === 0) {
+        unlink($alias);
+        symlink($directory . '/second', $alias);
+        exit(0);
+    }
+    pcntl_waitpid($pid, $status);
+
+    try {
+        try {
+            expect($provider->next('test', 1, 100))->toBe(101);
+        } catch (FileLockException) {
+            expect(file_get_contents($second))->toBe('100,100');
+        }
+        expect(file_get_contents($first))->toBe('100,1');
+    } finally {
+        unlink($alias);
+        unlink($first);
+        unlink($second);
+        rmdir($directory . '/first');
+        rmdir($directory . '/second');
+        rmdir($directory);
+    }
+});
+
 test('filesystem sequence fails closed at integer exhaustion', function (): void {
     $directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uid-safety-' . bin2hex(random_bytes(6));
     mkdir($directory, 0700);

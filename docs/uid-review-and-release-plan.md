@@ -8,6 +8,80 @@ Review date: 2026-10-06. Reviewed revision: `322c9d9c033b16e4a47ff88c156ce230e3c
 Latest local release tag: `5.0`, at `4a95eb8058e73c72e74e44fedd25755198899eae`.
 Status: sections A–F implemented and regression-covered; section G, host performance, soak, and exact-final release acceptance remain open.
 
+## Latest gate investigation (2026-10-07)
+
+Rechecked exact committed revision
+`d3858dc537d08710502f3222ab9f1155bd7def30`. Security & Standards run
+`37588152700` passed. Release Acceptance run `37588152012` passed diagnostics,
+the five-minute soak and eleven of twelve host-performance lanes. The single
+remaining failed job is `host-performance (snowflake-contended, 5, 1)`:
+
+| Metric | Tag 5.0 | Candidate |
+| --- | ---: | ---: |
+| Median successful RPM | 259926.06731 | 252941.12415 |
+| Trial spread | 0.52804% | 0.87610% |
+| p99 latency | 3.489 ms | 3.376 ms |
+
+Both sides were stable and recorded zero failed responses, timeouts and
+within-response duplicates. The 2.69% RPM regression exceeds the unchanged 2%
+budget. This supersedes the three failed lanes on the previous revision below.
+
+The working-tree fix retains the original lock-wait policy and clears the PHP
+file-status cache before both pathname checks without evicting realpath entries.
+Fresh `lstat()` ownership/type checks and pre-open/handle/post-open inode matching
+still fence stale path resolution. A process fixture replaces a primed parent
+directory symlink and checks that allocation either uses the current file or
+fails closed, leaving the old target untouched. Cross-process uniqueness
+coverage now exercises reservation sizes one and sixteen.
+
+Remove redundant internal provider resolution after generator entry points have
+already resolved the provider, skip reservation bookkeeping calls when disabled,
+and keep opening/error handling together without an extra wrapper call. The
+public provider/generator signatures and passed-context dispatch are unchanged.
+
+System-call profiling of 10,000 allocations reduced `newfstatat` calls from
+30,726 to 20,728 while retaining both fresh pathname checks and handle checks.
+The [PHP manual](https://www.php.net/manual/en/function.clearstatcache.php)
+distinguishes file-status invalidation from optional realpath-cache eviction.
+Sustained measurements and final-revision hosted confirmation remain required.
+
+An initial lock-backoff experiment passed sustained concurrency-five RPM but
+regressed at concurrency fifty, so it was discarded. Keep the existing 2% budget
+and require all affected workloads to pass; one improved lane cannot excuse
+a regression in another. Keep this plan until final-revision acceptance closes
+the other resource/lifecycle coverage requirements below.
+
+Local PHPForge processors, the detailed suite and final release guard passed on
+the selected implementation: 229 tests / 4,094 assertions, zero dependency
+advisories, and unchanged static/complexity/security gates.
+
+Final selected-source local host measurements used PHP 8.5.4, OPcache enabled,
+JIT disabled, 64 CLI server children, production authoritative autoloaders and
+four 60-second trials per release in balanced AB/BA order:
+
+| Workload | Tag 5.0 RPM | Working-copy RPM | Regression | 2% gate |
+| --- | ---: | ---: | ---: | --- |
+| Snowflake contention, concurrency 5 | 523986.55703 | 516127.45456 | 1.50% | Pass |
+| Snowflake contention, concurrency 50 | 641233.69239 | 620850.10493 | 3.18% | Fail |
+
+Both pairs passed result-contract validation and reported stable trials and zero
+failed responses, timeouts or within-response duplicates. Baseline/candidate
+spreads were 1.44641%/0.87400% at concurrency five and 0.78674%/0.98569% at fifty.
+Corresponding p99 values were 2.511/2.529 ms and 13.528/12.547 ms. PHPForge's
+unchanged stable-environment comparison passed concurrency five and rejected
+concurrency fifty; lower p99 does not excuse the RPM failure.
+
+The committed revision's hosted PHP 8.4 concurrency-fifty lane passed at
+184408.87 → 183652.12 RPM (0.41% regression). A separate short local comparison
+of exact `d3858dc` production source against the working copy measured
+634802.05397 → 630573.07866 RPM (0.67% regression, four ten-second trials per
+source). This supporting diagnostic does not certify a sustained 5.0 comparison
+or establish that the PHP 8.5 regression is resolved. Keep local and hosted
+runtime evidence separate and require exact-final-commit hosted confirmation.
+
+The selected production source also passed the no-optional-package smoke and
+strict Sphinx build. Changes remain uncommitted; no release or tag was published.
+
 ## 2026-10-07 cross-check
 
 Rechecked committed revision `5f62244d610ae77386d5d193dd86f1780eb9af8b`
