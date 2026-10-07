@@ -4,6 +4,58 @@ declare(strict_types=1);
 
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
+use Infocyph\UID\Support\FileLock;
+
+test('lock identity verification refreshes cached pathname metadata after external replacement', function (): void {
+    expect(function_exists('pcntl_fork'))->toBeTrue();
+    $directory = sys_get_temp_dir() . '/uid-lock-race-' . bin2hex(random_bytes(6));
+    mkdir($directory, 0700);
+    $path = $directory . '/state';
+    $target = $directory . '/target';
+    file_put_contents($path, '100,1');
+    file_put_contents($target, 'unchanged');
+    $handle = fopen($path, 'r+b');
+    $before = null;
+    $verify = Closure::bind(
+        static function () use ($path, $handle, &$before) {
+            return FileLock::verifyHandle($path, $handle, $before, 'replaced lock', function_exists('posix_geteuid') ? posix_geteuid() : null);
+        },
+        null,
+        FileLock::class,
+    );
+    expect($verify)->toBeInstanceOf(Closure::class);
+    // Prime PHP's path cache after loading the verifier and assertion machinery.
+    $before = lstat($path);
+    $pid = pcntl_fork();
+    if ($pid < 0) {
+        throw new RuntimeException('Unable to fork pathname replacement fixture');
+    }
+    if ($pid === 0) {
+        rename($path, $path . '.original');
+        symlink($target, $path);
+        exit(0);
+    }
+    pcntl_waitpid($pid, $status);
+
+    try {
+        $failure = null;
+        try {
+            $verify();
+        } catch (Throwable $exception) {
+            $failure = $exception;
+        }
+        expect($failure)->toBeInstanceOf(FileLockException::class)
+            ->and(file_get_contents($target))->toBe('unchanged');
+    } finally {
+        if (is_resource($handle)) {
+            fclose($handle);
+        }
+        unlink($path);
+        unlink($path . '.original');
+        unlink($target);
+        rmdir($directory);
+    }
+});
 
 test('filesystem sequence rejects symlink state without touching its target', function (): void {
     if (PHP_OS_FAMILY === 'Windows') {

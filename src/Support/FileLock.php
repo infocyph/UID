@@ -23,6 +23,7 @@ final class FileLock
         string $lockErrorMessage,
         ?GenerationContext $runtime = null,
     ) {
+        $runtime?->assertActive();
         $handle = self::openVerified($path, $openErrorMessage);
         $wouldBlock = 0;
         if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
@@ -34,15 +35,10 @@ final class FileLock
             throw new FileLockException($lockErrorMessage);
         }
 
-        $timeout = $timeoutMicros ?? self::runtimeTimeout($runtime);
-        $deadline = hrtime(true) + ($timeout * 1_000);
-        $runtimeDeadline = $runtime?->runwire?->deadlineNanoseconds();
-        if ($runtimeDeadline !== null) {
-            $deadline = min($deadline, $runtimeDeadline);
-        }
-
         try {
-            do {
+            $deadline = self::lockDeadline($timeoutMicros, $runtime);
+
+            while (hrtime(true) < $deadline) {
                 if ($runtime !== null) {
                     $runtime->sleepMicroseconds(1_000);
                 } else {
@@ -56,7 +52,7 @@ final class FileLock
                 if ($wouldBlock !== 1) {
                     throw new FileLockException($lockErrorMessage);
                 }
-            } while (hrtime(true) < $deadline);
+            }
         } catch (\Throwable $exception) {
             fclose($handle);
 
@@ -94,6 +90,19 @@ final class FileLock
         }
     }
 
+    private static function lockDeadline(?int $timeoutMicros, ?GenerationContext $runtime): int
+    {
+        $timeout = $timeoutMicros ?? $runtime->waitTimeoutMicros ?? self::DEFAULT_TIMEOUT_MICROS;
+        if ($runtime !== null) {
+            $timeout = min($timeout, $runtime->waitTimeoutMicros);
+        }
+        $now = hrtime(true);
+        $deadline = $now + (min($timeout, intdiv(PHP_INT_MAX - $now, 1_000)) * 1_000);
+        $runtimeDeadline = $runtime?->runwire?->deadlineNanoseconds();
+
+        return $runtimeDeadline === null ? $deadline : min($deadline, $runtimeDeadline);
+    }
+
     /**
      * @return resource
      * @throws FileLockException
@@ -123,6 +132,8 @@ final class FileLock
      */
     private static function openVerifiedWithHandler(string $path, string $errorMessage, ?int $ownerId)
     {
+        clearstatcache(true, $path);
+
         try {
             $before = lstat($path);
         } catch (ErrorException) {
@@ -156,13 +167,6 @@ final class FileLock
         return self::verifyHandle($path, $handle, null, $errorMessage, $ownerId);
     }
 
-    private static function runtimeTimeout(?GenerationContext $runtime): int
-    {
-        return $runtime instanceof GenerationContext
-            ? $runtime->waitTimeoutMicros
-            : self::DEFAULT_TIMEOUT_MICROS;
-    }
-
     /**
      * @param resource $handle
      * @param array<string|int, int>|null $before
@@ -172,6 +176,7 @@ final class FileLock
     {
         try {
             $after = fstat($handle);
+            clearstatcache(true, $path);
             $pathState = lstat($path);
             if ($after === false || $pathState === false) {
                 throw new FileLockException($errorMessage);

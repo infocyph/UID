@@ -102,8 +102,13 @@ trait GetSequence
         int $machineId,
         string $type,
         ?SequenceProviderInterface $provider = null,
+        ?GenerationContext $runtime = null,
     ): int {
         $provider ??= self::$sequenceProvider ??= new FilesystemSequenceProvider();
+
+        if ($runtime !== null && ($provider instanceof FilesystemSequenceProvider || $provider instanceof PsrSimpleCacheSequenceProvider)) {
+            return $provider->next($type, $machineId, $dateTime, $runtime);
+        }
 
         return $provider->next($type, $machineId, $dateTime);
     }

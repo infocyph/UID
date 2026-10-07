@@ -107,6 +107,7 @@ final class ULID
             }
 
             $time = self::waitForNextMillisecond(self::$lastGenTime);
+            self::assertTimestamp($time);
             self::$lastGenTime = $time;
             $timeChars = self::encodeTime($time);
             self::resetRandomState();
@@ -319,7 +320,14 @@ final class ULID
 
     private static function waitForNextMillisecond(int $lastTimestamp): int
     {
+        if ($lastTimestamp >= self::MAX_TIMESTAMP) {
+            throw new ULIDException('ULID timestamp exhausted');
+        }
+        $deadline = hrtime(true) + 1_000_000_000;
         do {
+            if (hrtime(true) >= $deadline) {
+                throw new ULIDException('Timed out waiting for the next ULID timestamp');
+            }
             usleep(1000);
             $next = (int) floor(microtime(true) * 1000);
         } while ($next <= $lastTimestamp);

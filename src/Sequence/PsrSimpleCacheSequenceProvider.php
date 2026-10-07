@@ -50,21 +50,24 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
     /**
      * @throws FileLockException
      */
-    public function next(string $type, int $machineId, int $timestamp): int
+    public function next(string $type, int $machineId, int $timestamp, ?GenerationContext $runtime = null): int
     {
+        $this->runtime?->assertActive();
+        $runtime ??= $this->runtime;
+        $runtime?->assertActive();
         $key = $this->key($type, $machineId);
         if (!isset($this->observedState[$key]) && count($this->observedState) >= self::MAX_OBSERVED_DOMAINS) {
             throw new FileLockException('Observed PSR-16 sequence domain limit exceeded');
         }
 
         if ($this->synchronizer !== null) {
-            return $this->nextSynchronized($this->synchronizer, $key, $timestamp);
+            return $this->nextSynchronized($this->synchronizer, $key, $timestamp, $runtime);
         }
 
-        $lock = $this->acquireLock($key);
+        $lock = $this->acquireLock($key, $runtime);
 
         try {
-            return $this->nextSafely($key, $timestamp);
+            return $this->nextSafely($key, $timestamp, $runtime);
         } finally {
             flock($lock, LOCK_UN);
             fclose($lock);
@@ -117,7 +120,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
      * @return resource
      * @throws FileLockException
      */
-    private function acquireLock(string $key)
+    private function acquireLock(string $key, ?GenerationContext $runtime)
     {
         $lockFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uid-cache-lock-' . hash('sha256', $key) . '.lck';
 
@@ -126,7 +129,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
             $this->waitTime * $this->maxAttempts,
             'Unable to open sequence cache lock file: ' . $lockFile,
             'Unable to acquire sequence cache lock for key: ' . $key,
-            $this->runtime,
+            $runtime,
         );
     }
 
@@ -144,8 +147,9 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         return $key;
     }
 
-    private function nextFromCacheState(string $key, int $timestamp): int
+    private function nextFromCacheState(string $key, int $timestamp, ?GenerationContext $runtime): int
     {
+        $runtime?->assertActive();
         $state = $this->normalizeState($this->cache->get($key), $key);
         $observed = $this->observedState[$key] ?? null;
         if ($state === null && $observed !== null) {
@@ -155,6 +159,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         self::assertNotRegressed($state, $observed, $key);
         $sequence = self::nextSequence($state, $timestamp, $key);
         $nextState = ['timestamp' => $timestamp, 'sequence' => $sequence];
+        $runtime?->assertActive();
         if (!$this->cache->set($key, $nextState)) {
             throw new FileLockException('Failed to persist sequence state for key: ' . $key);
         }
@@ -164,27 +169,31 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         return $sequence;
     }
 
-    private function nextSafely(string $key, int $timestamp): int
+    private function nextSafely(string $key, int $timestamp, ?GenerationContext $runtime): int
     {
         try {
-            return $this->nextFromCacheState($key, $timestamp);
+            return $this->nextFromCacheState($key, $timestamp, $runtime);
         } catch (FileLockException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
+            $runtime?->assertActive();
+
             throw $this->storageFailure($key, $exception);
         }
     }
 
-    private function nextSynchronized(Closure $synchronizer, string $key, int $timestamp): int
+    private function nextSynchronized(Closure $synchronizer, string $key, int $timestamp, ?GenerationContext $runtime): int
     {
         try {
             $sequence = $synchronizer(
                 $key,
-                fn(): int => $this->nextFromCacheState($key, $timestamp),
+                fn(): int => $this->nextFromCacheState($key, $timestamp, $runtime),
             );
         } catch (FileLockException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
+            $runtime?->assertActive();
+
             throw $this->storageFailure($key, $exception);
         }
 

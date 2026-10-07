@@ -34,7 +34,13 @@ final readonly class GenerationContext
             return (int) floor(microtime(true) * 1_000_000);
         }
 
-        return (int) $this->clock->now()->format('Uu');
+        $now = $this->clock->now();
+        $seconds = $now->getTimestamp();
+        if ($seconds < 0 || $seconds > intdiv(PHP_INT_MAX - 999_999, 1_000_000)) {
+            throw new InvalidArgumentException('Generation clock must fit in non-negative integer microseconds');
+        }
+
+        return ($seconds * 1_000_000) + (int) $now->format('u');
     }
 
     public function nowMilliseconds(): int
@@ -62,7 +68,9 @@ final readonly class GenerationContext
 
     public function waitDeadlineNanoseconds(): int
     {
-        $deadline = hrtime(true) + ($this->waitTimeoutMicros * 1_000);
+        $now = hrtime(true);
+        $timeout = min($this->waitTimeoutMicros, intdiv(PHP_INT_MAX - $now, 1_000));
+        $deadline = $now + ($timeout * 1_000);
         $runwireDeadline = $this->runwire?->deadlineNanoseconds();
 
         return $runwireDeadline === null ? $deadline : min($deadline, $runwireDeadline);

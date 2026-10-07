@@ -194,3 +194,61 @@ test('Runwire bindings reject scopes after the host closes them', function (): v
         ->and(fn(): RunwireBinding => new RunwireBinding($host, $request, $capturedScope))
         ->toThrow(LogicException::class, 'already closed');
 });
+
+test('contended locks suspend cooperatively and stop on host cancellation', function (bool $cancel): void {
+    $directory = sys_get_temp_dir() . '/uid-cooperative-' . bin2hex(random_bytes(6));
+    mkdir($directory, 0700);
+    $path = $directory . '/uid-snowflake-0.seq';
+    file_put_contents($path, '1700000000000,7');
+    $held = fopen($path, 'r+b');
+    expect(flock($held, LOCK_EX))->toBeTrue();
+    $host = RuntimeContext::fromCapabilities(new RuntimeCapabilities(
+        driver: RuntimeDriver::NATIVE,
+        runwireLoopAvailable: true,
+        supportsRunwireCoroutines: true,
+    ), 'uid-contended', concurrent: true);
+    $request = RequestContext::create($host);
+    $coroutines = new CoroutineRuntime();
+    $ranOtherTask = false;
+
+    $allocate = function () use ($coroutines, $request, $host, $held, $directory, $cancel, &$ranOtherTask): string {
+        return $coroutines->runRequest($request, function (CoroutineScope $scope) use ($request, $host, $held, $directory, $cancel, &$ranOtherTask): string {
+            $scope->spawn(function () use ($scope, $request, $held, $cancel, &$ranOtherTask): void {
+                $scope->sleep(0.005);
+                $ranOtherTask = true;
+                if ($cancel) {
+                    $request->cancel(CancellationReason::HOST_CANCELLED);
+                }
+                flock($held, LOCK_UN);
+            });
+            // A worker-owned provider receives each request's binding through the config.
+            $provider = new \Infocyph\UID\Sequence\FilesystemSequenceProvider($directory);
+
+            return forwardUidSnowflake(new SnowflakeConfig(
+                sequenceProvider: $provider,
+                runtime: new GenerationContext(
+                    clock: new FrozenUidClock(new DateTimeImmutable('@1700000000')),
+                    runwire: new RunwireBinding($host, $request, $scope),
+                    waitTimeoutMicros: 100_000,
+                ),
+            ));
+        });
+    };
+
+    try {
+        if ($cancel) {
+            expect($allocate)->toThrow(CancelledException::class)
+                ->and(file_get_contents($path))->toBe('1700000000000,7');
+        } else {
+            expect(Snowflake::parse($allocate())['sequence'])->toBe(7)
+                ->and(file_get_contents($path))->toBe('1700000000000,8')
+                ->and($request->completed())->toBeFalse();
+        }
+        expect($ranOtherTask)->toBeTrue();
+    } finally {
+        flock($held, LOCK_UN);
+        fclose($held);
+        unlink($path);
+        rmdir($directory);
+    }
+})->with([false, true]);

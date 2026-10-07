@@ -347,7 +347,7 @@ final class Snowflake
     ): array {
         while (true) {
             try {
-                $allocation = self::sequence($currentTime, $sequenceKey, $sequenceType, $sequenceProvider);
+                $allocation = self::sequence($currentTime, $sequenceKey, $sequenceType, $sequenceProvider, $runtime);
             } catch (SequenceTimestampException $exception) {
                 if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                     throw new SnowflakeException(

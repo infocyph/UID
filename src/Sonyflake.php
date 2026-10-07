@@ -202,7 +202,7 @@ final class Sonyflake
 
         while (true) {
             try {
-                $allocation = self::sequence($elapsedTime, $machineId, $sequenceType, $provider);
+                $allocation = self::sequence($elapsedTime, $machineId, $sequenceType, $provider, $runtime);
             } catch (SequenceTimestampException $exception) {
                 if ($policy === ClockBackwardPolicy::THROW) {
                     throw new SonyflakeException(
@@ -263,6 +263,13 @@ final class Sonyflake
      */
     private static function elapsedTime(int $currentTime, int $startTimestamp): int
     {
+        if ($currentTime < $startTimestamp) {
+            throw new SonyflakeException('Sonyflake epoch must not be in the future');
+        }
+        if ($startTimestamp < $currentTime - (((1 << self::TIMESTAMP_BITS) - 1) * 10 + 9)) {
+            throw new SonyflakeException('Exceeding the maximum life cycle of the algorithm');
+        }
+
         return intdiv($currentTime - $startTimestamp, 10);
     }
 

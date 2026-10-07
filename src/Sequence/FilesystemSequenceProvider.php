@@ -50,8 +50,11 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         }
     }
 
-    public function next(string $type, int $machineId, int $timestamp): int
+    public function next(string $type, int $machineId, int $timestamp, ?GenerationContext $runtime = null): int
     {
+        $this->runtime?->assertActive();
+        $runtime ??= $this->runtime;
+        $runtime?->assertActive();
         $fileLocation = $this->sequenceFileLocation($type, $machineId);
         if ($this->reservationSize > 1) {
             $this->resetAfterFork();
@@ -66,11 +69,11 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
             $this->lockTimeoutMicros,
             'Failed to open sequence file: ' . $fileLocation,
             'Unable to acquire sequence lock: ' . $fileLocation,
-            $this->runtime,
+            $runtime,
         );
 
         try {
-            return $this->allocateLocked($handle, $fileLocation, $timestamp);
+            return $this->allocateLocked($handle, $fileLocation, $timestamp, $runtime);
         } finally {
             flock($handle, LOCK_UN);
             fclose($handle);
@@ -80,7 +83,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
     /**
      * @param resource $handle
      */
-    private function allocateLocked($handle, string $fileLocation, int $timestamp): int
+    private function allocateLocked($handle, string $fileLocation, int $timestamp, ?GenerationContext $runtime): int
     {
         [$lastTimestamp, $lastAllocation, $oldLength] = $this->readState($handle);
         if ($lastTimestamp > $timestamp) {
@@ -97,6 +100,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         }
 
         $reservedEnd = $allocation + $reservationOffset;
+        $runtime?->assertActive();
         $this->writeState($handle, $timestamp . ',' . $reservedEnd, $oldLength);
         $this->storeReservation($fileLocation, $timestamp, $allocation, $reservedEnd);
 

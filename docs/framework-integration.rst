@@ -66,6 +66,12 @@ the request. UID verifies that the scope is active and that the request belongs 
 the supplied runtime; it does not depend on Runwire private internals.
 
 When a scope is supplied, UID uses cooperative sleeps for lock and rollover waits.
+The generator forwards its GenerationContext to built-in filesystem and PSR-16
+providers for that allocation. A shared provider does not retain the operation's
+request binding; subsequent requests can supply their own context through configs.
+Custom providers remain responsible for their own synchronization and cooperative
+I/O. A context supplied when constructing a provider remains a scoped default;
+do not keep a request-bound provider after that request completes.
 Without Runwire, the same bounded policies use native synchronous waits. Missing
 Runwire is a normal fallback condition; cancellation, an expired deadline, stale
 process identity, completed requests, corrupt state and authoritative-store

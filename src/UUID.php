@@ -658,10 +658,21 @@ final class UUID
      */
     private static function nextV7Timestamp(int $lastTimestamp): int
     {
+        if ($lastTimestamp >= self::MAX_V7_TIMESTAMP) {
+            throw new UUIDException('UUID v7 timestamp exhausted');
+        }
+        $deadline = hrtime(true) + 1_000_000_000;
         do {
+            if (hrtime(true) >= $deadline) {
+                throw new UUIDException('Timed out waiting for the next UUID v7 timestamp');
+            }
             usleep(1000);
             $next = (int) floor(microtime(true) * 1000);
         } while ($next <= $lastTimestamp);
+
+        if ($next > self::MAX_V7_TIMESTAMP) {
+            throw new UUIDException('UUID v7 timestamp exhausted');
+        }
 
         return $next;
     }
@@ -693,7 +704,7 @@ final class UUID
      */
     private static function normalizeNode(string $node): string
     {
-        if (!preg_match('/^[0-9a-f]{12}$/i', $node)) {
+        if (!preg_match('/^[0-9a-f]{12}$/iD', $node)) {
             throw new UUIDException('UUID node must be exactly 12 hexadecimal characters');
         }
 

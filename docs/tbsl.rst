@@ -33,6 +33,12 @@ Use ``Infocyph\\UID\\Configuration\\TBSLConfig`` for:
 - toggling ``sequenced`` mode
 - custom sequence provider
 - clock-backward policy
+- a GenerationContext for an injected clock, bounded waits and optional Runwire
+
+Rollback state belongs to the provider and machine domain. Reuse the same
+authoritative provider for writers in one domain; separate providers do not share
+clock history. The timestamp/machine portion occupies 60 bits, and generation
+rejects timestamps outside that field before normal allocation.
 
 .. code-block:: php
 

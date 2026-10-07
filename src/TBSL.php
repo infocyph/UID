@@ -11,6 +11,7 @@ use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\UIDException;
 use Infocyph\UID\Runtime\GenerationContext;
+use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\GetSequence;
@@ -21,7 +22,8 @@ final class TBSL
 
     private const int WAIT_TIMEOUT_MICROS = 1_000_000;
 
-    private static int $lastTimeSequence = 0;
+    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<int, int>>|null */
+    private static ?\WeakMap $lastTimeByProvider = null;
 
     /**
      * Decodes one of bases: 16, 32, 36, 58, 62 into canonical TBSL.
@@ -111,11 +113,11 @@ final class TBSL
         $storeParts = unpack('Jvalue', $storeBytes);
         $storeValue = $storeParts['value'] ?? null;
         is_int($storeValue) || throw new Exception('Unable to parse TBSL timestamp');
-        $storeData = str_pad((string) $storeValue, 18, '0', STR_PAD_LEFT);
+        $time = intdiv($storeValue, 100);
 
         return [
-            'time' => new DateTimeImmutable('@' . substr($storeData, 0, 10) . '.' . substr($storeData, 10, 6)),
-            'machineId' => (int) substr($storeData, -2),
+            'time' => new DateTimeImmutable('@' . intdiv($time, 1_000_000) . '.' . str_pad((string) ($time % 1_000_000), 6, '0', STR_PAD_LEFT)),
+            'machineId' => $storeValue % 100,
         ];
     }
 
@@ -156,6 +158,13 @@ final class TBSL
         }
     }
 
+    private static function assertTimestamp(int $timestamp, int $machineId): void
+    {
+        if ($timestamp < 0 || $timestamp > intdiv(0x0fffffffffffffff - $machineId, 100)) {
+            throw new UIDException('TBSL timestamp exceeds its 60-bit field');
+        }
+    }
+
     /**
      * @throws Exception
      */
@@ -168,15 +177,21 @@ final class TBSL
     ): string {
         self::assertMachineId($machineId);
 
+        $sequenceProvider ??= self::$sequenceProvider ??= new FilesystemSequenceProvider();
+        self::$lastTimeByProvider ??= new \WeakMap();
+        /** @var \ArrayObject<int, int> $state */
+        $state = self::$lastTimeByProvider[$sequenceProvider] ??= new \ArrayObject();
+        $lastTime = $state[$machineId] ?? 0;
         $timeSequence = self::nowMicroseconds($runtime);
 
-        if ($timeSequence < self::$lastTimeSequence) {
+        if ($timeSequence < $lastTime) {
             if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                 throw new UIDException('Clock moved backwards while generating TBSL ID');
             }
 
-            $timeSequence = self::waitUntilNextTimeSequence(self::$lastTimeSequence, $runtime);
+            $timeSequence = self::waitUntilNextTimeSequence($lastTime, $runtime);
         }
+        self::assertTimestamp($timeSequence, $machineId);
         [$timeSequence, $tail] = self::resolveTail(
             $machineId,
             $sequenced,
@@ -185,9 +200,10 @@ final class TBSL
             $sequenceProvider,
             $runtime,
         );
-        self::$lastTimeSequence = $timeSequence;
+        self::assertTimestamp($timeSequence, $machineId);
+        $state[$machineId] = max($state[$machineId] ?? 0, $timeSequence);
 
-        $storeValue = (int) ($timeSequence . sprintf('%02d', $machineId));
+        $storeValue = ($timeSequence * 100) + $machineId;
         $storeData = ltrim(bin2hex(pack('J', $storeValue)), '0');
         if (strlen($storeData) > 15) {
             throw new UIDException('TBSL timestamp exceeds its 60-bit field');
@@ -228,7 +244,7 @@ final class TBSL
 
         do {
             try {
-                $sequence = self::sequence($timeSequence, $machineId, 'tbsl', $sequenceProvider);
+                $sequence = self::sequence($timeSequence, $machineId, 'tbsl', $sequenceProvider, $runtime);
             } catch (SequenceTimestampException $exception) {
                 if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                     throw new UIDException(

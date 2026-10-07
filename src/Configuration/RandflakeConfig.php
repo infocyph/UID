@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Infocyph\UID\Configuration;
 
 use Infocyph\UID\Enums\RandflakeFormat;
+use Infocyph\UID\Exceptions\RandflakeException;
 use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 
@@ -26,6 +27,9 @@ final readonly class RandflakeConfig
     {
         if ($this->leaseEndExclusive !== null) {
             return $this->leaseEndExclusive;
+        }
+        if ($this->leaseEnd === PHP_INT_MAX) {
+            throw new RandflakeException('randflake: inclusive lease end cannot be converted to an exclusive boundary');
         }
 
         return $this->leaseEnd + 1;

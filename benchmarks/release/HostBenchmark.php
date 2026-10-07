@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+if (realpath((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) !== __FILE__) {
+    return;
+}
+
 $options = getopt('', [
     'baseline-url:',
     'candidate-url:',
@@ -96,6 +100,17 @@ function uidCreateHandle(string $url): CurlHandle
     return $handle;
 }
 
+function uidValidId(string $id, string $route): bool
+{
+    if ($route === '/snowflake-contended') {
+        return preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/', $id) === 1
+            && (strlen($id) < 19 || strcmp($id, (string) PHP_INT_MAX) <= 0);
+    }
+
+    return in_array($route, ['/cuid2-one', '/cuid2-batch'], true)
+        && preg_match('/\A[a-z][a-z0-9]{23}\z/', $id) === 1;
+}
+
 /**
  * @param array{result:int,handle:CurlHandle} $info
  * @return array{successful:bool,timeout:bool,latency:float,duplicates:int}
@@ -117,9 +132,10 @@ function uidInspectCompletion(array $info, int $idsPerResponse): array
 
     $duplicates = 0;
     $responseIds = [];
+    $route = (string) parse_url((string) curl_getinfo($handle, CURLINFO_EFFECTIVE_URL), PHP_URL_PATH);
 
     foreach ($ids as $id) {
-        if (!is_string($id) || $id === '') {
+        if (!is_string($id) || !uidValidId($id, $route)) {
             $successful = false;
 
             continue;
@@ -133,7 +149,7 @@ function uidInspectCompletion(array $info, int $idsPerResponse): array
     }
 
     return [
-        'successful' => $successful,
+        'successful' => $successful && $duplicates === 0,
         'timeout' => $info['result'] === CURLE_OPERATION_TIMEDOUT,
         'latency' => $latency,
         'duplicates' => $duplicates,

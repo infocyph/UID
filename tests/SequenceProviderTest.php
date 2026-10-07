@@ -11,6 +11,8 @@ use Psr\SimpleCache\CacheInterface;
 
 final class SequenceTestCache implements CacheInterface
 {
+    public ?Closure $beforeRead = null;
+
     public bool $failWrites = false;
 
     public null|int|DateInterval $lastTtl = null;
@@ -43,6 +45,8 @@ final class SequenceTestCache implements CacheInterface
 
     public function get(string $key, mixed $default = null): mixed
     {
+        ($this->beforeRead ?? static function (): void {})();
+
         return $this->store[$key] ?? $default;
     }
 
@@ -89,6 +93,36 @@ final class SequenceTestCache implements CacheInterface
         return true;
     }
 }
+
+test('bound cache providers reject cancellation before writes and inside synchronizers', function (string $phase): void {
+    $host = \Infocyph\Runwire\RuntimeContext::standalone();
+    $request = \Infocyph\Runwire\RequestContext::create($host);
+    $runtime = new \Infocyph\UID\Runtime\GenerationContext(
+        runwire: new \Infocyph\UID\Runtime\RunwireBinding($host, $request),
+    );
+    $cache = new SequenceTestCache();
+    $cancel = static fn() => $request->cancel(\Infocyph\Runwire\Runtime\Enum\CancellationReason::HOST_CANCELLED);
+    $synchronizer = static function (string $key, callable $allocate) use ($cancel, $phase): int {
+        unset($key);
+        if ($phase === 'synchronizer') {
+            $cancel();
+        }
+
+        return $allocate();
+    };
+    $provider = new PsrSimpleCacheSequenceProvider($cache, synchronizer: $synchronizer, runtime: $runtime);
+
+    if ($phase === 'entry') {
+        $cancel();
+    } elseif ($phase === 'read') {
+        $cache->beforeRead = $cancel;
+    }
+
+    expect(fn(): int => $provider->next('test', 1, 100))
+        ->toThrow(\Infocyph\Runwire\Exception\CancelledException::class);
+    $cache->beforeRead = null;
+    expect($cache->has('uid.seq.test.1'))->toBeFalse();
+})->with(['entry', 'read', 'synchronizer']);
 
 final class FutureOnceSequenceProvider implements SequenceProviderInterface
 {

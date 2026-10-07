@@ -373,7 +373,7 @@ final class Randflake
         $type = $format === RandflakeFormat::UID ? 'randflake' : 'randflake_upstream';
 
         try {
-            return [$now, self::sequence($now, $nodeId, $type, $provider)];
+            return [$now, self::sequence($now, $nodeId, $type, $provider, $runtime)];
         } catch (SequenceTimestampException $exception) {
             $now = self::nowSeconds($runtime);
             self::assertGenerationTime($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive);
@@ -385,7 +385,7 @@ final class Randflake
                 );
             }
 
-            return [$now, self::sequence($now, $nodeId, $type, $provider)];
+            return [$now, self::sequence($now, $nodeId, $type, $provider, $runtime)];
         }
     }
 
@@ -400,7 +400,7 @@ final class Randflake
             throw new RandflakeException('randflake: invalid lease, lease expired or not started yet');
         }
 
-        if ($now > self::MAX_TIMESTAMP) {
+        if ($now < self::EPOCH_OFFSET || $now > self::MAX_TIMESTAMP) {
             throw new RandflakeException('randflake: the randflake id is dead after 34 years of lifetime');
         }
     }
@@ -464,7 +464,8 @@ final class Randflake
             $leaseEndExclusive,
             $runtime,
         );
-        $sequence = self::normalizeAllocation($allocation, $last, $now);
+        // A callback provider may suspend while another request advances this domain.
+        $sequence = self::normalizeAllocation($allocation, $state[$domainKey] ?? null, $now);
         $state[$domainKey] = ['timestamp' => $now, 'sequence' => $sequence];
 
         return self::encodeGeneratedPayload($now, $nodeId, $sequence, $secret, $format);
@@ -522,6 +523,9 @@ final class Randflake
         }
 
         $sequence = $allocation - 1;
+        if ($last !== null && $now < $last['timestamp']) {
+            throw new RandflakeException('randflake: sequence allocation timestamp regressed for the active provider domain');
+        }
         if ($last !== null && $last['timestamp'] === $now && $sequence <= $last['sequence']) {
             throw new RandflakeException('randflake: sequence allocation regressed for the active provider domain');
         }
