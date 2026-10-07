@@ -111,6 +111,7 @@ final class BaseEncoder
             throw new InvalidArgumentException('Encoded value exceeds target byte length');
         }
 
+        /** @var list<int> $bytes */
         $bytes = [0];
         $length = strlen($encoded);
         for ($index = 0; $index < $length; ++$index) {
