@@ -24,7 +24,7 @@ Character positions are 1-based.
 | Characters | Length | Field | Description |
 |:--|--:|:--|:--|
 | 1-15 | 15 hex chars | Time-machine payload | Uppercase hexadecimal encoding of the 60-bit integer `(unixMicroseconds * 100) + machineId`, left-padded with zeroes to 15 characters. |
-| 16-20 | 5 hex chars | Entropy or sequence | Random suffix by default, or a zero-based sequence suffix when sequenced mode is enabled. |
+| 16-20 | 5 hex chars | Sequence or entropy | Zero-based sequence suffix by default, or random entropy when sequenced mode is disabled. |
 
 The time-machine payload is numeric, not a fixed-width decimal string. Parsing is:
 
@@ -41,7 +41,7 @@ digits, as long as the combined value still fits the 60-bit field.
 Generation accepts:
 
 - `machineId`: integer from `0` to `99`; default is `0`.
-- `sequenced`: boolean; default is `false`.
+- `sequenced`: boolean; default is `true`. Use `generateRandom()` or `sequenced: false` for the entropy suffix.
 
 The generator:
 
@@ -50,10 +50,10 @@ The generator:
 3. Forms the 60-bit time-machine payload as `(unixMicroseconds * 100) + machineId`.
 4. Converts that integer to hexadecimal and left-pads it to 15 characters.
 5. Appends a 5-character hexadecimal suffix:
-   - random mode: first 5 hex characters from 3 random bytes;
-   - sequenced mode: obtains a positive provider allocation from
+   - sequenced mode (default): obtains a positive provider allocation from
      `(type = "tbsl", machineId, timestamp)`, then encodes
-     `allocation - 1` as five hexadecimal characters.
+     `allocation - 1` as five hexadecimal characters;
+   - random mode: first 5 hex characters from 3 random bytes.
 6. Returns the 20-character uppercase hexadecimal string.
 
 In sequenced mode, provider allocations `1..0x100000` map to encoded suffixes
