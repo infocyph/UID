@@ -98,8 +98,6 @@ final class FileLock
 
         try {
             return self::openVerifiedWithHandler($path, $errorMessage);
-        } catch (FileLockException $exception) {
-            throw $exception;
         } catch (ErrorException $exception) {
             throw new FileLockException($errorMessage, 0, $exception);
         } finally {
