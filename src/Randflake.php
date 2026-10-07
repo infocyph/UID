@@ -7,9 +7,9 @@ namespace Infocyph\UID;
 use DateTimeImmutable;
 use Exception;
 use Infocyph\UID\Configuration\RandflakeConfig;
+use Infocyph\UID\Enums\RandflakeFormat;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\RandflakeException;
-use Infocyph\UID\Enums\RandflakeFormat;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
@@ -719,5 +719,4 @@ final class Randflake
 
         return $secret;
     }
-
 }

@@ -454,5 +454,4 @@ final class Sonyflake
 
         return $currentTime;
     }
-
 }
