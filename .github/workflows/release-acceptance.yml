@@ -108,6 +108,7 @@ jobs:
           path: .phpforge-report
           retention-days: 14
           if-no-files-found: error
+          include-hidden-files: true
 
   host-performance:
     needs: diagnostics
@@ -250,6 +251,7 @@ jobs:
           path: .phpforge-report
           retention-days: 14
           if-no-files-found: error
+          include-hidden-files: true
 
   persistent-worker-soak:
     needs: diagnostics
@@ -300,3 +302,4 @@ jobs:
           path: .phpforge-report
           retention-days: 14
           if-no-files-found: error
+          include-hidden-files: true
