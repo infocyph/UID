@@ -23,7 +23,7 @@ runtime policy. SnowflakeConfig, SonyflakeConfig, RandflakeConfig and TBSLConfig
 may receive a GenerationContext without changing the ordinary synchronous APIs.
 
 Runwire 2.1.1+ Integration
--------------------------
+--------------------------
 
 Runwire support is optional. UID never discovers a runtime globally and never
 starts, stops, drives or closes a Runwire runtime, request, scope or event loop.
