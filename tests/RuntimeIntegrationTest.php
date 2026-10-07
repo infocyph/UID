@@ -150,3 +150,47 @@ test('a cancellation after allocation never recycles the consumed allocation', f
         )))->toThrow(CancelledException::class)
         ->and($allocations)->toBe(1);
 });
+
+
+function forwardUidSnowflake(SnowflakeConfig $config): string
+{
+    return Snowflake::generateWithConfig($config);
+}
+
+test('Runwire bindings survive intermediary config forwarding without rediscovery', function (): void {
+    $host = RuntimeContext::standalone();
+    $request = RequestContext::create($host);
+    $binding = new RunwireBinding($host, $request);
+    $config = new SnowflakeConfig(
+        sequenceProvider: new InMemorySequenceProvider(),
+        runtime: new GenerationContext(runwire: $binding),
+    );
+
+    expect(forwardUidSnowflake($config))->toBeString()
+        ->and($config->runtime?->runwire)->toBe($binding)
+        ->and($binding->runtime)->toBe($host)
+        ->and($binding->request)->toBe($request);
+});
+
+test('Runwire bindings reject scopes after the host closes them', function (): void {
+    $capabilities = new RuntimeCapabilities(
+        driver: RuntimeDriver::NATIVE,
+        runwireLoopAvailable: true,
+        supportsRunwireCoroutines: true,
+    );
+    $host = RuntimeContext::fromCapabilities($capabilities, 'uid-closed-scope', concurrent: true);
+    $request = RequestContext::create($host);
+    $coroutines = new CoroutineRuntime();
+    $capturedScope = null;
+
+    $coroutines->runRequest(
+        $request,
+        function (CoroutineScope $scope) use (&$capturedScope): void {
+            $capturedScope = $scope;
+        },
+    );
+
+    expect($capturedScope)->toBeInstanceOf(CoroutineScope::class)
+        ->and(fn(): RunwireBinding => new RunwireBinding($host, $request, $capturedScope))
+        ->toThrow(LogicException::class, 'already closed');
+});

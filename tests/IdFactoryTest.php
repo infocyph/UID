@@ -6,6 +6,7 @@ use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Configuration\TBSLConfig;
 use Infocyph\UID\Configuration\RandflakeConfig;
+use Infocyph\UID\Enums\SonyflakeFormat;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Id;
 use Infocyph\UID\RandomId;
@@ -89,4 +90,15 @@ test('configuration objects keep generation policy separate from representation'
         ->and($sonyflake)->toBeString()
         ->and($tbsl)->toHaveLength(20)
         ->and($randflake)->toBeString();
+});
+
+
+test('Sonyflake value preserves explicit format metadata', function (): void {
+    $value = Id::sonyflakeValue(new SonyflakeConfig(
+        machineId: 42,
+        format: SonyflakeFormat::UPSTREAM,
+    ));
+
+    expect($value->getFormat())->toBe(SonyflakeFormat::UPSTREAM)
+        ->and($value->getMachineId())->toBe(42);
 });

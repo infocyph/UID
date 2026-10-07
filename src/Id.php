@@ -9,6 +9,7 @@ use Infocyph\UID\Configuration\RandflakeConfig;
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Configuration\SonyflakeConfig;
 use Infocyph\UID\Configuration\TBSLConfig;
+use Infocyph\UID\Enums\SonyflakeFormat;
 use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Value\SnowflakeValue;
 use Infocyph\UID\Value\SonyflakeValue;
@@ -69,7 +70,11 @@ final class Id
 
     public static function sonyflakeValue(?SonyflakeConfig $config = null): SonyflakeValue
     {
-        return new SonyflakeValue(self::sonyflake($config), $config?->resolveCustomEpochMs());
+        return new SonyflakeValue(
+            self::sonyflake($config),
+            $config?->resolveCustomEpochMs(),
+            $config?->format ?? SonyflakeFormat::UID,
+        );
     }
 
     public static function tbsl(?TBSLConfig $config = null): string
