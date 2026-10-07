@@ -3,7 +3,7 @@ TBSL
 
 Class: ``Infocyph\\UID\\TBSL``
 
-TBSL is a project-specific, time-based, lexicographically sortable uppercase hex ID.
+TBSL is a project-specific, time-based, lexicographically sortable uppercase hex ID. ``TBSL::generate()`` uses sequenced mode by default; ``generateRandom()`` selects the entropy suffix.
 
 Format
 ------
@@ -33,6 +33,12 @@ Use ``Infocyph\\UID\\Configuration\\TBSLConfig`` for:
 - toggling ``sequenced`` mode
 - custom sequence provider
 - clock-backward policy
+- a GenerationContext for an injected clock, bounded waits and optional Runwire
+
+Rollback state belongs to the provider and machine domain. Reuse the same
+authoritative provider for writers in one domain; separate providers do not share
+clock history. The timestamp/machine portion occupies 60 bits, and generation
+rejects timestamps outside that field before normal allocation.
 
 .. code-block:: php
 
@@ -66,7 +72,7 @@ Binary and Alternate Bases
 - ``TBSL::toBytes($id)`` / ``TBSL::fromBytes($bytes)``
 - ``TBSL::toBase($id, $base)`` / ``TBSL::fromBase($encoded, $base)``
 
-Supported bases: ``16``, ``32``, ``36``, ``58``, ``62``.
+Supported bases: ``10``, ``16``, ``32``, ``36``, ``58``, ``62``.
 
 Exception Type
 --------------

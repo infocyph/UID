@@ -62,9 +62,25 @@ inside it. Those measurements are not comparable algorithm baselines, so no
 misleading percentage delta is reported. This report is the first isolated v5
 baseline; future releases should compare against it using the checked-in harness.
 
-Correctness gates took priority over throughput: the multi-process test suite
-for Snowflake, Sonyflake, Randflake, TBSL, and sequence reservations produced
-zero duplicates and zero lock errors.
+Current Release Checks
+----------------------
+
+Release acceptance runs one 100-cycle smoke pass across every generator and
+supported format on PHP 8.4 and 8.5, using a production-only Composer install.
+It checks valid output, no repeated IDs within each sample, relevant binary
+round trips, configured node fields and deterministic results. Run it locally
+with ``php tests/smoke.php``.
+
+The Security & Standards workflow retains the full test suite, static and taint
+analysis, dependency audit, and process/fork, cancellation, exhaustion and
+malformed-input regressions. The smoke pass is an additional consumer check;
+it does not establish collision probability, cryptographic security or sustained
+host throughput.
+
+The former long HTTP performance matrix and persistent-worker soak are removed.
+There is no mandatory RPM comparison against tag ``5.0``. Existing component
+benchmark tools remain available for targeted investigations; the historical
+v5 measurements above are not v6 performance claims.
 
 Filesystem Contention
 ---------------------

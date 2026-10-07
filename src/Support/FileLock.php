@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Support;
 
+use ErrorException;
 use Infocyph\UID\Exceptions\FileLockException;
+use Infocyph\UID\Runtime\GenerationContext;
 
 final class FileLock
 {
+    private const int DEFAULT_TIMEOUT_MICROS = 1_000_000;
+
     /**
      * @return resource
      * @throws FileLockException
@@ -17,37 +21,162 @@ final class FileLock
         ?int $timeoutMicros,
         string $openErrorMessage,
         string $lockErrorMessage,
+        ?GenerationContext $runtime = null,
     ) {
-        ($handle = fopen($path, 'c+')) || throw new FileLockException($openErrorMessage);
-
-        if ($timeoutMicros === null) {
-            if (flock($handle, LOCK_EX)) {
-                return $handle;
-            }
-
+        $runtime?->assertActive();
+        $handle = self::openVerified($path, $openErrorMessage);
+        $wouldBlock = 0;
+        if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
+            return $handle;
+        }
+        if ($wouldBlock !== 1) {
             fclose($handle);
 
             throw new FileLockException($lockErrorMessage);
         }
 
-        $deadline = hrtime(true) + ($timeoutMicros * 1000);
-        do {
-            $wouldBlock = 0;
-            if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
-                return $handle;
+        try {
+            $deadline = self::lockDeadline($timeoutMicros, $runtime);
+
+            while (hrtime(true) < $deadline) {
+                $wouldBlock = 0;
+                if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
+                    return $handle;
+                }
+                if ($wouldBlock !== 1) {
+                    throw new FileLockException($lockErrorMessage);
+                }
+
+                if ($runtime !== null) {
+                    $runtime->sleepMicroseconds(1_000);
+                } else {
+                    usleep(1_000);
+                }
             }
+        } catch (\Throwable $exception) {
+            fclose($handle);
 
-            if ($wouldBlock !== 1) {
-                fclose($handle);
-
-                throw new FileLockException($lockErrorMessage);
-            }
-
-            usleep(1000);
-        } while (hrtime(true) < $deadline);
+            throw $exception;
+        }
 
         fclose($handle);
 
         throw new FileLockException($lockErrorMessage);
+    }
+
+    /**
+     * @param array<string|int, int> $metadata
+     * @throws FileLockException
+     */
+    private static function assertSafeMetadata(array $metadata, string $errorMessage, ?int $ownerId): void
+    {
+        if (($metadata['mode'] & 0170000) !== 0100000) {
+            throw new FileLockException($errorMessage);
+        }
+
+        if ($ownerId !== null && $metadata['uid'] !== $ownerId) {
+            throw new FileLockException($errorMessage);
+        }
+    }
+
+    private static function lockDeadline(?int $timeoutMicros, ?GenerationContext $runtime): int
+    {
+        $timeout = $timeoutMicros ?? $runtime->waitTimeoutMicros ?? self::DEFAULT_TIMEOUT_MICROS;
+        if ($runtime !== null) {
+            $timeout = min($timeout, $runtime->waitTimeoutMicros);
+        }
+        $now = hrtime(true);
+        $deadline = $now + (min($timeout, intdiv(PHP_INT_MAX - $now, 1_000)) * 1_000);
+        $runtimeDeadline = $runtime?->runwire?->deadlineNanoseconds();
+
+        return $runtimeDeadline === null ? $deadline : min($deadline, $runtimeDeadline);
+    }
+
+    /**
+     * @return resource
+     * @throws FileLockException
+     */
+    private static function openVerified(string $path, string $errorMessage)
+    {
+        $ownerId = function_exists('posix_geteuid') ? posix_geteuid() : null;
+        set_error_handler(
+            static function (int $severity, string $message, string $file, int $line): never {
+                throw new ErrorException($message, 0, $severity, $file, $line);
+            },
+        );
+
+        try {
+            // Refresh metadata; handle identity checks also fence cached path resolution.
+            clearstatcache();
+
+            try {
+                $before = lstat($path);
+            } catch (ErrorException) {
+                $before = false;
+            }
+
+            if ($before !== false) {
+                self::assertSafeMetadata($before, $errorMessage, $ownerId);
+                $handle = fopen($path, 'r+b');
+                is_resource($handle) || throw new FileLockException($errorMessage);
+
+                return self::verifyHandle($path, $handle, $before, $errorMessage, $ownerId);
+            }
+
+            try {
+                $handle = fopen($path, 'x+b');
+            } catch (ErrorException) {
+                $before = lstat($path);
+                $before !== false || throw new FileLockException($errorMessage);
+                self::assertSafeMetadata($before, $errorMessage, $ownerId);
+
+                $handle = fopen($path, 'r+b');
+                is_resource($handle) || throw new FileLockException($errorMessage);
+
+                return self::verifyHandle($path, $handle, $before, $errorMessage, $ownerId);
+            }
+
+            is_resource($handle) || throw new FileLockException($errorMessage);
+            chmod($path, 0600) || throw new FileLockException($errorMessage);
+
+            return self::verifyHandle($path, $handle, null, $errorMessage, $ownerId);
+        } catch (ErrorException $exception) {
+            throw new FileLockException($errorMessage, 0, $exception);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
+    /**
+     * @param resource $handle
+     * @param array<string|int, int>|null $before
+     * @return resource
+     */
+    private static function verifyHandle(string $path, $handle, ?array $before, string $errorMessage, ?int $ownerId)
+    {
+        try {
+            $after = fstat($handle);
+            clearstatcache();
+            $pathState = lstat($path);
+            if ($after === false || $pathState === false) {
+                throw new FileLockException($errorMessage);
+            }
+
+            if (
+                ($after['mode'] & 0170000) !== 0100000
+                || ($pathState['mode'] & 0170000) !== 0100000
+                || ($ownerId !== null && ($after['uid'] !== $ownerId || $pathState['uid'] !== $ownerId))
+                || $after['dev'] !== $pathState['dev'] || $after['ino'] !== $pathState['ino']
+                || ($before !== null && ($before['dev'] !== $after['dev'] || $before['ino'] !== $after['ino']))
+            ) {
+                throw new FileLockException($errorMessage);
+            }
+
+            return $handle;
+        } catch (\Throwable $exception) {
+            fclose($handle);
+
+            throw $exception;
+        }
     }
 }

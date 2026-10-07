@@ -9,7 +9,9 @@ Hierarchy
 - ``Infocyph\\UID\\Exceptions\\ULIDException``
 - ``Infocyph\\UID\\Exceptions\\SnowflakeException``
 - ``Infocyph\\UID\\Exceptions\\SonyflakeException``
+- ``Infocyph\\UID\\Exceptions\\RandflakeException``
 - ``Infocyph\\UID\\Exceptions\\FileLockException``
+- ``Infocyph\\UID\\Exceptions\\SequenceTimestampException`` (extends ``FileLockException``)
 
 Usage Pattern
 -------------

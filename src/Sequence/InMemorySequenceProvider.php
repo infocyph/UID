@@ -9,6 +9,8 @@ use Infocyph\UID\Exceptions\SequenceTimestampException;
 
 final class InMemorySequenceProvider implements SequenceProviderInterface
 {
+    private const int MAX_DOMAINS = 1024;
+
     /**
      * @var array<string, array{timestamp:int, sequence:int}>
      */
@@ -17,6 +19,10 @@ final class InMemorySequenceProvider implements SequenceProviderInterface
     public function next(string $type, int $machineId, int $timestamp): int
     {
         $key = $this->key($type, $machineId);
+        if (!isset($this->state[$key]) && count($this->state) >= self::MAX_DOMAINS) {
+            throw new FileLockException('In-memory sequence domain limit exceeded');
+        }
+
         $last = $this->state[$key] ?? null;
 
         $sequence = 1;

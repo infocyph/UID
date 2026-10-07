@@ -6,14 +6,17 @@ namespace Infocyph\UID\Sequence;
 
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Support\FileLock;
 use InvalidArgumentException;
 
 final class FilesystemSequenceProvider implements SequenceProviderInterface
 {
-    private const MAX_PATH_CACHE = 1024;
+    private const int MAX_PATH_CACHE = 1024;
 
-    private const MAX_SEQUENCE_STATE_BYTES = 64;
+    private const int MAX_RESERVATIONS = 1024;
+
+    private const int MAX_SEQUENCE_STATE_BYTES = 64;
 
     private readonly string $baseDirectory;
 
@@ -30,6 +33,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         private readonly string $namespace = '',
         private readonly ?int $lockTimeoutMicros = null,
         private readonly int $reservationSize = 1,
+        private readonly ?GenerationContext $runtime = null,
     ) {
         $this->baseDirectory = $baseDirectory ?: sys_get_temp_dir();
 
@@ -46,21 +50,18 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         }
     }
 
-    public function next(string $type, int $machineId, int $timestamp): int
+    public function next(string $type, int $machineId, int $timestamp, ?GenerationContext $runtime = null): int
     {
+        $this->runtime?->assertActive();
+        $runtime ??= $this->runtime;
+        $runtime?->assertActive();
         $fileLocation = $this->sequenceFileLocation($type, $machineId);
-        $this->resetAfterFork();
-        $reservation = $this->reservations[$fileLocation] ?? null;
-
-        if (
-            $reservation !== null
-            && $reservation['timestamp'] === $timestamp
-            && $reservation['next'] <= $reservation['end']
-        ) {
-            $allocation = $reservation['next'];
-            $this->reservations[$fileLocation]['next'] = $allocation + 1;
-
-            return $allocation;
+        if ($this->reservationSize > 1) {
+            $this->resetAfterFork();
+            $reserved = $this->takeReservedAllocation($fileLocation, $timestamp);
+            if ($reserved !== null) {
+                return $reserved;
+            }
         }
 
         $handle = FileLock::acquire(
@@ -68,6 +69,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
             $this->lockTimeoutMicros,
             'Failed to open sequence file: ' . $fileLocation,
             'Unable to acquire sequence lock: ' . $fileLocation,
+            $runtime,
         );
 
         try {
@@ -75,33 +77,28 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
             if ($lastTimestamp > $timestamp) {
                 throw new SequenceTimestampException($lastTimestamp, $timestamp);
             }
-
-            $allocation = $lastTimestamp === $timestamp ? $lastAllocation + 1 : 1;
-            if ($allocation > PHP_INT_MAX - $this->reservationSize + 1) {
+            if ($lastTimestamp === $timestamp && $lastAllocation === PHP_INT_MAX) {
                 throw new FileLockException('Sequence value exhausted');
             }
 
-            $reservedEnd = $allocation + $this->reservationSize - 1;
-            $state = $timestamp . ',' . $reservedEnd;
-            $this->writeState($handle, $state, $oldLength);
-            $this->reservations[$fileLocation] = [
-                'timestamp' => $timestamp,
-                'next' => $allocation + 1,
-                'end' => $reservedEnd,
-            ];
+            $allocation = $lastTimestamp === $timestamp ? $lastAllocation + 1 : 1;
+            $reservationOffset = $this->reservationSize - 1;
+            if ($allocation > PHP_INT_MAX - $reservationOffset) {
+                throw new FileLockException('Sequence value exhausted');
+            }
+
+            $reservedEnd = $allocation + $reservationOffset;
+            $runtime?->assertActive();
+            $this->writeState($handle, $timestamp . ',' . $reservedEnd, $oldLength);
+            if ($this->reservationSize > 1) {
+                $this->storeReservation($fileLocation, $timestamp, $allocation, $reservedEnd);
+            }
 
             return $allocation;
         } finally {
             flock($handle, LOCK_UN);
             fclose($handle);
         }
-    }
-
-    private static function isCanonicalInteger(string $value): bool
-    {
-        return $value !== ''
-            && ctype_digit($value)
-            && ($value === '0' || $value[0] !== '0');
     }
 
     /**
@@ -124,22 +121,15 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
             return [0, 0, 0];
         }
 
-        $comma = strpos($state, ',');
-        if ($comma === false || str_contains(substr($state, $comma + 1), ',')) {
+        if (preg_match('/\A(0|[1-9][0-9]{0,18}),(0|[1-9][0-9]{0,18})\z/', $state, $parts) !== 1) {
             throw new FileLockException('Sequence state is malformed');
         }
 
-        $timestamp = substr($state, 0, $comma);
-        $allocation = substr($state, $comma + 1);
-        if (!self::isCanonicalInteger($timestamp) || !self::isCanonicalInteger($allocation)) {
-            throw new FileLockException('Sequence state is malformed');
-        }
-
+        $timestamp = $parts[1];
+        $allocation = $parts[2];
         if (
-            strlen($timestamp) > 19
-            || strlen($allocation) > 19
-            || (strlen($timestamp) === 19 && $timestamp > (string) PHP_INT_MAX)
-            || (strlen($allocation) === 19 && $allocation > (string) PHP_INT_MAX)
+            (strlen($timestamp) === 19 && strcmp($timestamp, (string) PHP_INT_MAX) > 0)
+            || (strlen($allocation) === 19 && strcmp($allocation, (string) PHP_INT_MAX) > 0)
         ) {
             throw new FileLockException('Sequence state is malformed');
         }
@@ -175,6 +165,44 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         }
 
         return $this->pathCache[$cacheKey] = $this->baseDirectory . DIRECTORY_SEPARATOR . $name;
+    }
+
+    private function storeReservation(
+        string $fileLocation,
+        int $timestamp,
+        int $allocation,
+        int $reservedEnd,
+    ): void {
+        if (!isset($this->reservations[$fileLocation]) && count($this->reservations) >= self::MAX_RESERVATIONS) {
+            throw new FileLockException('Sequence reservation domain limit exceeded');
+        }
+
+        $this->reservations[$fileLocation] = [
+            'timestamp' => $timestamp,
+            'next' => $allocation + 1,
+            'end' => $reservedEnd,
+        ];
+    }
+
+    private function takeReservedAllocation(string $fileLocation, int $timestamp): ?int
+    {
+        $reservation = $this->reservations[$fileLocation] ?? null;
+        if (
+            $reservation === null
+            || $reservation['timestamp'] !== $timestamp
+            || $reservation['next'] > $reservation['end']
+        ) {
+            return null;
+        }
+
+        $allocation = $reservation['next'];
+        if ($allocation === $reservation['end']) {
+            unset($this->reservations[$fileLocation]);
+        } else {
+            $this->reservations[$fileLocation]['next'] = $allocation + 1;
+        }
+
+        return $allocation;
     }
 
     /**

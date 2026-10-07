@@ -1,7 +1,7 @@
 Database Storage
 ================
 
-Storage recommendations are documentation only; v5 has no runtime ``DbStorage`` API.
+Storage recommendations are documentation only; UID has no runtime ``DbStorage`` API.
 
 .. list-table::
    :header-rows: 1
@@ -24,9 +24,12 @@ Storage recommendations are documentation only; v5 has no runtime ``DbStorage`` 
    * - Snowflake/Sonyflake
      - ``BIGINT``
      - ``BIGINT``
-   * - Randflake
+   * - Randflake (UID format)
      - ``BIGINT UNSIGNED`` / ``BINARY(8)``
      - ``NUMERIC(20,0)`` / ``BYTEA``
+   * - Randflake (upstream format)
+     - signed ``BIGINT`` / ``BINARY(8)``
+     - signed ``BIGINT`` / ``BYTEA``
    * - TBSL
      - ``CHAR(20)`` / ``BINARY(10)``
      - ``CHAR(20)`` / ``BYTEA``
@@ -38,3 +41,5 @@ the entity type in the schema and store the underlying UUID bytes.
 An epoch is part of a deployed Snowflake or Sonyflake ID domain. Changing it
 creates a different domain and may eventually produce values overlapping the
 original domain.
+
+Randflake storage must preserve the format discriminator outside the raw value when an application can contain both UID and upstream-compatible representations. The upstream representation is signed 64-bit; the legacy UID representation can require the full unsigned 64-bit domain.

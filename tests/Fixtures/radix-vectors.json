@@ -1,0 +1,632 @@
+[
+  {
+    "hex": "00",
+    "base": 10,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00",
+    "base": 16,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00",
+    "base": 32,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00",
+    "base": 36,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00",
+    "base": 58,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "00",
+    "base": 62,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00000000000000",
+    "base": 10,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00000000000000",
+    "base": 16,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00000000000000",
+    "base": 32,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00000000000000",
+    "base": 36,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "00000000000000",
+    "base": 58,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "00000000000000",
+    "base": 62,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "hex": "01",
+    "base": 10,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "01",
+    "base": 16,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "01",
+    "base": 32,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "01",
+    "base": 36,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "01",
+    "base": 58,
+    "sha256": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35"
+  },
+  {
+    "hex": "01",
+    "base": 62,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "010203",
+    "base": 10,
+    "sha256": "24260b3c030c6e4f86175247e322724d3997a1310105fa003b9edab91b80b000"
+  },
+  {
+    "hex": "010203",
+    "base": 16,
+    "sha256": "91d29cb4702d2677c21abcbeefe7d75a9caff7761216ac71f8f6fb728a03cef7"
+  },
+  {
+    "hex": "010203",
+    "base": 32,
+    "sha256": "e39b8e0726aa4a8b86b3096a3ca42923255db5f50dc193b0ce9f64c641cda133"
+  },
+  {
+    "hex": "010203",
+    "base": 36,
+    "sha256": "db7116bec467527726501fc8a5b14ea6d94e304a0b6fdf4224e76ce0c7329b52"
+  },
+  {
+    "hex": "010203",
+    "base": 58,
+    "sha256": "c666dfb52eb204a33e933a44afdcaab0b6d23c1675bb2d2d651c8e2e09a5c4c1"
+  },
+  {
+    "hex": "010203",
+    "base": 62,
+    "sha256": "304bd1f15dba3af470b3de501f7a39c64551e431589a5403530d8622c6283209"
+  },
+  {
+    "hex": "ffffffff",
+    "base": 10,
+    "sha256": "f807212b6748a8300fc3702322caa515edf0a6ed9bbc86e94c451e351b080c60"
+  },
+  {
+    "hex": "ffffffff",
+    "base": 16,
+    "sha256": "a44ba123189855990795e3260a64b34cdae6b29bf1c941818a34cba8bbc45575"
+  },
+  {
+    "hex": "ffffffff",
+    "base": 32,
+    "sha256": "edd5889f8f8ec599b6b440cf0073217786a62ddddcb06c540b71d1395a74f65b"
+  },
+  {
+    "hex": "ffffffff",
+    "base": 36,
+    "sha256": "efce4cbc26a9225f27698923308bfcba97d727e33b42460817fd64eea9e63d96"
+  },
+  {
+    "hex": "ffffffff",
+    "base": 58,
+    "sha256": "ed4eb404ddaf41bd8260aa633694def36054181d7205b0b25c30636ad7d33110"
+  },
+  {
+    "hex": "ffffffff",
+    "base": 62,
+    "sha256": "e084d93abbe254544ab1ca05a8a3becd511915ec22c6fab371d500fa72b07811"
+  },
+  {
+    "hex": "0100000000",
+    "base": 10,
+    "sha256": "6c1ca4002509bc24e93aa4211830738fce7e205e41364e11301ac5a0635cb4b5"
+  },
+  {
+    "hex": "0100000000",
+    "base": 16,
+    "sha256": "e59bbea6227c578f97fc467bc62dc3407d4885693d74e6e970f6cab44158fef4"
+  },
+  {
+    "hex": "0100000000",
+    "base": 32,
+    "sha256": "ace9f9389bff190c68b88f731056d0667d25438f8b5cb75b858b0ab6623fe08b"
+  },
+  {
+    "hex": "0100000000",
+    "base": 36,
+    "sha256": "3e06c89d3a704cb155bdb96a0194e267c391d56656bb17927cff8c7151d21504"
+  },
+  {
+    "hex": "0100000000",
+    "base": 58,
+    "sha256": "1d891934c5156b64b3ff9f4bbb75fb02a74948b9c87158d4b28925d2ac55817a"
+  },
+  {
+    "hex": "0100000000",
+    "base": 62,
+    "sha256": "6689137fa3ce8c223bb53873a4a4ebd20db18558ee3f928703ffd0ee4c508ff9"
+  },
+  {
+    "hex": "ffffffffffffff",
+    "base": 10,
+    "sha256": "2e979f5af74005579ea3ba3907f8de33d768f935115a03adc2cea6ba8cd62613"
+  },
+  {
+    "hex": "ffffffffffffff",
+    "base": 16,
+    "sha256": "54861dbd9763f64887854ea22c2de89435f5b1917f8079ad719f8990563ae919"
+  },
+  {
+    "hex": "ffffffffffffff",
+    "base": 32,
+    "sha256": "9727f344a8dbd01c4c06d0682b99921e77a917d8c86e9d102ac51ad272aeea90"
+  },
+  {
+    "hex": "ffffffffffffff",
+    "base": 36,
+    "sha256": "32cd4e0080086ea66c93db83cb2db931a6f1aae0f8559042a0f52699961c88a6"
+  },
+  {
+    "hex": "ffffffffffffff",
+    "base": 58,
+    "sha256": "c7c74041de89b891faa5d39dc26a7d61ce5a761faa16fedb8bebcefa5939a302"
+  },
+  {
+    "hex": "ffffffffffffff",
+    "base": 62,
+    "sha256": "6c0e8b7c084ce2b6b115632e058e5ea1417d5d1d1ccfe0f97aca11ae5e7a9856"
+  },
+  {
+    "hex": "ffffffffffffffff",
+    "base": 10,
+    "sha256": "2cdb26265b4dc65e3b44d694f121fd6de99b9e4b8ae7f08d84bfa9537635ae43"
+  },
+  {
+    "hex": "ffffffffffffffff",
+    "base": 16,
+    "sha256": "6534b338bcb91cf173444c24ed8bc0f1b7065face0ea95cdd1b936556c6860ed"
+  },
+  {
+    "hex": "ffffffffffffffff",
+    "base": 32,
+    "sha256": "186e9c46e8ef522bab0c99889bb79855051fd248a1f21c8d6613bf48e1a7cb4d"
+  },
+  {
+    "hex": "ffffffffffffffff",
+    "base": 36,
+    "sha256": "208d1995d8a68c9d6fb54c610f05d3fdbc7c6d1fc2c762c28134512afcf31004"
+  },
+  {
+    "hex": "ffffffffffffffff",
+    "base": 58,
+    "sha256": "8e4deb0ebdaa4a5316d3c6c3cd5aad65f3b23551a4e3e7bd8fd562fe6e758608"
+  },
+  {
+    "hex": "ffffffffffffffff",
+    "base": 62,
+    "sha256": "751182822485df44ab62837e51046dae09dce275a529a350757c8eed4086284a"
+  },
+  {
+    "hex": "010000000000000000",
+    "base": 10,
+    "sha256": "8b292fc2d32f1fd491784610c61b90dc4632a6e4add19261eca4c3979e4ea6d2"
+  },
+  {
+    "hex": "010000000000000000",
+    "base": 16,
+    "sha256": "139eb393675707818651f879828a526159209ca3ad3b2f94f9f8ec8c4fb5e610"
+  },
+  {
+    "hex": "010000000000000000",
+    "base": 32,
+    "sha256": "e251cf358c15b1e31a8102955a282c31a4a82b735076393aa79daad62d9eed04"
+  },
+  {
+    "hex": "010000000000000000",
+    "base": 36,
+    "sha256": "8dd8e3c360e2ce9f175e735c81f62f3d04db3541a4ea3b4468aca16d0f72142a"
+  },
+  {
+    "hex": "010000000000000000",
+    "base": 58,
+    "sha256": "9822cb8a94b821fb9a0c3559d5b8ae5970d5918d6203542412d8659fa0e47e66"
+  },
+  {
+    "hex": "010000000000000000",
+    "base": 62,
+    "sha256": "6587c44d3f1cfec0fdfd9bf257ddbc17811d3e2ebea8469f4e3a37e609755e78"
+  },
+  {
+    "hex": "000000000000000001",
+    "base": 10,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "000000000000000001",
+    "base": 16,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "000000000000000001",
+    "base": 32,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "000000000000000001",
+    "base": 36,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "000000000000000001",
+    "base": 58,
+    "sha256": "d4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35"
+  },
+  {
+    "hex": "000000000000000001",
+    "base": 62,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "base": 10,
+    "sha256": "62f34becf1824be7bc2cd8bf3c74ce61a095a160a507818aef987bb29902972f"
+  },
+  {
+    "hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "base": 16,
+    "sha256": "79ad567e2df031ffca60b675bcbc52ef5d92e9acf36924aa85a0008860ff1219"
+  },
+  {
+    "hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "base": 32,
+    "sha256": "d996cf67728f15cdea403d1a95c72e5bf132b4f65f7603a8e5a0e27b427eff21"
+  },
+  {
+    "hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "base": 36,
+    "sha256": "9f2e8789ab4a1ecfaa3cbfd128cb41eb8f60f2cbac5afe39f5d91051f9e89597"
+  },
+  {
+    "hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "base": 58,
+    "sha256": "8817ec0e2858b0e01b19dbab30ff745b7effddb6411008260379ff24bd54c345"
+  },
+  {
+    "hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
+    "base": 62,
+    "sha256": "96dae209ef19bb45c0f0aa3e695323c0111d363a21499333ee04024de1b04fa5"
+  },
+  {
+    "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "base": 10,
+    "sha256": "c7580a7344e36b87c5d8078a90b39aa93a2d6c5166083acddb12c1402a5038db"
+  },
+  {
+    "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "base": 16,
+    "sha256": "d6be42c836477c05cd6d674c79c21cab7a381398b2e55f9bafaa1ad2573b564f"
+  },
+  {
+    "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "base": 32,
+    "sha256": "949af726728ff4b2494bd9e4d7b0cd4a2dddeaefcc86298c6ea20dbcc5b3184a"
+  },
+  {
+    "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "base": 36,
+    "sha256": "f8f98956a7547f3dcb96b7118e39f3ac54b47e3b453d6fb4c2546b32ddf079b6"
+  },
+  {
+    "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "base": 58,
+    "sha256": "8a6b63d5ba101a9a5ed2a4a63478c215ab202763ab318af97d2a9e183be6b620"
+  },
+  {
+    "hex": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "base": 62,
+    "sha256": "7e5371e1310f0fdcf424f3071fb88a731eb85e43401cb4e2a59804c27ae9ee99"
+  },
+  {
+    "hex": "01869f",
+    "base": 10,
+    "sha256": "fd5f56b40a79a385708428e7b32ab996a681080a166a2206e750eb4819186145"
+  },
+  {
+    "hex": "0186a0",
+    "base": 10,
+    "sha256": "3bb78535cc9555ff19fe3556aaa41c78a0a45c64d49ba2bc564507648a8e77a1"
+  },
+  {
+    "hex": "0186a1",
+    "base": 10,
+    "sha256": "97c489b6c1231ecd9fac99df40e60cec000a70a057d5971fb520c578da8e8841"
+  },
+  {
+    "hex": "0f423f",
+    "base": 10,
+    "sha256": "937377f056160fc4b15e0b770c67136a5f03c15205b4d3bf918268fefa2c6d0a"
+  },
+  {
+    "hex": "0f4240",
+    "base": 10,
+    "sha256": "6cce36d9f8a9e151b100234af75cca89d55bcb94c153f51847debdf1f39cae45"
+  },
+  {
+    "hex": "0f4241",
+    "base": 10,
+    "sha256": "443372db1ff98d9737596b4f83a8381ab6aab60e44e29854b48be88c74cdf1f0"
+  },
+  {
+    "hex": "3b9ac9ff",
+    "base": 10,
+    "sha256": "bb421fa35db885ce507b0ef5c3f23cb09c62eb378fae3641c165bdf4c0272949"
+  },
+  {
+    "hex": "3b9aca00",
+    "base": 10,
+    "sha256": "52a5d4a071d82caea87329868d22f6b8390ac3d227c6fde0d4525e69510ec479"
+  },
+  {
+    "hex": "3b9aca01",
+    "base": 10,
+    "sha256": "80a7cd0ffb78b364089257b612609ae24a9e886a2513ee0b3a7dc67b828c8c3c"
+  },
+  {
+    "hex": "0fffff",
+    "base": 16,
+    "sha256": "99834619b3c160248b69c7f42ba868f945a0ea04cd31cf2f60dc4bc8f7d13b8a"
+  },
+  {
+    "hex": "100000",
+    "base": 16,
+    "sha256": "3bb78535cc9555ff19fe3556aaa41c78a0a45c64d49ba2bc564507648a8e77a1"
+  },
+  {
+    "hex": "100001",
+    "base": 16,
+    "sha256": "97c489b6c1231ecd9fac99df40e60cec000a70a057d5971fb520c578da8e8841"
+  },
+  {
+    "hex": "ffffff",
+    "base": 16,
+    "sha256": "e2dbf8f5c4cc151480213d21f95c72aa73a001bce4915b17691ae40952dcd793"
+  },
+  {
+    "hex": "01000000",
+    "base": 16,
+    "sha256": "6cce36d9f8a9e151b100234af75cca89d55bcb94c153f51847debdf1f39cae45"
+  },
+  {
+    "hex": "01000001",
+    "base": 16,
+    "sha256": "443372db1ff98d9737596b4f83a8381ab6aab60e44e29854b48be88c74cdf1f0"
+  },
+  {
+    "hex": "0fffffffff",
+    "base": 16,
+    "sha256": "96c9766aa0d2590be49a4693e4919653a72537b662501f56dfa74404d06ccaef"
+  },
+  {
+    "hex": "1000000000",
+    "base": 16,
+    "sha256": "52a5d4a071d82caea87329868d22f6b8390ac3d227c6fde0d4525e69510ec479"
+  },
+  {
+    "hex": "1000000001",
+    "base": 16,
+    "sha256": "80a7cd0ffb78b364089257b612609ae24a9e886a2513ee0b3a7dc67b828c8c3c"
+  },
+  {
+    "hex": "01ffffff",
+    "base": 32,
+    "sha256": "f3fb5428392674c123adc9798d8482876663ded63ef0b4d7a65adc290e6ced3f"
+  },
+  {
+    "hex": "02000000",
+    "base": 32,
+    "sha256": "3bb78535cc9555ff19fe3556aaa41c78a0a45c64d49ba2bc564507648a8e77a1"
+  },
+  {
+    "hex": "02000001",
+    "base": 32,
+    "sha256": "97c489b6c1231ecd9fac99df40e60cec000a70a057d5971fb520c578da8e8841"
+  },
+  {
+    "hex": "3fffffff",
+    "base": 32,
+    "sha256": "5e22363936e77b200d078a778a0eef2db904174476b41e4569df1344839ced8e"
+  },
+  {
+    "hex": "40000000",
+    "base": 32,
+    "sha256": "6cce36d9f8a9e151b100234af75cca89d55bcb94c153f51847debdf1f39cae45"
+  },
+  {
+    "hex": "40000001",
+    "base": 32,
+    "sha256": "443372db1ff98d9737596b4f83a8381ab6aab60e44e29854b48be88c74cdf1f0"
+  },
+  {
+    "hex": "1fffffffffff",
+    "base": 32,
+    "sha256": "76ed0b82ee51b4e3df728afe66507924922757eebd6b33764b4e6b86d34a2a1e"
+  },
+  {
+    "hex": "200000000000",
+    "base": 32,
+    "sha256": "52a5d4a071d82caea87329868d22f6b8390ac3d227c6fde0d4525e69510ec479"
+  },
+  {
+    "hex": "200000000001",
+    "base": 32,
+    "sha256": "80a7cd0ffb78b364089257b612609ae24a9e886a2513ee0b3a7dc67b828c8c3c"
+  },
+  {
+    "hex": "039aa3ff",
+    "base": 36,
+    "sha256": "68a55e5b1e43c67f4ef34065a86c4c583f532ae8e3cda7e36cc79b611802ac07"
+  },
+  {
+    "hex": "039aa400",
+    "base": 36,
+    "sha256": "3bb78535cc9555ff19fe3556aaa41c78a0a45c64d49ba2bc564507648a8e77a1"
+  },
+  {
+    "hex": "039aa401",
+    "base": 36,
+    "sha256": "97c489b6c1231ecd9fac99df40e60cec000a70a057d5971fb520c578da8e8841"
+  },
+  {
+    "hex": "81bf0fff",
+    "base": 36,
+    "sha256": "95fbeb8f769d2c0079d1d11348877da944aaefaba6ecf9f7f7dab6344ece8605"
+  },
+  {
+    "hex": "81bf1000",
+    "base": 36,
+    "sha256": "6cce36d9f8a9e151b100234af75cca89d55bcb94c153f51847debdf1f39cae45"
+  },
+  {
+    "hex": "81bf1001",
+    "base": 36,
+    "sha256": "443372db1ff98d9737596b4f83a8381ab6aab60e44e29854b48be88c74cdf1f0"
+  },
+  {
+    "hex": "5c5e4523ffff",
+    "base": 36,
+    "sha256": "f6dad0e59524cee41f6888a77281d94436f4c0615326875613cd55f521714033"
+  },
+  {
+    "hex": "5c5e45240000",
+    "base": 36,
+    "sha256": "52a5d4a071d82caea87329868d22f6b8390ac3d227c6fde0d4525e69510ec479"
+  },
+  {
+    "hex": "5c5e45240001",
+    "base": 36,
+    "sha256": "80a7cd0ffb78b364089257b612609ae24a9e886a2513ee0b3a7dc67b828c8c3c"
+  },
+  {
+    "hex": "271f359f",
+    "base": 58,
+    "sha256": "68a55e5b1e43c67f4ef34065a86c4c583f532ae8e3cda7e36cc79b611802ac07"
+  },
+  {
+    "hex": "271f35a0",
+    "base": 58,
+    "sha256": "564374777639c82cf0c285c4b85704c0a19c0b8d008f25fc7ce4b560f031515c"
+  },
+  {
+    "hex": "271f35a1",
+    "base": 58,
+    "sha256": "c8b5462497d37eb053ccd8954c5fa4c5932303f64687cfb30ec7279fcf3309a8"
+  },
+  {
+    "hex": "08dd12263f",
+    "base": 58,
+    "sha256": "95fbeb8f769d2c0079d1d11348877da944aaefaba6ecf9f7f7dab6344ece8605"
+  },
+  {
+    "hex": "08dd122640",
+    "base": 58,
+    "sha256": "5c4be4f3632c63145070274c378fede7b99e82b6dc80a7927bb58d5f0373b529"
+  },
+  {
+    "hex": "08dd122641",
+    "base": 58,
+    "sha256": "66f4108f1134cabde7749f1a9be4aa62b317f07e2e5051116b307d9e7e9df37b"
+  },
+  {
+    "hex": "1a636a90b079ff",
+    "base": 58,
+    "sha256": "f6dad0e59524cee41f6888a77281d94436f4c0615326875613cd55f521714033"
+  },
+  {
+    "hex": "1a636a90b07a00",
+    "base": 58,
+    "sha256": "340076c5ad7c98d5f921b7fb87e03347ae1f012f89b3579f307ae827c52e2cf1"
+  },
+  {
+    "hex": "1a636a90b07a01",
+    "base": 58,
+    "sha256": "f46dda0b91be8402b3228b9bb52de3e45bbdbf70e9e4c1ff2d2bf740874d7f27"
+  },
+  {
+    "hex": "369b13df",
+    "base": 62,
+    "sha256": "68a55e5b1e43c67f4ef34065a86c4c583f532ae8e3cda7e36cc79b611802ac07"
+  },
+  {
+    "hex": "369b13e0",
+    "base": 62,
+    "sha256": "3bb78535cc9555ff19fe3556aaa41c78a0a45c64d49ba2bc564507648a8e77a1"
+  },
+  {
+    "hex": "369b13e1",
+    "base": 62,
+    "sha256": "97c489b6c1231ecd9fac99df40e60cec000a70a057d5971fb520c578da8e8841"
+  },
+  {
+    "hex": "0d398ed03f",
+    "base": 62,
+    "sha256": "95fbeb8f769d2c0079d1d11348877da944aaefaba6ecf9f7f7dab6344ece8605"
+  },
+  {
+    "hex": "0d398ed040",
+    "base": 62,
+    "sha256": "6cce36d9f8a9e151b100234af75cca89d55bcb94c153f51847debdf1f39cae45"
+  },
+  {
+    "hex": "0d398ed041",
+    "base": 62,
+    "sha256": "443372db1ff98d9737596b4f83a8381ab6aab60e44e29854b48be88c74cdf1f0"
+  },
+  {
+    "hex": "3017e892e23dff",
+    "base": 62,
+    "sha256": "f6dad0e59524cee41f6888a77281d94436f4c0615326875613cd55f521714033"
+  },
+  {
+    "hex": "3017e892e23e00",
+    "base": 62,
+    "sha256": "52a5d4a071d82caea87329868d22f6b8390ac3d227c6fde0d4525e69510ec479"
+  },
+  {
+    "hex": "3017e892e23e01",
+    "base": 62,
+    "sha256": "80a7cd0ffb78b364089257b612609ae24a9e886a2513ee0b3a7dc67b828c8c3c"
+  }
+]

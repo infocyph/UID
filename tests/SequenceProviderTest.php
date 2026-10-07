@@ -11,6 +11,8 @@ use Psr\SimpleCache\CacheInterface;
 
 final class SequenceTestCache implements CacheInterface
 {
+    public ?Closure $beforeRead = null;
+
     public bool $failWrites = false;
 
     public null|int|DateInterval $lastTtl = null;
@@ -43,6 +45,8 @@ final class SequenceTestCache implements CacheInterface
 
     public function get(string $key, mixed $default = null): mixed
     {
+        ($this->beforeRead ?? static function (): void {})();
+
         return $this->store[$key] ?? $default;
     }
 
@@ -89,6 +93,36 @@ final class SequenceTestCache implements CacheInterface
         return true;
     }
 }
+
+test('bound cache providers reject cancellation before writes and inside synchronizers', function (string $phase): void {
+    $host = \Infocyph\Runwire\RuntimeContext::standalone();
+    $request = \Infocyph\Runwire\RequestContext::create($host);
+    $runtime = new \Infocyph\UID\Runtime\GenerationContext(
+        runwire: new \Infocyph\UID\Runtime\RunwireBinding($host, $request),
+    );
+    $cache = new SequenceTestCache();
+    $cancel = static fn() => $request->cancel(\Infocyph\Runwire\Runtime\Enum\CancellationReason::HOST_CANCELLED);
+    $synchronizer = static function (string $key, callable $allocate) use ($cancel, $phase): int {
+        unset($key);
+        if ($phase === 'synchronizer') {
+            $cancel();
+        }
+
+        return $allocate();
+    };
+    $provider = new PsrSimpleCacheSequenceProvider($cache, synchronizer: $synchronizer, runtime: $runtime);
+
+    if ($phase === 'entry') {
+        $cancel();
+    } elseif ($phase === 'read') {
+        $cache->beforeRead = $cancel;
+    }
+
+    expect(fn(): int => $provider->next('test', 1, 100))
+        ->toThrow(\Infocyph\Runwire\Exception\CancelledException::class);
+    $cache->beforeRead = null;
+    expect($cache->has('uid.seq.test.1'))->toBeFalse();
+})->with(['entry', 'read', 'synchronizer']);
 
 final class FutureOnceSequenceProvider implements SequenceProviderInterface
 {
@@ -223,4 +257,28 @@ test('filesystem sequence provider rejects unsafe keys and corrupted state', fun
             unlink($path);
         }
     }
+});
+
+
+test('psr-16 sequence provider fails closed after observed state loss', function () {
+    $cache = new SequenceTestCache();
+    $provider = new PsrSimpleCacheSequenceProvider($cache);
+    expect($provider->next('snowflake', 1, 100))->toBe(1);
+    $cache->clear();
+
+    expect(fn(): int => $provider->next('snowflake', 1, 100))
+        ->toThrow(\Infocyph\UID\Exceptions\FileLockException::class);
+});
+
+test('custom epochs are normalized at configuration construction', function () {
+    $epoch = new DateTime('2024-01-01T00:00:00+00:00');
+    $snowflake = new \Infocyph\UID\Configuration\SnowflakeConfig(customEpoch: $epoch);
+    $sonyflake = new \Infocyph\UID\Configuration\SonyflakeConfig(customEpoch: $epoch);
+    $snowflakeEpoch = $snowflake->resolveCustomEpochMs();
+    $sonyflakeEpoch = $sonyflake->resolveCustomEpochMs();
+
+    $epoch->modify('+1 day');
+
+    expect($snowflake->resolveCustomEpochMs())->toBe($snowflakeEpoch)
+        ->and($sonyflake->resolveCustomEpochMs())->toBe($sonyflakeEpoch);
 });

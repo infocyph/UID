@@ -11,6 +11,7 @@ use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\SnowflakeException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
@@ -22,15 +23,19 @@ final class Snowflake
 {
     use GetSequence;
 
-    private const DATACENTER_BITS = 5;
+    private const int DATACENTER_BITS = 5;
 
-    private const DEFAULT_EPOCH = 1_577_836_800_000;
+    private const int DEFAULT_EPOCH = 1_577_836_800_000;
 
-    private const SEQUENCE_BITS = 12;
+    private const int MAX_PROVIDER_DOMAINS = 1024;
 
-    private const TIMESTAMP_BITS = 41;
+    private const int SEQUENCE_BITS = 12;
 
-    private const WORKER_BITS = 5;
+    private const int TIMESTAMP_BITS = 41;
+
+    private const int WAIT_TIMEOUT_MICROS = 1_000_000;
+
+    private const int WORKER_BITS = 5;
 
     /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, array{timestamp:int, sequence:int}>>|null */
     private static ?\WeakMap $lastStateByProvider = null;
@@ -68,7 +73,7 @@ final class Snowflake
         return self::generateInternal(
             $datacenter,
             $workerId,
-            self::getStartTimeStamp(),
+            self::DEFAULT_EPOCH,
             ClockBackwardPolicy::WAIT,
         );
     }
@@ -81,14 +86,15 @@ final class Snowflake
     public static function generateWithConfig(SnowflakeConfig $config): string
     {
         [$datacenterId, $workerId] = $config->resolveNode();
-        $customEpoch = $config->resolveCustomEpochMs();
+        $customEpoch = $config->customEpoch;
 
         return self::generateInternal(
             $datacenterId,
             $workerId,
-            $customEpoch ?? self::getStartTimeStamp(),
+            $customEpoch ?? self::DEFAULT_EPOCH,
             $config->clockBackwardPolicy,
             $config->sequenceProvider,
+            $config->runtime,
         );
     }
 
@@ -113,7 +119,7 @@ final class Snowflake
     {
         return self::parseWithEpoch(
             id: $id,
-            startTimestamp: self::getStartTimeStamp(),
+            startTimestamp: self::DEFAULT_EPOCH,
         );
     }
 
@@ -166,6 +172,15 @@ final class Snowflake
         return self::encodeNumericBytes($id);
     }
 
+    private static function assertDecodedId(string $id): string
+    {
+        if (!self::isValid($id)) {
+            throw new SnowflakeException('Decoded Snowflake ID exceeds the supported signed domain');
+        }
+
+        return $id;
+    }
+
     /**
      * @throws SnowflakeException
      */
@@ -201,22 +216,26 @@ final class Snowflake
 
     private static function decodeNumericBase(string $encoded, int $base): string
     {
-        return NumericConversion::decimalFromBase(
+        $id = NumericConversion::decimalFromBase(
             $encoded,
             $base,
             8,
             static fn(string $message, \InvalidArgumentException $exception): SnowflakeException => new SnowflakeException($message, 0, $exception),
         );
+
+        return self::assertDecodedId($id);
     }
 
     private static function decodeNumericBytes(string $bytes): string
     {
-        return NumericConversion::decimalFromBytes(
+        $id = NumericConversion::decimalFromBytes(
             $bytes,
             8,
             'Snowflake binary data must be exactly 8 bytes',
             static fn(string $message, \InvalidArgumentException $exception): SnowflakeException => new SnowflakeException($message, 0, $exception),
         );
+
+        return self::assertDecodedId($id);
     }
 
     private static function encodeNumericBytes(string $id): string
@@ -240,21 +259,21 @@ final class Snowflake
         int $startTimestamp,
         ClockBackwardPolicy $clockBackwardPolicy,
         ?SequenceProviderInterface $sequenceProvider = null,
+        ?GenerationContext $runtime = null,
     ): string {
         self::assertNodeIds($datacenter, $workerId);
-
-        $currentTime = (int) floor(microtime(true) * 1000);
-        self::assertTimestampRange($currentTime, $startTimestamp);
 
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
         $sequenceKey = ($datacenter << self::WORKER_BITS) | $workerId;
         $stateKey = $startTimestamp . ':' . $sequenceKey;
-        self::$lastStateByProvider ??= new \WeakMap();
-        $providerState = self::$lastStateByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
+        $providerState = self::providerState($resolvedSequenceProvider, $stateKey);
         $maxSequence = -1 ^ (-1 << self::SEQUENCE_BITS);
         $sequenceType = $startTimestamp === self::DEFAULT_EPOCH
             ? 'snowflake'
             : 'snowflake_' . $startTimestamp;
+
+        $currentTime = self::nowMilliseconds($runtime);
+        self::assertTimestampRange($currentTime, $startTimestamp);
 
         while (true) {
             [$currentTime, $sequence] = self::nextSequenceAtValidTimestamp(
@@ -265,6 +284,7 @@ final class Snowflake
                 $clockBackwardPolicy,
                 $resolvedSequenceProvider,
                 $sequenceType,
+                $runtime,
             );
 
             $lastState = $providerState[$stateKey] ?? null;
@@ -279,7 +299,7 @@ final class Snowflake
                 $currentTime < $lastState['timestamp']
                 || ($currentTime === $lastState['timestamp'] && $sequence <= $lastState['sequence'])
             ) {
-                $currentTime = self::waitUntil($lastState['timestamp'] + 1);
+                $currentTime = self::waitUntil($lastState['timestamp'] + 1, $runtime);
                 self::assertTimestampRange($currentTime, $startTimestamp);
 
                 continue;
@@ -304,14 +324,6 @@ final class Snowflake
     }
 
     /**
-     * Retrieves the start timestamp.
-     */
-    private static function getStartTimeStamp(): int
-    {
-        return self::DEFAULT_EPOCH;
-    }
-
-    /**
      * @return array{0:int, 1:int}
      * @throws FileLockException|SnowflakeException
      */
@@ -323,10 +335,11 @@ final class Snowflake
         ClockBackwardPolicy $clockBackwardPolicy,
         SequenceProviderInterface $sequenceProvider,
         string $sequenceType,
+        ?GenerationContext $runtime,
     ): array {
         while (true) {
             try {
-                $allocation = self::sequence($currentTime, $sequenceKey, $sequenceType, $sequenceProvider);
+                $allocation = self::sequence($currentTime, $sequenceKey, $sequenceType, $sequenceProvider, $runtime);
             } catch (SequenceTimestampException $exception) {
                 if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                     throw new SnowflakeException(
@@ -336,7 +349,7 @@ final class Snowflake
                     );
                 }
 
-                $currentTime = self::waitUntil($exception->lastTimestamp);
+                $currentTime = self::waitUntil($exception->lastTimestamp, $runtime);
                 self::assertTimestampRange($currentTime, $startTimestamp);
 
                 continue;
@@ -350,9 +363,40 @@ final class Snowflake
                 return [$currentTime, $allocation - 1];
             }
 
-            $currentTime = self::waitUntil($currentTime + 1);
+            $currentTime = self::waitUntil($currentTime + 1, $runtime);
             self::assertTimestampRange($currentTime, $startTimestamp);
         }
+    }
+
+    private static function nowMilliseconds(?GenerationContext $runtime): int
+    {
+        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
+    }
+
+    /**
+     * @return \ArrayObject<string, array{timestamp:int, sequence:int}>
+     */
+    private static function providerState(
+        SequenceProviderInterface $provider,
+        string $stateKey,
+    ): \ArrayObject {
+        self::$lastStateByProvider ??= new \WeakMap();
+
+        /** @var \ArrayObject<string, array{timestamp:int, sequence:int}>|null $state */
+        $state = self::$lastStateByProvider[$provider] ?? null;
+        if ($state === null) {
+            /** @var \ArrayObject<string, array{timestamp:int, sequence:int}> $state */
+            $state = new \ArrayObject();
+            self::$lastStateByProvider[$provider] = $state;
+
+            return $state;
+        }
+
+        if (!isset($state[$stateKey]) && count($state) >= self::MAX_PROVIDER_DOMAINS) {
+            throw new SnowflakeException('Snowflake provider domain limit exceeded');
+        }
+
+        return $state;
     }
 
     private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
@@ -368,12 +412,21 @@ final class Snowflake
         return [(string) intdiv($timestamp, 1000), (string) (($timestamp % 1000) * 1000)];
     }
 
-    private static function waitUntil(int $timestamp): int
+    private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
     {
-        $now = (int) floor(microtime(true) * 1000);
-        while ($now < $timestamp) {
-            usleep(1000);
-            $now = (int) floor(microtime(true) * 1000);
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
+
+        while (($now = self::nowMilliseconds($runtime)) < $timestamp) {
+            if (hrtime(true) >= $deadline) {
+                throw new SnowflakeException('Timed out waiting for a valid Snowflake timestamp');
+            }
+
+            if ($runtime !== null) {
+                $runtime->sleepMicroseconds(1_000);
+            } else {
+                usleep(1_000);
+            }
         }
 
         return $now;

@@ -1,0 +1,50 @@
+name: UID 6 Release Acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "composer.json"
+      - ".github/workflows/release-acceptance.yml"
+  pull_request:
+    branches: ["main", "master"]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "composer.json"
+      - ".github/workflows/release-acceptance.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  production-smoke:
+    name: Production smoke (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.4", "8.5"]
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          extensions: ctype
+          coverage: none
+
+      - name: Install production dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
+
+      - name: Check every generator and format in one 100-cycle pass
+        run: php tests/smoke.php

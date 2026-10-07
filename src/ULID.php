@@ -13,15 +13,15 @@ use Infocyph\UID\Support\BaseEncoder;
 
 final class ULID
 {
-    private const ENCODING_CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    private const string ENCODING_CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 
-    private const ENCODING_LENGTH = 32;
+    private const int ENCODING_LENGTH = 32;
 
-    private const MAX_TIMESTAMP = 281_474_976_710_655;
+    private const int MAX_TIMESTAMP = 281_474_976_710_655;
 
-    private const RANDOM_LENGTH = 16;
+    private const int RANDOM_LENGTH = 16;
 
-    private const TIME_LENGTH = 10;
+    private const int TIME_LENGTH = 10;
 
     private static int $lastGenTime = 0;
 
@@ -87,17 +87,19 @@ final class ULID
         self::assertTimestamp($time);
 
         $isMonotonic = $mode === UlidGenerationMode::MONOTONIC;
-        if ($isMonotonic && $dateTime === null && $time < self::$lastGenTime) {
+        if (!$isMonotonic) {
+            return self::encodeTime($time) . self::randomChars();
+        }
+
+        if ($dateTime === null && $time < self::$lastGenTime) {
             $time = self::$lastGenTime;
         }
 
-        $isDuplicate = $isMonotonic && $time === self::$lastGenTime;
-        if ($isMonotonic) {
-            self::$lastGenTime = $time;
-        }
+        $isDuplicate = $time === self::$lastGenTime;
+        self::$lastGenTime = $time;
 
         $timeChars = self::encodeTime($time);
-        if (!$isMonotonic || !$isDuplicate || count(self::$lastRandChars) !== self::RANDOM_LENGTH) {
+        if (!$isDuplicate || count(self::$lastRandChars) !== self::RANDOM_LENGTH) {
             self::resetRandomState();
         } elseif (!self::incrementRandomState()) {
             if ($dateTime !== null) {
@@ -105,6 +107,7 @@ final class ULID
             }
 
             $time = self::waitForNextMillisecond(self::$lastGenTime);
+            self::assertTimestamp($time);
             self::$lastGenTime = $time;
             $timeChars = self::encodeTime($time);
             self::resetRandomState();
@@ -168,7 +171,7 @@ final class ULID
      */
     public static function isValid(string $ulid): bool
     {
-        return (bool) preg_match('/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/', $ulid);
+        return (bool) preg_match('/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/D', $ulid);
     }
 
     /**
@@ -236,17 +239,41 @@ final class ULID
 
     private static function incrementRandomState(): bool
     {
+        $next = self::$lastRandChars;
         for ($index = self::RANDOM_LENGTH - 1; $index >= 0; --$index) {
-            if (self::$lastRandChars[$index] < 31) {
-                self::$lastRandChars[$index]++;
+            if ($next[$index] < 31) {
+                $next[$index]++;
+                self::$lastRandChars = $next;
 
                 return true;
             }
 
-            self::$lastRandChars[$index] = 0;
+            $next[$index] = 0;
         }
 
         return false;
+    }
+
+    /**
+     * @throws Exception
+     */
+    private static function randomChars(): string
+    {
+        $random = random_bytes(10);
+        $result = '';
+        $buffer = 0;
+        $bits = 0;
+        for ($index = 0; $index < 10; ++$index) {
+            $buffer = ($buffer << 8) | ord($random[$index]);
+            $bits += 8;
+            while ($bits >= 5) {
+                $bits -= 5;
+                $result .= self::ENCODING_CHARS[($buffer >> $bits) & 31];
+                $buffer &= $bits === 0 ? 0 : (1 << $bits) - 1;
+            }
+        }
+
+        return $result;
     }
 
     private static function randomCharsFromState(): string
@@ -293,7 +320,14 @@ final class ULID
 
     private static function waitForNextMillisecond(int $lastTimestamp): int
     {
+        if ($lastTimestamp >= self::MAX_TIMESTAMP) {
+            throw new ULIDException('ULID timestamp exhausted');
+        }
+        $deadline = hrtime(true) + 1_000_000_000;
         do {
+            if (hrtime(true) >= $deadline) {
+                throw new ULIDException('Timed out waiting for the next ULID timestamp');
+            }
             usleep(1000);
             $next = (int) floor(microtime(true) * 1000);
         } while ($next <= $lastTimestamp);

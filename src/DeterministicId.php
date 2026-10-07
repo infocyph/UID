@@ -8,11 +8,11 @@ use InvalidArgumentException;
 
 final class DeterministicId
 {
-    private const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    private const string ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-    private const DOMAIN = "infocyph.uid.deterministic.v5\0";
+    private const string DOMAIN = "infocyph.uid.deterministic.v5\0";
 
-    private const MAX_LENGTH = 43;
+    private const int MAX_LENGTH = 43;
 
     /**
      * Generates a deterministic opaque ID from payload.

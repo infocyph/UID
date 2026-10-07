@@ -15,7 +15,7 @@ It supports:
 - TBSL
 - NanoID and CUID2
 - KSUID and XID
-- RandomId and NanoID
+- RandomId
 - Opaque and deterministic IDs
 
 .. toctree::
@@ -24,6 +24,7 @@ It supports:
 
    installation
    quickstart
+   migration-6.0
    id-facade
 
 .. toctree::

@@ -14,26 +14,26 @@ use const STR_PAD_LEFT;
 
 final class UUID
 {
-    private const MAX_V7_TIMESTAMP = 281_474_976_710_655;
+    private const int MAX_V7_TIMESTAMP = 281_474_976_710_655;
 
-    private const NS_LIST = [
+    private const array NS_LIST = [
         'dns' => 0,
         'url' => 1,
         'oid' => 2,
         'x500' => 4,
     ];
 
-    private const RANDOM_LENGTH = [
+    private const array RANDOM_LENGTH = [
         6 => 2,
         7 => 4,
         8 => 1,
     ];
 
-    private const SECOND_INTERVALS = 10_000_000;
+    private const int SECOND_INTERVALS = 10_000_000;
 
-    private const SECOND_INTERVALS_78 = 10_000;
+    private const int SECOND_INTERVALS_78 = 10_000;
 
-    private const TIME_OFFSET = 0x01b21dd213814000;
+    private const int TIME_OFFSET = 0x01b21dd213814000;
 
     /** @var array<int, int> */
     private static array $subSec = [
@@ -137,7 +137,7 @@ final class UUID
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
         $data = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
 
-        return $trim ? $data : "\{$data\}";
+        return $trim ? $data : '{' . $data . '}';
     }
 
     /**
@@ -550,41 +550,20 @@ final class UUID
      *
      * @return string|null The incremented value or null if overflow occurred.
      */
-    private static function incrementHexCounter(string $hex): ?string
+    private static function incrementV7Tail(string $tail): ?string
     {
-        $hex = strtolower($hex);
-        for ($index = strlen($hex) - 1; $index >= 0; --$index) {
-            if ($hex[$index] === 'f') {
-                $hex[$index] = '0';
+        $tail = strtolower($tail);
+        for ($index = strlen($tail) - 1; $index >= 1; --$index) {
+            $value = intval($tail[$index], 16);
+            $maximum = $index === 4 ? 3 : 15;
+            $value = $index === 4 ? $value & 3 : $value;
+            if ($value < $maximum) {
+                $tail[$index] = dechex($value + 1);
 
-                continue;
+                return $tail;
             }
 
-            $next = match ($hex[$index]) {
-                '0' => '1',
-                '1' => '2',
-                '2' => '3',
-                '3' => '4',
-                '4' => '5',
-                '5' => '6',
-                '6' => '7',
-                '7' => '8',
-                '8' => '9',
-                '9' => 'a',
-                'a' => 'b',
-                'b' => 'c',
-                'c' => 'd',
-                'd' => 'e',
-                'e' => 'f',
-                default => null,
-            };
-            if ($next === null) {
-                return null;
-            }
-
-            $hex[$index] = $next;
-
-            return $hex;
+            $tail[$index] = '0';
         }
 
         return null;
@@ -659,7 +638,7 @@ final class UUID
         }
 
         $unixTsMs = $state['timestamp'];
-        $tail = self::incrementHexCounter($state['tail']);
+        $tail = self::incrementV7Tail($state['tail']);
         if ($tail === null) {
             if ($isExplicitTimestamp) {
                 throw new UUIDException('Monotonic UUID v7 overflow for the provided timestamp');
@@ -679,10 +658,21 @@ final class UUID
      */
     private static function nextV7Timestamp(int $lastTimestamp): int
     {
+        if ($lastTimestamp >= self::MAX_V7_TIMESTAMP) {
+            throw new UUIDException('UUID v7 timestamp exhausted');
+        }
+        $deadline = hrtime(true) + 1_000_000_000;
         do {
+            if (hrtime(true) >= $deadline) {
+                throw new UUIDException('Timed out waiting for the next UUID v7 timestamp');
+            }
             usleep(1000);
             $next = (int) floor(microtime(true) * 1000);
         } while ($next <= $lastTimestamp);
+
+        if ($next > self::MAX_V7_TIMESTAMP) {
+            throw new UUIDException('UUID v7 timestamp exhausted');
+        }
 
         return $next;
     }
@@ -714,7 +704,7 @@ final class UUID
      */
     private static function normalizeNode(string $node): string
     {
-        if (!preg_match('/^[0-9a-f]{12}$/i', $node)) {
+        if (!preg_match('/^[0-9a-f]{12}$/iD', $node)) {
             throw new UUIDException('UUID node must be exactly 12 hexadecimal characters');
         }
 
@@ -800,6 +790,10 @@ final class UUID
      */
     private static function randomV7Tail(): string
     {
-        return bin2hex(random_bytes(self::randomLengthFor(7) + 6));
+        $tail = bin2hex(random_bytes(self::randomLengthFor(7) + 6));
+        $tail[0] = '0';
+        $tail[4] = dechex(hexdec($tail[4]) & 3);
+
+        return $tail;
     }
 }

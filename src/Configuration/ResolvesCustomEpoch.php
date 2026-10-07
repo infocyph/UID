@@ -10,19 +10,17 @@ trait ResolvesCustomEpoch
 {
     public function resolveCustomEpochMs(): ?int
     {
-        return self::resolveEpochValue($this->customEpoch);
+        return $this->customEpoch;
     }
 
-    private static function resolveEpochValue(DateTimeInterface|int|null $customEpoch): ?int
+    private static function normalizeEpoch(DateTimeInterface|int|null $customEpoch): ?int
     {
         if ($customEpoch === null) {
             return null;
         }
 
-        if ($customEpoch instanceof DateTimeInterface) {
-            return (int) $customEpoch->format('Uv');
-        }
-
-        return $customEpoch;
+        return $customEpoch instanceof DateTimeInterface
+            ? (int) $customEpoch->format('Uv')
+            : $customEpoch;
     }
 }

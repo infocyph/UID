@@ -38,7 +38,11 @@ final class OpaqueId
         $value = $unpacked[1] ?? null;
         is_int($value) || throw new Exception('Unable to decode opaque token');
         $saltMask = crc32($salt);
+        $decoded = $value ^ $saltMask;
+        if ($decoded < 0) {
+            throw new \InvalidArgumentException('Decoded opaque token is outside the supported non-negative domain');
+        }
 
-        return $value ^ $saltMask;
+        return $decoded;
     }
 }

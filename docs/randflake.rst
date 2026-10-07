@@ -6,8 +6,11 @@ Class: ``Infocyph\\UID\\Randflake``
 Overview
 --------
 
-Randflake is a lease-bound 64-bit ID family whose payload fields are obscured by
-a reversible keyed permutation.
+Randflake is a lease-bound 64-bit ID family. ``RandflakeFormat::UID`` remains the
+default and preserves UID's legacy reversible Feistel representation.
+``RandflakeFormat::UPSTREAM`` uses the pinned upstream SPARX64 representation,
+byte order, signed decimal form and Base32hex text contract. Raw IDs do not carry
+a format discriminator, so applications using both modes must store one externally.
 
 Layout before permutation:
 
@@ -46,6 +49,9 @@ Use ``Infocyph\\UID\\Configuration\\RandflakeConfig``:
 - ``leaseStart`` and ``leaseEnd`` (Unix seconds)
 - ``secret`` (exactly 16 bytes)
 - optional ``sequenceProvider``
+- optional ``runtime`` (``GenerationContext``)
+- ``format`` (UID legacy by default)
+- optional ``leaseEndExclusive`` for upstream mode
 
 .. code-block:: php
 
@@ -62,6 +68,26 @@ Use ``Infocyph\\UID\\Configuration\\RandflakeConfig``:
    );
 
    $id = Randflake::generateWithConfig($config);
+
+   $upstream = Randflake::generateWithConfig(
+       new RandflakeConfig(
+           nodeId: 42,
+           leaseStart: time() - 5,
+           leaseEnd: time() + 300,
+           secret: 'super-secret-key',
+           format: \Infocyph\UID\Enums\RandflakeFormat::UPSTREAM,
+           leaseEndExclusive: time() + 301,
+       ),
+   );
+
+Lease Semantics
+---------------
+
+UID legacy mode keeps the existing inclusive ``leaseEnd`` contract. Upstream
+mode uses an exclusive end. If ``leaseEndExclusive`` is omitted,
+``RandflakeConfig`` translates the inclusive value to ``leaseEnd + 1``. Every
+resampled retry revalidates lease, lifetime and rollback constraints before a
+new allocation is consumed.
 
 Validation and Parsing
 ----------------------
@@ -91,11 +117,13 @@ Validation and Parsing
 Binary and Alternate Bases
 --------------------------
 
-- ``Randflake::toBytes($id)`` / ``Randflake::fromBytes($bytes)``
-- ``Randflake::toBase($id, $base)`` / ``Randflake::fromBase($encoded, $base)``
-- ``Randflake::encodeString($id)`` / ``Randflake::decodeString($stringId)``
+- ``Randflake::toBytes($id, $format)`` / ``Randflake::fromBytes($bytes, $format)``
+- ``Randflake::toBase($id, $base, $format)`` / ``Randflake::fromBase($encoded, $base, $format)``
+- ``Randflake::encodeString($id, $format)`` / ``Randflake::decodeString($stringId, $format)``
 
-Supported bases: ``16``, ``32``, ``36``, ``58``, ``62``.
+Supported bases: ``10``, ``16``, ``32``, ``36``, ``58``, ``62``. Pass the same explicit
+format to conversion/parsing APIs that was used to generate the ID. In upstream
+mode base 32 follows the upstream Base32hex representation.
 
 Exception Types
 ---------------

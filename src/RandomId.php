@@ -8,7 +8,7 @@ use Infocyph\UID\Support\RandomSampler;
 
 final class RandomId
 {
-    public const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyz123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    public const string DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyz123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
     public static function generate(int $length = 21, string $alphabet = self::DEFAULT_ALPHABET): string
     {

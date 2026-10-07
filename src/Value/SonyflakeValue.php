@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Infocyph\UID\Value;
 
 use DateTimeImmutable;
+use Infocyph\UID\Enums\SonyflakeFormat;
 use Infocyph\UID\Sonyflake;
 
 /**
@@ -12,9 +13,17 @@ use Infocyph\UID\Sonyflake;
  */
 final readonly class SonyflakeValue extends AbstractParsedIdValue
 {
-    public function __construct(string $value, private ?int $customEpoch = null)
-    {
+    public function __construct(
+        string $value,
+        private ?int $customEpoch = null,
+        private SonyflakeFormat $format = SonyflakeFormat::UID,
+    ) {
         parent::__construct($value);
+    }
+
+    public function getFormat(): SonyflakeFormat
+    {
+        return $this->format;
     }
 
     public function getMachineId(): int
@@ -35,8 +44,8 @@ final readonly class SonyflakeValue extends AbstractParsedIdValue
     protected function parser(): callable
     {
         return $this->customEpoch === null
-            ? Sonyflake::parse(...)
-            : fn(string $id): array => Sonyflake::parseWithEpoch($id, $this->customEpoch);
+            ? fn(string $id): array => Sonyflake::parse($id, $this->format)
+            : fn(string $id): array => Sonyflake::parseWithEpoch($id, $this->customEpoch, $this->format);
     }
 
     protected function validator(): callable

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Infocyph\UID\Support;
 
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\CallbackSequenceProvider;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\InMemorySequenceProvider;
@@ -39,12 +40,14 @@ trait GetSequence
         string $namespace = '',
         ?int $lockTimeoutMicros = null,
         int $reservationSize = 1,
+        ?GenerationContext $runtime = null,
     ): void {
         self::$sequenceProvider = new FilesystemSequenceProvider(
             $baseDirectory,
             $namespace,
             $lockTimeoutMicros,
             $reservationSize,
+            $runtime,
         );
     }
 
@@ -75,6 +78,7 @@ trait GetSequence
         ?callable $synchronizer = null,
         int $waitTime = 1_000,
         int $maxAttempts = 1_000,
+        ?GenerationContext $runtime = null,
     ): void {
         self::$sequenceProvider = new PsrSimpleCacheSequenceProvider(
             $cache,
@@ -82,6 +86,7 @@ trait GetSequence
             $waitTime,
             $maxAttempts,
             $synchronizer,
+            $runtime,
         );
     }
 
@@ -96,9 +101,12 @@ trait GetSequence
         int $dateTime,
         int $machineId,
         string $type,
-        ?SequenceProviderInterface $provider = null,
+        SequenceProviderInterface $provider,
+        ?GenerationContext $runtime = null,
     ): int {
-        $provider ??= self::$sequenceProvider ??= new FilesystemSequenceProvider();
+        if ($runtime !== null && ($provider instanceof FilesystemSequenceProvider || $provider instanceof PsrSimpleCacheSequenceProvider)) {
+            return $provider->next($type, $machineId, $dateTime, $runtime);
+        }
 
         return $provider->next($type, $machineId, $dateTime);
     }

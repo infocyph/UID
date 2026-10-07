@@ -7,77 +7,133 @@ namespace Infocyph\UID;
 use DateTimeImmutable;
 use Exception;
 use Infocyph\UID\Configuration\RandflakeConfig;
+use Infocyph\UID\Enums\RandflakeFormat;
 use Infocyph\UID\Exceptions\FileLockException;
 use Infocyph\UID\Exceptions\RandflakeException;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\DecimalBytes;
 use Infocyph\UID\Support\GetSequence;
 use Infocyph\UID\Support\NumericConversion;
+use Infocyph\UID\Support\Sparx64;
 use Infocyph\UID\Support\UnsignedDecimal;
 
 final class Randflake
 {
     use GetSequence;
 
-    public const EPOCH_OFFSET = 1_730_000_000;
+    public const int EPOCH_OFFSET = 1_730_000_000;
 
-    public const MAX_NODE = (1 << self::NODE_BITS) - 1;
+    public const int MAX_NODE = (1 << self::NODE_BITS) - 1;
 
-    public const MAX_SEQUENCE = (1 << self::SEQUENCE_BITS) - 1;
+    public const int MAX_SEQUENCE = (1 << self::SEQUENCE_BITS) - 1;
 
-    public const MAX_TIMESTAMP = self::EPOCH_OFFSET + self::MAX_TIMESTAMP_PART;
+    public const int MAX_TIMESTAMP = self::EPOCH_OFFSET + self::MAX_TIMESTAMP_PART;
 
-    public const MAX_TIMESTAMP_PART = (1 << self::TIMESTAMP_BITS) - 1;
+    public const int MAX_TIMESTAMP_PART = (1 << self::TIMESTAMP_BITS) - 1;
 
-    public const NODE_BITS = 17;
+    public const int NODE_BITS = 17;
 
-    public const SEQUENCE_BITS = 17;
+    public const int SEQUENCE_BITS = 17;
 
-    public const TIMESTAMP_BITS = 30;
+    public const int TIMESTAMP_BITS = 30;
 
-    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<int, int>>|null */
+    private const int MAX_PROVIDER_DOMAINS = 1024;
+
+    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<string, array{timestamp:int,sequence:int}>>|null */
     private static ?\WeakMap $lastTimestampByProvider = null;
 
     /** @var array<string, array<int, int>> */
     private static array $roundKeyCache = [];
 
+    /** @var array<string, Sparx64> */
+    private static array $sparxCache = [];
+
     /**
      * @throws RandflakeException
      */
-    public static function decodeString(string $id): string
-    {
+    public static function decodeString(
+        string $id,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): string {
+        if ($format === RandflakeFormat::UPSTREAM) {
+            if (
+                preg_match('/^(?:0|[1-9a-v][0-9a-v]{0,12})$/D', $id) !== 1
+                || (strlen($id) > 1 && $id[0] === '0')
+            ) {
+                throw new RandflakeException('randflake: invalid id');
+            }
+
+            try {
+                $bytes = BaseEncoder::decodeToBytes($id, 32, 8);
+                $decoded = DecimalBytes::fromLittleEndianSigned64(strrev($bytes));
+            } catch (\InvalidArgumentException $exception) {
+                throw new RandflakeException('randflake: invalid id', 0, $exception);
+            }
+
+            if (self::encodeString($decoded, $format) !== $id) {
+                throw new RandflakeException('randflake: invalid id');
+            }
+
+            return $decoded;
+        }
+
         return NumericConversion::decimalFromBase(
             $id,
             32,
             8,
-            static fn(string $message, \InvalidArgumentException $exception): RandflakeException => new RandflakeException(
-                $message === '' ? 'randflake: invalid id' : 'randflake: invalid id',
-                0,
-                $exception,
-            ),
+            static function (string $message, \InvalidArgumentException $exception): RandflakeException {
+                unset($message);
+
+                return new RandflakeException('randflake: invalid id', 0, $exception);
+            },
         );
     }
 
     /**
      * @throws RandflakeException
      */
-    public static function encodeString(string $id): string
-    {
-        if (!self::isValid($id)) {
+    public static function encodeString(
+        string $id,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): string {
+        if (!self::isValid($id, $format)) {
             throw new RandflakeException('randflake: invalid id');
         }
 
-        return BaseEncoder::encodeBytes(self::toBytes($id), 32);
+        $bytes = self::toBytes($id, $format);
+
+        return BaseEncoder::encodeBytes(
+            $format === RandflakeFormat::UPSTREAM ? strrev($bytes) : $bytes,
+            32,
+        );
     }
 
     /**
      * @throws RandflakeException
      */
-    public static function fromBase(string $encoded, int $base): string
-    {
+    public static function fromBase(
+        string $encoded,
+        int $base,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): string {
+        if ($format === RandflakeFormat::UPSTREAM) {
+            if ($base === 32) {
+                return self::decodeString($encoded, $format);
+            }
+
+            try {
+                return DecimalBytes::fromLittleEndianSigned64(
+                    strrev(BaseEncoder::decodeToBytes($encoded, $base, 8)),
+                );
+            } catch (\InvalidArgumentException $exception) {
+                throw new RandflakeException('randflake: invalid id', 0, $exception);
+            }
+        }
+
         return NumericConversion::decimalFromBase(
             $encoded,
             $base,
@@ -89,8 +145,18 @@ final class Randflake
     /**
      * @throws RandflakeException
      */
-    public static function fromBytes(string $bytes): string
-    {
+    public static function fromBytes(
+        string $bytes,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): string {
+        if ($format === RandflakeFormat::UPSTREAM) {
+            try {
+                return DecimalBytes::fromLittleEndianSigned64($bytes);
+            } catch (\InvalidArgumentException $exception) {
+                throw new RandflakeException('randflake: invalid id', 0, $exception);
+            }
+        }
+
         return NumericConversion::decimalFromBytes(
             $bytes,
             8,
@@ -102,13 +168,21 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      */
-    public static function generate(int $nodeId, int $leaseStart, int $leaseEnd, string $secret): string
-    {
+    public static function generate(
+        int $nodeId,
+        int $leaseStart,
+        int $leaseEnd,
+        #[\SensitiveParameter]
+        string $secret,
+    ): string {
         return self::generateInternal(
             $nodeId,
             $leaseStart,
             $leaseEnd,
             $secret,
+            null,
+            null,
+            RandflakeFormat::UID,
             null,
         );
     }
@@ -116,8 +190,13 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      */
-    public static function generateString(int $nodeId, int $leaseStart, int $leaseEnd, string $secret): string
-    {
+    public static function generateString(
+        int $nodeId,
+        int $leaseStart,
+        int $leaseEnd,
+        #[\SensitiveParameter]
+        string $secret,
+    ): string {
         return self::encodeString(self::generate($nodeId, $leaseStart, $leaseEnd, $secret));
     }
 
@@ -132,6 +211,11 @@ final class Randflake
             $config->leaseEnd,
             $config->secret,
             $config->sequenceProvider,
+            $config->runtime,
+            $config->format,
+            $config->format === RandflakeFormat::UPSTREAM
+                ? $config->resolveLeaseEndExclusive()
+                : null,
         );
     }
 
@@ -139,15 +223,20 @@ final class Randflake
      * @return array{timestamp: int, node_id: int, sequence: int}
      * @throws RandflakeException
      */
-    public static function inspect(string $id, string $secret): array
-    {
-        if (!self::isValid($id)) {
+    public static function inspect(
+        string $id,
+        #[\SensitiveParameter]
+        string $secret,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): array {
+        if (!self::isValid($id, $format)) {
             throw new RandflakeException('randflake: invalid id');
         }
 
         [$timestamp, $nodeId, $sequence] = self::inspectBytes(
-            self::toBytes($id),
+            self::toBytes($id, $format),
             self::validateSecret($secret),
+            $format,
         );
 
         return [
@@ -161,13 +250,23 @@ final class Randflake
      * @return array{timestamp: int, node_id: int, sequence: int}
      * @throws RandflakeException
      */
-    public static function inspectString(string $id, string $secret): array
-    {
-        return self::inspect(self::decodeString($id), $secret);
+    public static function inspectString(
+        string $id,
+        #[\SensitiveParameter]
+        string $secret,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): array {
+        return self::inspect(self::decodeString($id, $format), $secret, $format);
     }
 
-    public static function isValid(string $id): bool
-    {
+    public static function isValid(
+        string $id,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): bool {
+        if ($format === RandflakeFormat::UPSTREAM) {
+            return DecimalBytes::isSigned64($id);
+        }
+
         return $id !== ''
             && ctype_digit($id)
             && UnsignedDecimal::compare($id, '18446744073709551615') <= 0;
@@ -177,15 +276,20 @@ final class Randflake
      * @return array{time: DateTimeImmutable, node_id: int, sequence: int}
      * @throws Exception
      */
-    public static function parse(string $id, string $secret): array
-    {
-        if (!self::isValid($id)) {
+    public static function parse(
+        string $id,
+        #[\SensitiveParameter]
+        string $secret,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): array {
+        if (!self::isValid($id, $format)) {
             throw new RandflakeException('randflake: invalid id');
         }
 
         [$timestamp, $nodeId, $sequence] = self::inspectBytes(
-            self::toBytes($id),
+            self::toBytes($id, $format),
             self::validateSecret($secret),
+            $format,
         );
 
         return [
@@ -199,32 +303,124 @@ final class Randflake
      * @return array{time: DateTimeImmutable, node_id: int, sequence: int}
      * @throws Exception
      */
-    public static function parseString(string $id, string $secret): array
-    {
-        return self::parse(self::decodeString($id), $secret);
+    public static function parseString(
+        string $id,
+        #[\SensitiveParameter]
+        string $secret,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): array {
+        return self::parse(self::decodeString($id, $format), $secret, $format);
     }
 
     /**
      * @throws RandflakeException
      */
-    public static function toBase(string $id, int $base): string
-    {
-        return BaseEncoder::encodeBytes(self::toBytes($id), $base);
+    public static function toBase(
+        string $id,
+        int $base,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): string {
+        if ($format === RandflakeFormat::UPSTREAM && $base === 32) {
+            return self::encodeString($id, $format);
+        }
+
+        $bytes = self::toBytes($id, $format);
+
+        return BaseEncoder::encodeBytes(
+            $format === RandflakeFormat::UPSTREAM ? strrev($bytes) : $bytes,
+            $base,
+        );
     }
 
     /**
      * @throws RandflakeException
      */
-    public static function toBytes(string $id): string
-    {
+    public static function toBytes(
+        string $id,
+        RandflakeFormat $format = RandflakeFormat::UID,
+    ): string {
+        if ($format === RandflakeFormat::UPSTREAM) {
+            try {
+                return DecimalBytes::toLittleEndianSigned64($id);
+            } catch (\InvalidArgumentException $exception) {
+                throw new RandflakeException('randflake: invalid id', 0, $exception);
+            }
+        }
+
         return NumericConversion::bytesFromDecimal(
             $id,
             8,
-            self::isValid(...),
+            static fn(string $value): bool => self::isValid($value, RandflakeFormat::UID),
             'randflake: invalid id',
             'randflake: invalid id',
             static fn(string $message, \InvalidArgumentException $exception): RandflakeException => new RandflakeException($message, 0, $exception),
         );
+    }
+
+    /**
+     * @return array{0:int,1:int}
+     */
+    private static function allocateSequence(
+        SequenceProviderInterface $provider,
+        int $nodeId,
+        int $now,
+        int $leaseStart,
+        int $leaseEnd,
+        RandflakeFormat $format,
+        ?int $leaseEndExclusive,
+        ?GenerationContext $runtime,
+    ): array {
+        $type = $format === RandflakeFormat::UID ? 'randflake' : 'randflake_upstream';
+
+        try {
+            return [$now, self::sequence($now, $nodeId, $type, $provider, $runtime)];
+        } catch (SequenceTimestampException $exception) {
+            $now = self::nowSeconds($runtime);
+            self::assertGenerationTime($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive);
+            if ($now < $exception->lastTimestamp) {
+                throw new RandflakeException(
+                    'randflake: timestamp consistency violation, the current time is less than the persisted time',
+                    0,
+                    $exception,
+                );
+            }
+
+            return [$now, self::sequence($now, $nodeId, $type, $provider, $runtime)];
+        }
+    }
+
+    private static function assertGenerationTime(
+        int $now,
+        int $leaseStart,
+        int $leaseEnd,
+        RandflakeFormat $format,
+        ?int $leaseEndExclusive,
+    ): void {
+        if (!self::leaseContains($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive)) {
+            throw new RandflakeException('randflake: invalid lease, lease expired or not started yet');
+        }
+
+        if ($now < self::EPOCH_OFFSET || $now > self::MAX_TIMESTAMP) {
+            throw new RandflakeException('randflake: the randflake id is dead after 34 years of lifetime');
+        }
+    }
+
+    private static function encodeGeneratedPayload(
+        int $timestamp,
+        int $nodeId,
+        int $sequence,
+        #[\SensitiveParameter]
+        string $secret,
+        RandflakeFormat $format,
+    ): string {
+        $plain = self::packPayload($timestamp, $nodeId, $sequence);
+        if ($format === RandflakeFormat::UPSTREAM) {
+            return DecimalBytes::fromLittleEndianSigned64(
+                self::sparx($secret)->encrypt(strrev($plain)),
+            );
+        }
+
+        return DecimalBytes::fromBytes(self::permute($plain, $secret, false));
     }
 
     /**
@@ -234,70 +430,59 @@ final class Randflake
         int $nodeId,
         int $leaseStart,
         int $leaseEnd,
+        #[\SensitiveParameter]
         string $secret,
         ?SequenceProviderInterface $sequenceProvider,
+        ?GenerationContext $runtime,
+        RandflakeFormat $format,
+        ?int $leaseEndExclusive,
     ): string {
         self::validateNode($nodeId);
-        self::validateLeaseWindow($leaseStart, $leaseEnd);
+        self::validateLeaseWindow($leaseStart, $leaseEnd, $format, $leaseEndExclusive);
         $secret = self::validateSecret($secret);
 
-        $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
-        self::$lastTimestampByProvider ??= new \WeakMap();
-        $providerState = self::$lastTimestampByProvider[$resolvedSequenceProvider] ??= new \ArrayObject();
-        $now = time();
-        if ($now < $leaseStart || $now > $leaseEnd) {
-            throw new RandflakeException('randflake: invalid lease, lease expired or not started yet');
-        }
+        $provider = self::resolveSequenceProvider($sequenceProvider);
+        $domainKey = $format->value . ':' . $nodeId;
+        $state = self::providerState($provider, $domainKey);
+        $now = self::nowSeconds($runtime);
+        self::assertGenerationTime($now, $leaseStart, $leaseEnd, $format, $leaseEndExclusive);
 
-        if ($now > self::MAX_TIMESTAMP) {
-            throw new RandflakeException('randflake: the randflake id is dead after 34 years of lifetime');
-        }
-
-        $lastTimestamp = $providerState[$nodeId] ?? null;
-        if ($lastTimestamp !== null && $now < $lastTimestamp) {
-            throw new RandflakeException('randflake: timestamp consistency violation, the current time is less than the last time');
-        }
-
-        try {
-            $sequenceValue = self::sequence($now, $nodeId, 'randflake', $resolvedSequenceProvider);
-        } catch (SequenceTimestampException $exception) {
-            $now = time();
-            if ($now < $exception->lastTimestamp) {
-                throw new RandflakeException(
-                    'randflake: timestamp consistency violation, the current time is less than the persisted time',
-                    0,
-                    $exception,
-                );
-            }
-
-            $sequenceValue = self::sequence($now, $nodeId, 'randflake', $resolvedSequenceProvider);
-        }
-        if ($sequenceValue < 1) {
-            throw new RandflakeException('randflake: sequence provider must return a positive integer');
-        }
-
-        $sequence = $sequenceValue - 1;
-        if ($sequence > self::MAX_SEQUENCE) {
+        $last = $state[$domainKey] ?? null;
+        if ($last !== null && $now < $last['timestamp']) {
             throw new RandflakeException(
-                "randflake: resource exhausted (generator can't handle current throughput, try using multiple randflake instances)",
+                'randflake: timestamp consistency violation, the current time is less than the last time',
             );
         }
 
-        $providerState[$nodeId] = $now;
+        [$now, $allocation] = self::allocateSequence(
+            $provider,
+            $nodeId,
+            $now,
+            $leaseStart,
+            $leaseEnd,
+            $format,
+            $leaseEndExclusive,
+            $runtime,
+        );
+        // A callback provider may suspend while another request advances this domain.
+        $sequence = self::normalizeAllocation($allocation, $state[$domainKey] ?? null, $now);
+        $state[$domainKey] = ['timestamp' => $now, 'sequence' => $sequence];
 
-        $plain = self::packPayload($now, $nodeId, $sequence);
-        $cipher = self::permute($plain, $secret, false);
-
-        return DecimalBytes::fromBytes($cipher);
+        return self::encodeGeneratedPayload($now, $nodeId, $sequence, $secret, $format);
     }
 
     /**
      * @return array{0:int,1:int,2:int}
      * @throws RandflakeException
      */
-    private static function inspectBytes(string $cipherBytes, string $secret): array
-    {
-        $plain = self::permute($cipherBytes, $secret, true);
+    private static function inspectBytes(
+        string $cipherBytes,
+        string $secret,
+        RandflakeFormat $format,
+    ): array {
+        $plain = $format === RandflakeFormat::UPSTREAM
+            ? strrev(self::sparx($secret)->decrypt($cipherBytes))
+            : self::permute($cipherBytes, $secret, true);
         [$timestamp, $nodeId, $sequence] = self::unpackPayload($plain);
 
         if (
@@ -312,6 +497,50 @@ final class Randflake
         }
 
         return [$timestamp, $nodeId, $sequence];
+    }
+
+    private static function leaseContains(
+        int $timestamp,
+        int $leaseStart,
+        int $leaseEnd,
+        RandflakeFormat $format,
+        ?int $leaseEndExclusive,
+    ): bool {
+        if ($format === RandflakeFormat::UPSTREAM) {
+            return $timestamp >= $leaseStart && $timestamp < (int) $leaseEndExclusive;
+        }
+
+        return $timestamp >= $leaseStart && $timestamp <= $leaseEnd;
+    }
+
+    /**
+     * @param array{timestamp:int,sequence:int}|null $last
+     */
+    private static function normalizeAllocation(int $allocation, ?array $last, int $now): int
+    {
+        if ($allocation < 1) {
+            throw new RandflakeException('randflake: sequence provider must return a positive integer');
+        }
+
+        $sequence = $allocation - 1;
+        if ($last !== null && $now < $last['timestamp']) {
+            throw new RandflakeException('randflake: sequence allocation timestamp regressed for the active provider domain');
+        }
+        if ($last !== null && $last['timestamp'] === $now && $sequence <= $last['sequence']) {
+            throw new RandflakeException('randflake: sequence allocation regressed for the active provider domain');
+        }
+        if ($sequence > self::MAX_SEQUENCE) {
+            throw new RandflakeException(
+                "randflake: resource exhausted (generator can't handle current throughput, try using multiple randflake instances)",
+            );
+        }
+
+        return $sequence;
+    }
+
+    private static function nowSeconds(?GenerationContext $runtime): int
+    {
+        return $runtime?->nowSeconds() ?? time();
     }
 
     private static function packPayload(int $timestamp, int $nodeId, int $sequence): string
@@ -353,9 +582,33 @@ final class Randflake
         return pack('N2', $left, $right);
     }
 
+    /**
+     * @return \ArrayObject<string, array{timestamp:int,sequence:int}>
+     */
+    private static function providerState(
+        SequenceProviderInterface $provider,
+        string $domainKey,
+    ): \ArrayObject {
+        self::$lastTimestampByProvider ??= new \WeakMap();
+
+        /** @var \ArrayObject<string, array{timestamp:int,sequence:int}>|null $state */
+        $state = self::$lastTimestampByProvider[$provider] ?? null;
+        if ($state === null) {
+            /** @var \ArrayObject<string, array{timestamp:int,sequence:int}> $state */
+            $state = new \ArrayObject();
+            self::$lastTimestampByProvider[$provider] = $state;
+        }
+
+        if (!isset($state[$domainKey]) && count($state) >= self::MAX_PROVIDER_DOMAINS) {
+            throw new RandflakeException('randflake: provider domain limit exceeded');
+        }
+
+        return $state;
+    }
+
     private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
     {
-        return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
+        return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider(reservationSize: 64);
     }
 
     private static function roundFunction(int $value, int $key): int
@@ -395,6 +648,22 @@ final class Randflake
         return self::$roundKeyCache[$fingerprint] = $keys;
     }
 
+    private static function sparx(
+        #[\SensitiveParameter]
+        string $secret,
+    ): Sparx64 {
+        $fingerprint = hash('sha256', $secret);
+        if (isset(self::$sparxCache[$fingerprint])) {
+            return self::$sparxCache[$fingerprint];
+        }
+
+        if (count(self::$sparxCache) === 16) {
+            array_shift(self::$sparxCache);
+        }
+
+        return self::$sparxCache[$fingerprint] = new Sparx64($secret);
+    }
+
     /**
      * @param array<array-key, mixed>|false $parts
      * @throws RandflakeException
@@ -432,8 +701,25 @@ final class Randflake
     /**
      * @throws RandflakeException
      */
-    private static function validateLeaseWindow(int $leaseStart, int $leaseEnd): void
-    {
+    private static function validateLeaseWindow(
+        int $leaseStart,
+        int $leaseEnd,
+        RandflakeFormat $format,
+        ?int $leaseEndExclusive,
+    ): void {
+        if ($format === RandflakeFormat::UPSTREAM) {
+            if (
+                $leaseEndExclusive === null
+                || $leaseStart < self::EPOCH_OFFSET
+                || $leaseEndExclusive <= $leaseStart
+                || $leaseEndExclusive > self::MAX_TIMESTAMP + 1
+            ) {
+                throw new RandflakeException('randflake: invalid lease, lease expired or not started yet');
+            }
+
+            return;
+        }
+
         if ($leaseStart > $leaseEnd || $leaseEnd > self::MAX_TIMESTAMP) {
             throw new RandflakeException('randflake: invalid lease, lease expired or not started yet');
         }
@@ -452,8 +738,10 @@ final class Randflake
     /**
      * @throws RandflakeException
      */
-    private static function validateSecret(string $secret): string
-    {
+    private static function validateSecret(
+        #[\SensitiveParameter]
+        string $secret,
+    ): string {
         if (strlen($secret) !== 16) {
             throw new RandflakeException('randflake: invalid secret, secret must be 16 bytes long');
         }

@@ -8,10 +8,10 @@ process-local and must not be used when multiple workers share an ID domain.
 Filesystem Provider
 -------------------
 
-The normal path uses blocking ``flock()``. An optional monotonic timeout can be
-set in microseconds. State reads are bounded, malformed state fails closed, and
-validated paths—not open handles—are cached. Namespaces isolate applications
-sharing a directory.
+Use an application-owned directory that is not writable by unrelated local users.
+UID rejects symlink/non-regular sequence files, verifies ownership and opened-file
+identity, and keeps a stable inode while writers coordinate. Lock acquisition is
+bounded; with a Runwire-bound GenerationContext retries use cooperative sleep.
 
 .. code-block:: php
 
@@ -26,22 +26,50 @@ sharing a directory.
        reservationSize: 8,
    );
 
-Reservation size defaults to 1. Larger ranges reduce lock traffic but reserve
-unused values when a process exits; they do not permit duplicate allocations.
+Larger reservations reduce lock traffic by allocating disjoint local ranges.
+A process that exits can leave gaps, which is acceptable; reserved values are
+never recycled. Reservation metadata is bounded. The default storage location is
+unchanged in 6.0, so no automatic state-path migration is performed.
 
-Other Providers
+Filesystem state is crash-resistant only to the guarantees of the underlying
+filesystem. fflush() is not a power-loss durability guarantee. Deployments that
+require stronger durability should use an authoritative external allocator.
+
+PSR-16 Provider
 ---------------
 
-``setSequenceProvider()`` accepts any ``SequenceProviderInterface``. Convenience
-methods select filesystem, in-memory, callback, or optional PSR-16 providers.
-The PSR-16 provider needs an application-supplied distributed synchronizer when
-the cache is shared by multiple hosts; its fallback lock coordinates one host only.
+Generic PSR-16 storage is usable only when its operational contract is strong
+enough for sequence allocation. For a shared ID domain:
 
-The provider contract is:
+- the sequence key must remain authoritative while its timestamp can still emit;
+- configure the cache so the key is not evicted or expired unexpectedly;
+- preserve state across cache clearing, failover, restore and worker restarts;
+- coordinate all hosts with an application-supplied distributed synchronizer;
+- keep machine/node ownership stable across writers.
+
+UID writes sequence state without an explicit TTL. PSR-16 implementations may
+apply their configured default lifetime when null/default TTL is used, so the
+backend must be configured accordingly. UID fails closed when state that this
+provider instance has already observed disappears or regresses, but that local
+guard cannot reconstruct state lost before a new process starts.
+
+The fallback cache lock coordinates only cooperating processes that see the same
+local filesystem. It is not a distributed lock, and a Runwire mutex is not a
+replacement for distributed synchronization or an authoritative allocation store.
+
+Provider Contract
+-----------------
+
+setSequenceProvider() accepts any SequenceProviderInterface:
 
 .. code-block:: php
 
    public function next(string $type, int $machineId, int $timestamp): int;
 
-It returns a positive allocation starting at 1. Generators map that allocation
-to their zero-based encoded sequence fields.
+The provider returns a positive allocation starting at 1. Generators map that
+allocation to their encoded zero-based sequence field where required.
+
+Static provider selectors are process/worker configuration. They are not
+request-local storage. In persistent workers, prefer explicitly configured
+provider instances on generator config objects when different requests can belong
+to different allocation domains.

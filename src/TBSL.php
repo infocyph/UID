@@ -10,6 +10,8 @@ use Infocyph\UID\Configuration\TBSLConfig;
 use Infocyph\UID\Enums\ClockBackwardPolicy;
 use Infocyph\UID\Exceptions\SequenceTimestampException;
 use Infocyph\UID\Exceptions\UIDException;
+use Infocyph\UID\Runtime\GenerationContext;
+use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\GetSequence;
@@ -18,7 +20,10 @@ final class TBSL
 {
     use GetSequence;
 
-    private static int $lastTimeSequence = 0;
+    private const int WAIT_TIMEOUT_MICROS = 1_000_000;
+
+    /** @var \WeakMap<SequenceProviderInterface, \ArrayObject<int, int>>|null */
+    private static ?\WeakMap $lastTimeByProvider = null;
 
     /**
      * Decodes one of bases: 16, 32, 36, 58, 62 into canonical TBSL.
@@ -78,6 +83,7 @@ final class TBSL
             $config->sequenced,
             $config->clockBackwardPolicy,
             $config->sequenceProvider,
+            $config->runtime,
         );
     }
 
@@ -86,7 +92,7 @@ final class TBSL
      */
     public static function isValid(string $tbsl): bool
     {
-        return (bool) preg_match('/^[0-9A-F]{20}$/', $tbsl);
+        return (bool) preg_match('/^[0-9A-F]{20}$/D', $tbsl);
     }
 
     /**
@@ -107,11 +113,11 @@ final class TBSL
         $storeParts = unpack('Jvalue', $storeBytes);
         $storeValue = $storeParts['value'] ?? null;
         is_int($storeValue) || throw new Exception('Unable to parse TBSL timestamp');
-        $storeData = str_pad((string) $storeValue, 18, '0', STR_PAD_LEFT);
+        $time = intdiv($storeValue, 100);
 
         return [
-            'time' => new DateTimeImmutable('@' . substr($storeData, 0, 10) . '.' . substr($storeData, 10, 6)),
-            'machineId' => (int) substr($storeData, -2),
+            'time' => new DateTimeImmutable('@' . intdiv($time, 1_000_000) . '.' . str_pad((string) ($time % 1_000_000), 6, '0', STR_PAD_LEFT)),
+            'machineId' => $storeValue % 100,
         ];
     }
 
@@ -152,6 +158,13 @@ final class TBSL
         }
     }
 
+    private static function assertTimestamp(int $timestamp, int $machineId): void
+    {
+        if ($timestamp < 0 || $timestamp > intdiv(0x0fffffffffffffff - $machineId, 100)) {
+            throw new UIDException('TBSL timestamp exceeds its 60-bit field');
+        }
+    }
+
     /**
      * @throws Exception
      */
@@ -160,29 +173,37 @@ final class TBSL
         bool $sequenced,
         ClockBackwardPolicy $clockBackwardPolicy,
         ?SequenceProviderInterface $sequenceProvider = null,
+        ?GenerationContext $runtime = null,
     ): string {
         self::assertMachineId($machineId);
 
-        [$micro, $seconds] = explode(' ', microtime());
-        $timeSequence = (int) ($seconds . substr($micro, 2, 6));
+        $sequenceProvider ??= self::$sequenceProvider ??= new FilesystemSequenceProvider();
+        self::$lastTimeByProvider ??= new \WeakMap();
+        /** @var \ArrayObject<int, int> $state */
+        $state = self::$lastTimeByProvider[$sequenceProvider] ??= new \ArrayObject();
+        $lastTime = $state[$machineId] ?? 0;
+        $timeSequence = self::nowMicroseconds($runtime);
 
-        if ($timeSequence < self::$lastTimeSequence) {
+        if ($timeSequence < $lastTime) {
             if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                 throw new UIDException('Clock moved backwards while generating TBSL ID');
             }
 
-            $timeSequence = self::waitUntilNextTimeSequence(self::$lastTimeSequence);
+            $timeSequence = self::waitUntilNextTimeSequence($lastTime, $runtime);
         }
+        self::assertTimestamp($timeSequence, $machineId);
         [$timeSequence, $tail] = self::resolveTail(
             $machineId,
             $sequenced,
             $timeSequence,
             $clockBackwardPolicy,
             $sequenceProvider,
+            $runtime,
         );
-        self::$lastTimeSequence = $timeSequence;
+        self::assertTimestamp($timeSequence, $machineId);
+        $state[$machineId] = max($state[$machineId] ?? 0, $timeSequence);
 
-        $storeValue = (int) ($timeSequence . sprintf('%02d', $machineId));
+        $storeValue = ($timeSequence * 100) + $machineId;
         $storeData = ltrim(bin2hex(pack('J', $storeValue)), '0');
         if (strlen($storeData) > 15) {
             throw new UIDException('TBSL timestamp exceeds its 60-bit field');
@@ -193,6 +214,11 @@ final class TBSL
             $storeData,
             $tail,
         ));
+    }
+
+    private static function nowMicroseconds(?GenerationContext $runtime): int
+    {
+        return $runtime?->nowMicroseconds() ?? (int) floor(microtime(true) * 1_000_000);
     }
 
     /**
@@ -209,7 +235,8 @@ final class TBSL
         bool $enableSequence,
         int $timeSequence,
         ClockBackwardPolicy $clockBackwardPolicy,
-        ?SequenceProviderInterface $sequenceProvider = null,
+        SequenceProviderInterface $sequenceProvider,
+        ?GenerationContext $runtime = null,
     ): array {
         if (!$enableSequence) {
             return [$timeSequence, substr(bin2hex(random_bytes(3)), 0, 5)];
@@ -217,7 +244,7 @@ final class TBSL
 
         do {
             try {
-                $sequence = self::sequence($timeSequence, $machineId, 'tbsl', $sequenceProvider);
+                $sequence = self::sequence($timeSequence, $machineId, 'tbsl', $sequenceProvider, $runtime);
             } catch (SequenceTimestampException $exception) {
                 if ($clockBackwardPolicy === ClockBackwardPolicy::THROW) {
                     throw new UIDException(
@@ -227,7 +254,7 @@ final class TBSL
                     );
                 }
 
-                $timeSequence = self::waitUntilNextTimeSequence($exception->lastTimestamp);
+                $timeSequence = self::waitUntilNextTimeSequence($exception->lastTimestamp, $runtime);
 
                 continue;
             }
@@ -240,16 +267,26 @@ final class TBSL
                 return [$timeSequence, str_pad(dechex($sequence - 1), 5, '0', STR_PAD_LEFT)];
             }
 
-            $timeSequence = self::waitUntilNextTimeSequence($timeSequence);
+            $timeSequence = self::waitUntilNextTimeSequence($timeSequence, $runtime);
         } while (true);
     }
 
-    private static function waitUntilNextTimeSequence(int $last): int
+    private static function waitUntilNextTimeSequence(int $last, ?GenerationContext $runtime): int
     {
-        do {
-            [$micro, $seconds] = explode(' ', microtime());
-            $candidate = (int) ($seconds . substr($micro, 2, 6));
-        } while ($candidate <= $last);
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
+
+        while (($candidate = self::nowMicroseconds($runtime)) <= $last) {
+            if (hrtime(true) >= $deadline) {
+                throw new UIDException('Timed out waiting for the next TBSL timestamp');
+            }
+
+            if ($runtime !== null) {
+                $runtime->sleepMicroseconds(100);
+            } else {
+                usleep(100);
+            }
+        }
 
         return $candidate;
     }

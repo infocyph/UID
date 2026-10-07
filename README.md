@@ -18,13 +18,16 @@ All-in-one unique ID toolkit for PHP.
 - TypeID, ObjectID, NanoID, RandomId, CUID2, KSUID, XID
 - Opaque and deterministic IDs
 - Value objects and comparator utilities
-- Binary conversion and base encoders (`16`, `32`, `36`, `58`, `62`)
+- Binary conversion and base encoders (`10`, `16`, `32`, `36`, `58`, `62`)
 - Pluggable sequence providers (filesystem, memory, PSR-16 cache, callback)
+- Explicit legacy/upstream Sonyflake and Randflake compatibility modes
+- Optional PSR-20 clocks and Runwire 2.1.1+ cooperative wait integration
 
 ## Requirements
 
-- PHP `>=8.2`
+- PHP `>=8.4`
 - A 64-bit PHP runtime
+- PHP ctype extension
 
 ## Installation
 
@@ -75,7 +78,7 @@ $decoded = UUID::fromBase($base58, 58);
 ```
 
 The shared byte-level encoder is available as
-`Infocyph\UID\Support\BaseEncoder` for bases `16`, `32`, `36`, `58`, and `62`.
+`Infocyph\UID\Support\BaseEncoder` for bases `10`, `16`, `32`, `36`, `58`, and `62`.
 
 ## References
 
@@ -97,6 +100,10 @@ to contact the maintainers confidentially.
 UID is protected by [PHPForge](https://github.com/infocyph/PHPForge), an automated quality and security gate covering
 tests, static and taint analysis, dependency auditing, architecture checks, and release readiness. Automated controls reduce
 risk but do not replace responsible disclosure or manual review.
+
+Release acceptance also runs `php tests/smoke.php` with a production-only install on PHP 8.4 and 8.5.
+One 100-cycle pass covers every generator and supported format, checking valid output, sample uniqueness,
+and relevant round trips. Long HTTP benchmarks and soak runs are not release gates.
 
 ---
 

@@ -44,7 +44,7 @@ Binary and Alternate Bases
 - ``ULID::toBytes($ulid)`` / ``ULID::fromBytes($bytes)``
 - ``ULID::toBase($ulid, $base)`` / ``ULID::fromBase($encoded, $base)``
 
-Supported bases: ``16``, ``32``, ``36``, ``58``, ``62``.
+Supported bases: ``10``, ``16``, ``32``, ``36``, ``58``, ``62``.
 
 Exception Type
 --------------

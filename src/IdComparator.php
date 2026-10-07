@@ -17,7 +17,12 @@ final class IdComparator
         $leftString = $left instanceof IdValueInterface ? $left->toString() : $left;
         $rightString = $right instanceof IdValueInterface ? $right->toString() : $right;
 
-        if (ctype_digit($leftString) && ctype_digit($rightString)) {
+        $leftNumeric = ctype_digit($leftString);
+        $rightNumeric = ctype_digit($rightString);
+        if ($leftNumeric !== $rightNumeric) {
+            return $leftNumeric ? -1 : 1;
+        }
+        if ($leftNumeric) {
             return UnsignedDecimal::compare($leftString, $rightString);
         }
 

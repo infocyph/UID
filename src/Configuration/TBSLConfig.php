@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Infocyph\UID\Configuration;
 
 use Infocyph\UID\Enums\ClockBackwardPolicy;
+use Infocyph\UID\Runtime\GenerationContext;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 
 final readonly class TBSLConfig
@@ -20,6 +21,7 @@ final readonly class TBSLConfig
         ?callable $machineIdResolver = null,
         public ?SequenceProviderInterface $sequenceProvider = null,
         public ClockBackwardPolicy $clockBackwardPolicy = ClockBackwardPolicy::WAIT,
+        public ?GenerationContext $runtime = null,
     ) {
         $this->machineIdResolver = $machineIdResolver ? $machineIdResolver(...) : null;
     }

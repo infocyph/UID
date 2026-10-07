@@ -64,10 +64,9 @@ test('filesystem sequences fail closed for oversized and malformed state', funct
     }
 });
 
-test('filesystem reservation ranges never overlap across processes', function () {
-    if (!function_exists('pcntl_fork') || !function_exists('pcntl_exec')) {
-        $this->markTestSkipped('The pcntl extension is required for multi-process coverage');
-    }
+test('filesystem reservation ranges never overlap across processes', function (int $reservationSize) {
+    expect(function_exists('pcntl_fork'))->toBeTrue()
+        ->and(function_exists('pcntl_exec'))->toBeTrue();
 
     $directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uid-v5-' . bin2hex(random_bytes(6));
     mkdir($directory, 0700);
@@ -79,7 +78,7 @@ test('filesystem reservation ranges never overlap across processes', function ()
             $pid = pcntl_fork();
             expect($pid)->toBeGreaterThanOrEqual(0);
             if ($pid === 0) {
-                $provider = new FilesystemSequenceProvider($directory, 'shared', reservationSize: 16);
+                $provider = new FilesystemSequenceProvider($directory, 'shared', reservationSize: $reservationSize);
                 $allocations = [];
                 for ($index = 0; $index < 100; ++$index) {
                     $allocations[] = $provider->next('sequence', 1, 123456);
@@ -109,12 +108,11 @@ test('filesystem reservation ranges never overlap across processes', function ()
         }
         rmdir($directory);
     }
-});
+})->with([1, 16]);
 
 test('coordinated generators remain unique across processes', function (string $algorithm) {
-    if (!function_exists('pcntl_fork') || !function_exists('pcntl_exec')) {
-        $this->markTestSkipped('The pcntl extension is required for multi-process coverage');
-    }
+    expect(function_exists('pcntl_fork'))->toBeTrue()
+        ->and(function_exists('pcntl_exec'))->toBeTrue();
 
     $directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'uid-v5-' . bin2hex(random_bytes(6));
     mkdir($directory, 0700);
