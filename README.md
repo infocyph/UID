@@ -18,7 +18,7 @@ All-in-one unique ID toolkit for PHP.
 - TypeID, ObjectID, NanoID, RandomId, CUID2, KSUID, XID
 - Opaque and deterministic IDs
 - Value objects and comparator utilities
-- Binary conversion and base encoders (`16`, `32`, `36`, `58`, `62`)
+- Binary conversion and base encoders (`10`, `16`, `32`, `36`, `58`, `62`)
 - Pluggable sequence providers (filesystem, memory, PSR-16 cache, callback)
 
 ## Requirements

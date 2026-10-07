@@ -7,6 +7,7 @@ UID exposes base conversion through algorithm-specific APIs and a shared
 Supported Bases
 ---------------
 
+- ``10``: decimal alphabet
 - ``16``: lowercase hexadecimal alphabet
 - ``32``: ``0-9a-v`` alphabet
 - ``36``: ``0-9a-z`` alphabet
@@ -55,6 +56,8 @@ left-padded and validated consistently.
 
 Notes
 -----
+
+Base-10 values are also transport encodings of the underlying bytes; for structured numeric ID families, prefer the algorithm-specific canonical decimal representation when one exists.
 
 Alternate-base values are transport encodings. They do not replace each
 algorithm's canonical representation.

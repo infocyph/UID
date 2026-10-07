@@ -117,11 +117,11 @@ Validation and Parsing
 Binary and Alternate Bases
 --------------------------
 
-- ``Randflake::toBytes($id)`` / ``Randflake::fromBytes($bytes)``
-- ``Randflake::toBase($id, $base)`` / ``Randflake::fromBase($encoded, $base)``
-- ``Randflake::encodeString($id)`` / ``Randflake::decodeString($stringId)``
+- ``Randflake::toBytes($id, $format)`` / ``Randflake::fromBytes($bytes, $format)``
+- ``Randflake::toBase($id, $base, $format)`` / ``Randflake::fromBase($encoded, $base, $format)``
+- ``Randflake::encodeString($id, $format)`` / ``Randflake::decodeString($stringId, $format)``
 
-Supported bases: ``16``, ``32``, ``36``, ``58``, ``62``. Pass the same explicit
+Supported bases: ``10``, ``16``, ``32``, ``36``, ``58``, ``62``. Pass the same explicit
 format to conversion/parsing APIs that was used to generate the ID. In upstream
 mode base 32 follows the upstream Base32hex representation.
 

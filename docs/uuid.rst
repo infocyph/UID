@@ -101,7 +101,7 @@ Binary and Alternate Bases
 - ``UUID::toBytes($uuid)`` / ``UUID::fromBytes($bytes)``
 - ``UUID::toBase($uuid, $base)`` / ``UUID::fromBase($encoded, $base)``
 
-Supported bases: ``16``, ``32``, ``36``, ``58``, ``62``.
+Supported bases: ``10``, ``16``, ``32``, ``36``, ``58``, ``62``.
 
 GUID Helper
 -----------

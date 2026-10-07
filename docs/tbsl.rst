@@ -72,7 +72,7 @@ Binary and Alternate Bases
 - ``TBSL::toBytes($id)`` / ``TBSL::fromBytes($bytes)``
 - ``TBSL::toBase($id, $base)`` / ``TBSL::fromBase($encoded, $base)``
 
-Supported bases: ``16``, ``32``, ``36``, ``58``, ``62``.
+Supported bases: ``10``, ``16``, ``32``, ``36``, ``58``, ``62``.
 
 Exception Type
 --------------
