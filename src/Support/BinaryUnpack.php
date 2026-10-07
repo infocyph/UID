@@ -7,6 +7,18 @@ namespace Infocyph\UID\Support;
 final class BinaryUnpack
 {
     /**
+     * @return list<int>
+     */
+    public static function bytes(string $bytes): array
+    {
+        /** @var array<int, int>|false $unpacked */
+        $unpacked = unpack('C*', $bytes);
+        $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
+
+        return array_values($unpacked);
+    }
+
+    /**
      * @throws \Exception
      */
     public static function u16(string $bytes, string $error): int
