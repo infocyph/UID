@@ -136,6 +136,84 @@ function uidInspectCompletion(array $info, int $idsPerResponse): array
 }
 
 /**
+ * @return array{attempted:int,successful:int,failed:int,timeouts:int,duplicates:int}
+ */
+function uidRunOperations(
+    string $url,
+    int $concurrency,
+    int $operations,
+    int $idsPerResponse,
+): array {
+    $multi = curl_multi_init();
+    $launched = 0;
+    $active = 0;
+    $attempted = 0;
+    $successful = 0;
+    $failed = 0;
+    $timeouts = 0;
+    $duplicates = 0;
+
+    $launch = static function () use ($multi, $url, $operations, &$launched, &$active): void {
+        if ($launched >= $operations) {
+            return;
+        }
+
+        curl_multi_add_handle($multi, uidCreateHandle($url));
+        ++$launched;
+        ++$active;
+    };
+
+    for ($index = 0; $index < min($concurrency, $operations); ++$index) {
+        $launch();
+    }
+
+    while ($active > 0) {
+        do {
+            $status = curl_multi_exec($multi, $running);
+        } while ($status === CURLM_CALL_MULTI_PERFORM);
+
+        $status === CURLM_OK || throw new RuntimeException('Host benchmark warmup execution failed');
+
+        while (($info = curl_multi_info_read($multi)) !== false) {
+            $result = uidInspectCompletion($info, $idsPerResponse);
+            ++$attempted;
+
+            if ($result['successful']) {
+                ++$successful;
+            } else {
+                ++$failed;
+            }
+
+            if ($result['timeout']) {
+                ++$timeouts;
+            }
+
+            $duplicates += $result['duplicates'];
+            curl_multi_remove_handle($multi, $info['handle']);
+            --$active;
+            $launch();
+        }
+
+        if ($running > 0) {
+            $selected = curl_multi_select($multi, 0.5);
+            if ($selected === -1) {
+                usleep(1_000);
+            }
+        }
+    }
+
+    unset($multi);
+
+    return [
+        'attempted' => $attempted,
+        'successful' => $successful,
+        'failed' => $failed,
+        'timeouts' => $timeouts,
+        'duplicates' => $duplicates,
+    ];
+}
+
+/**
  * @return array{
  *   attempted:int,
  *   successful:int,
@@ -266,7 +344,7 @@ function uidEnvironment(string $release): array
 }
 
 $url = rtrim($baseUrl, '/') . '/' . ltrim($route, '/');
-$warmupResult = uidRunDuration($url, $concurrency, $warmup, $idsPerResponse);
+$warmupResult = uidRunOperations($url, $concurrency, $warmup, $idsPerResponse);
 
 if (
     $warmupResult['failed'] !== 0
@@ -320,19 +398,20 @@ $document = [
             'route' => '/' . ltrim($route, '/'),
             'trial_duration_seconds' => $duration,
             'ids_per_response' => $idsPerResponse,
-            'duplicate_ids' => $duplicates,
         ],
         'repetitions' => $repetitions,
-        'warmup_operations' => $warmupResult['attempted'],
-        'duration_seconds' => round($elapsedSeconds, 5),
+        'warmup_operations' => $warmup,
+        'duration_seconds' => $duration * $repetitions,
         'concurrency' => $concurrency,
         'result' => [
             'attempted_operations' => $attempted,
             'successful_operations' => $successful,
             'failed_operations' => $failed,
             'timeouts' => $timeouts,
+            'duplicate_ids' => $duplicates,
             'successful_rpm' => round($medianRpm, 5),
             'error_rate' => $attempted === 0 ? 0.0 : $failed / $attempted,
+            'measured_elapsed_seconds' => round($elapsedSeconds, 5),
             'latency_ms' => [
                 'minimum' => $latencies === [] ? null : round(min($latencies), 5),
                 'average' => $latencies === [] ? null : round(uidAverage($latencies), 5),
