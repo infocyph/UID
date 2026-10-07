@@ -54,11 +54,39 @@ final class BaseEncoder
         }
 
         $alphabet = self::alphabet($base);
+        $unpacked = unpack('C*', $bytes);
+        $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
+
+        $number = [];
+        foreach ($unpacked as $byte) {
+            is_int($byte) || throw new \LogicException('Unable to unpack byte value');
+            $number[] = $byte;
+        }
+
         if (trim($bytes, "\0") === '') {
             return $alphabet[0];
         }
 
-        return self::encodeRadix(self::unpackBytes($bytes), $base, $alphabet);
+        $encoded = '';
+        while ($number !== []) {
+            $quotient = [];
+            $remainder = 0;
+
+            foreach ($number as $byte) {
+                $value = ($remainder << 8) | $byte;
+                $digit = intdiv($value, $base);
+                $remainder = $value % $base;
+
+                if ($quotient !== [] || $digit !== 0) {
+                    $quotient[] = $digit;
+                }
+            }
+
+            $encoded = $alphabet[$remainder] . $encoded;
+            $number = $quotient;
+        }
+
+        return $encoded;
     }
 
     private static function alphabet(int $base): string
@@ -108,48 +136,4 @@ final class BaseEncoder
         return str_repeat("\0", $bytesLength - strlen($decoded)) . $decoded;
     }
 
-    /**
-     * @param list<int> $number
-     */
-    private static function encodeRadix(array $number, int $base, string $alphabet): string
-    {
-        $encoded = '';
-
-        while ($number !== []) {
-            $quotient = [];
-            $remainder = 0;
-
-            foreach ($number as $byte) {
-                $value = ($remainder << 8) | $byte;
-                $digit = intdiv($value, $base);
-                $remainder = $value % $base;
-
-                if ($quotient !== [] || $digit !== 0) {
-                    $quotient[] = $digit;
-                }
-            }
-
-            $encoded = $alphabet[$remainder] . $encoded;
-            $number = $quotient;
-        }
-
-        return $encoded;
-    }
-
-    /**
-     * @return list<int>
-     */
-    private static function unpackBytes(string $bytes): array
-    {
-        $unpacked = unpack('C*', $bytes);
-        $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
-
-        $number = [];
-        foreach ($unpacked as $byte) {
-            is_int($byte) || throw new \LogicException('Unable to unpack byte value');
-            $number[] = $byte;
-        }
-
-        return $number;
-    }
 }
