@@ -54,7 +54,8 @@ final class BaseEncoder
     }
 
     /**
-     * @param list<int> $bytes
+     * @param array<int, int> $bytes
+     * @param-out array<int, int> $bytes
      */
     private static function appendDigit(array &$bytes, int $base, int $digit): void
     {
@@ -126,7 +127,7 @@ final class BaseEncoder
             }
         }
 
-        $decoded = self::byteString($bytes);
+        $decoded = self::byteString(array_values($bytes));
 
         return str_repeat("\0", $bytesLength - strlen($decoded)) . $decoded;
     }
