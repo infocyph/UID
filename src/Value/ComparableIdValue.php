@@ -9,7 +9,7 @@ use Infocyph\UID\IdComparator;
 
 trait ComparableIdValue
 {
-    private string $value;
+    private readonly string $value;
 
     public function __toString(): string
     {

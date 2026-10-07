@@ -73,7 +73,7 @@ final class Id
         return new SonyflakeValue(
             self::sonyflake($config),
             $config?->resolveCustomEpochMs(),
-            $config?->format ?? SonyflakeFormat::UID,
+            $config === null ? SonyflakeFormat::UID : $config->format,
         );
     }
 
