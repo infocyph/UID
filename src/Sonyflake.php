@@ -46,8 +46,7 @@ final class Sonyflake
      *
      * @throws SonyflakeException
      */
-    public static function fromBase(string $encoded, int $base): string
-    {
+    public static function fromBase(string $encoded, int $base): string {
         $id = self::decodeNumeric(
             fn(): string => NumericIdCodec::decimalFromBase($encoded, $base, 8),
             null,
@@ -61,8 +60,7 @@ final class Sonyflake
      *
      * @throws SonyflakeException
      */
-    public static function fromBytes(string $bytes): string
-    {
+    public static function fromBytes(string $bytes): string {
         $id = self::decodeNumeric(
             fn(): string => NumericIdCodec::decimalFromBytes($bytes, 8),
             'Sonyflake binary data must be exactly 8 bytes',
@@ -78,8 +76,7 @@ final class Sonyflake
      * @return string The generated unique identifier.
      * @throws SonyflakeException|FileLockException
      */
-    public static function generate(int $machineId = 0): string
-    {
+    public static function generate(int $machineId = 0): string {
         return self::generateInternal(
             $machineId,
             self::getStartTimeStamp(SonyflakeFormat::UID),
@@ -93,8 +90,7 @@ final class Sonyflake
      *
      * @throws SonyflakeException|FileLockException
      */
-    public static function generateWithConfig(SonyflakeConfig $config): string
-    {
+    public static function generateWithConfig(SonyflakeConfig $config): string {
         return self::generateInternal(
             $config->resolveMachineId(),
             $config->resolveCustomEpochMs() ?? self::getStartTimeStamp($config->format),
@@ -108,8 +104,7 @@ final class Sonyflake
     /**
      * Checks whether a Sonyflake ID string has a valid numeric shape.
      */
-    public static function isValid(string $id): bool
-    {
+    public static function isValid(string $id): bool {
         return $id !== ''
             && ctype_digit($id)
             && UnsignedDecimal::compare($id, (string) PHP_INT_MAX) <= 0;
@@ -122,8 +117,7 @@ final class Sonyflake
      * @return array{time: DateTimeImmutable, sequence: int, machine_id: int}
      * @throws Exception
      */
-    public static function parse(string $id, SonyflakeFormat $format = SonyflakeFormat::UID): array
-    {
+    public static function parse(string $id, SonyflakeFormat $format = SonyflakeFormat::UID): array {
         return self::parseWithEpoch($id, self::getStartTimeStamp($format), $format);
     }
 
@@ -137,8 +131,7 @@ final class Sonyflake
         string $id,
         int $startTimestamp,
         SonyflakeFormat $format = SonyflakeFormat::UID,
-    ): array
-    {
+    ): array {
         if (!self::isValid($id) || UnsignedDecimal::compare($id, (string) PHP_INT_MAX) === 1) {
             throw new SonyflakeException('Invalid Sonyflake ID string');
         }
@@ -162,8 +155,7 @@ final class Sonyflake
      *
      * @throws SonyflakeException
      */
-    public static function toBase(string $id, int $base): string
-    {
+    public static function toBase(string $id, int $base): string {
         return BaseEncoder::encodeBytes(self::toBytes($id), $base);
     }
 
@@ -172,8 +164,7 @@ final class Sonyflake
      *
      * @throws SonyflakeException
      */
-    public static function toBytes(string $id): string
-    {
+    public static function toBytes(string $id): string {
         return self::decodeNumeric(
             fn(): string => NumericIdCodec::bytesFromDecimal(
                 $id,
@@ -229,8 +220,7 @@ final class Sonyflake
         }
     }
 
-    private static function assertDecodedId(string $id): string
-    {
+    private static function assertDecodedId(string $id): string {
         if (!self::isValid($id)) {
             throw new SonyflakeException('Decoded Sonyflake ID exceeds the supported signed domain');
         }
@@ -238,8 +228,7 @@ final class Sonyflake
         return $id;
     }
 
-    private static function assertMachineId(int $machineId): void
-    {
+    private static function assertMachineId(int $machineId): void {
         $maximum = -1 ^ (-1 << self::MACHINE_BITS);
         if ($machineId < 0 || $machineId > $maximum) {
             throw new SonyflakeException("Invalid machine ID, must be between 0 ~ $maximum.");
@@ -250,8 +239,7 @@ final class Sonyflake
      * @param callable():string $operation
      * @throws SonyflakeException
      */
-    private static function decodeNumeric(callable $operation, ?string $customMessage): string
-    {
+    private static function decodeNumeric(callable $operation, ?string $customMessage): string {
         try {
             return $operation();
         } catch (\InvalidArgumentException $exception) {
@@ -262,8 +250,7 @@ final class Sonyflake
     /**
      * Calculates the elapsed time in 10ms units.
      */
-    private static function elapsedTime(int $currentTime, int $startTimestamp): int
-    {
+    private static function elapsedTime(int $currentTime, int $startTimestamp): int {
         return intdiv($currentTime - $startTimestamp, 10);
     }
 
@@ -273,8 +260,7 @@ final class Sonyflake
      * @param int $elapsedTime The elapsed time in milliseconds.
      * @throws SonyflakeException If the elapsed time exceeds the maximum life cycle.
      */
-    private static function ensureEffectiveRuntime(int $elapsedTime): void
-    {
+    private static function ensureEffectiveRuntime(int $elapsedTime): void {
         if ($elapsedTime < 0) {
             throw new SonyflakeException('Sonyflake epoch must not be in the future');
         }
@@ -351,15 +337,13 @@ final class Sonyflake
     /**
      * Retrieves the start timestamp.
      */
-    private static function getStartTimeStamp(SonyflakeFormat $format): int
-    {
+    private static function getStartTimeStamp(SonyflakeFormat $format): int {
         return $format === SonyflakeFormat::UPSTREAM
             ? self::UPSTREAM_DEFAULT_EPOCH
             : self::DEFAULT_EPOCH;
     }
 
-    private static function nowMilliseconds(?GenerationContext $runtime): int
-    {
+    private static function nowMilliseconds(?GenerationContext $runtime): int {
         return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
     }
 
@@ -390,8 +374,7 @@ final class Sonyflake
     private static function providerState(
         SequenceProviderInterface $provider,
         string $domainKey,
-    ): \ArrayObject
-    {
+    ): \ArrayObject {
         self::$lastWallTimeByProvider ??= new \WeakMap();
 
         /** @var \ArrayObject<string, int>|null $state */
@@ -409,8 +392,7 @@ final class Sonyflake
         return $state;
     }
 
-    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
-    {
+    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface {
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
     }
 
@@ -453,8 +435,7 @@ final class Sonyflake
         return $next;
     }
 
-    private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime): int
-    {
+    private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime): int {
         $deadline = $runtime?->waitDeadlineNanoseconds()
             ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
 

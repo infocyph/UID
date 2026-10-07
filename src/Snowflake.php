@@ -45,8 +45,7 @@ final class Snowflake
      *
      * @throws SnowflakeException
      */
-    public static function fromBase(string $encoded, int $base): string
-    {
+    public static function fromBase(string $encoded, int $base): string {
         return self::decodeNumericBase($encoded, $base);
     }
 
@@ -55,8 +54,7 @@ final class Snowflake
      *
      * @throws SnowflakeException
      */
-    public static function fromBytes(string $bytes): string
-    {
+    public static function fromBytes(string $bytes): string {
         return self::decodeNumericBytes($bytes);
     }
 
@@ -68,8 +66,7 @@ final class Snowflake
      * @return string The generated snowflake ID
      * @throws SnowflakeException|FileLockException
      */
-    public static function generate(int $datacenter = 0, int $workerId = 0): string
-    {
+    public static function generate(int $datacenter = 0, int $workerId = 0): string {
         return self::generateInternal(
             $datacenter,
             $workerId,
@@ -83,8 +80,7 @@ final class Snowflake
      *
      * @throws SnowflakeException|FileLockException
      */
-    public static function generateWithConfig(SnowflakeConfig $config): string
-    {
+    public static function generateWithConfig(SnowflakeConfig $config): string {
         [$datacenterId, $workerId] = $config->resolveNode();
         $customEpoch = $config->resolveCustomEpochMs();
 
@@ -101,8 +97,7 @@ final class Snowflake
     /**
      * Checks whether a Snowflake ID string has a valid numeric shape.
      */
-    public static function isValid(string $id): bool
-    {
+    public static function isValid(string $id): bool {
         return $id !== ''
             && ctype_digit($id)
             && UnsignedDecimal::compare($id, (string) PHP_INT_MAX) <= 0;
@@ -115,8 +110,7 @@ final class Snowflake
      * @return array{time: DateTimeImmutable, sequence: int, worker_id: int, datacenter_id: int}
      * @throws Exception
      */
-    public static function parse(string $id): array
-    {
+    public static function parse(string $id): array {
         return self::parseWithEpoch(
             id: $id,
             startTimestamp: self::getStartTimeStamp(),
@@ -129,8 +123,7 @@ final class Snowflake
      * @return array{time: DateTimeImmutable, sequence: int, worker_id: int, datacenter_id: int}
      * @throws Exception
      */
-    public static function parseWithEpoch(string $id, int $startTimestamp): array
-    {
+    public static function parseWithEpoch(string $id, int $startTimestamp): array {
         if (!self::isValid($id) || UnsignedDecimal::compare($id, (string) PHP_INT_MAX) === 1) {
             throw new SnowflakeException('Invalid Snowflake ID string');
         }
@@ -157,8 +150,7 @@ final class Snowflake
      *
      * @throws SnowflakeException
      */
-    public static function toBase(string $id, int $base): string
-    {
+    public static function toBase(string $id, int $base): string {
         return BaseEncoder::encodeBytes(self::toBytes($id), $base);
     }
 
@@ -167,13 +159,11 @@ final class Snowflake
      *
      * @throws SnowflakeException
      */
-    public static function toBytes(string $id): string
-    {
+    public static function toBytes(string $id): string {
         return self::encodeNumericBytes($id);
     }
 
-    private static function assertDecodedId(string $id): string
-    {
+    private static function assertDecodedId(string $id): string {
         if (!self::isValid($id)) {
             throw new SnowflakeException('Decoded Snowflake ID exceeds the supported signed domain');
         }
@@ -184,8 +174,7 @@ final class Snowflake
     /**
      * @throws SnowflakeException
      */
-    private static function assertNodeIds(int $datacenter, int $workerId): void
-    {
+    private static function assertNodeIds(int $datacenter, int $workerId): void {
         $maxDataCenter = -1 ^ (-1 << self::DATACENTER_BITS);
         $maxWorkId = -1 ^ (-1 << self::WORKER_BITS);
 
@@ -201,8 +190,7 @@ final class Snowflake
     /**
      * @throws SnowflakeException
      */
-    private static function assertTimestampRange(int $currentTime, int $startTimestamp): void
-    {
+    private static function assertTimestampRange(int $currentTime, int $startTimestamp): void {
         $elapsed = $currentTime - $startTimestamp;
         $maxTimestamp = -1 ^ (-1 << self::TIMESTAMP_BITS);
         if ($elapsed < 0) {
@@ -214,8 +202,7 @@ final class Snowflake
         }
     }
 
-    private static function decodeNumericBase(string $encoded, int $base): string
-    {
+    private static function decodeNumericBase(string $encoded, int $base): string {
         $id = NumericConversion::decimalFromBase(
             $encoded,
             $base,
@@ -226,8 +213,7 @@ final class Snowflake
         return self::assertDecodedId($id);
     }
 
-    private static function decodeNumericBytes(string $bytes): string
-    {
+    private static function decodeNumericBytes(string $bytes): string {
         $id = NumericConversion::decimalFromBytes(
             $bytes,
             8,
@@ -238,8 +224,7 @@ final class Snowflake
         return self::assertDecodedId($id);
     }
 
-    private static function encodeNumericBytes(string $id): string
-    {
+    private static function encodeNumericBytes(string $id): string {
         return NumericConversion::bytesFromDecimal(
             $id,
             8,
@@ -326,8 +311,7 @@ final class Snowflake
     /**
      * Retrieves the start timestamp.
      */
-    private static function getStartTimeStamp(): int
-    {
+    private static function getStartTimeStamp(): int {
         return self::DEFAULT_EPOCH;
     }
 
@@ -376,8 +360,7 @@ final class Snowflake
         }
     }
 
-    private static function nowMilliseconds(?GenerationContext $runtime): int
-    {
+    private static function nowMilliseconds(?GenerationContext $runtime): int {
         return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
     }
 
@@ -387,8 +370,7 @@ final class Snowflake
     private static function providerState(
         SequenceProviderInterface $provider,
         string $stateKey,
-    ): \ArrayObject
-    {
+    ): \ArrayObject {
         self::$lastStateByProvider ??= new \WeakMap();
 
         /** @var \ArrayObject<string, array{timestamp:int, sequence:int}>|null $state */
@@ -406,21 +388,18 @@ final class Snowflake
         return $state;
     }
 
-    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface
-    {
+    private static function resolveSequenceProvider(?SequenceProviderInterface $provider): SequenceProviderInterface {
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
     }
 
     /**
      * @return array{0:string,1:string}
      */
-    private static function timestampParts(int $timestamp): array
-    {
+    private static function timestampParts(int $timestamp): array {
         return [(string) intdiv($timestamp, 1000), (string) (($timestamp % 1000) * 1000)];
     }
 
-    private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
-    {
+    private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int {
         $deadline = $runtime?->waitDeadlineNanoseconds()
             ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
 

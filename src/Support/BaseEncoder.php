@@ -88,6 +88,10 @@ final class BaseEncoder
     {
         $decoded = '';
         foreach ($bytes as $byte) {
+            if ($byte < 0 || $byte > 255) {
+                throw new InvalidArgumentException('Byte value must be between 0 and 255');
+            }
+
             $decoded .= chr($byte);
         }
 
