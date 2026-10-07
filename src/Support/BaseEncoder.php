@@ -57,16 +57,7 @@ final class BaseEncoder
         $unpacked = unpack('C*', $bytes);
         $unpacked !== false || throw new \LogicException('Unable to unpack byte value');
 
-        $number = [];
-        foreach ($unpacked as $byte) {
-            is_int($byte) || throw new \LogicException('Unable to unpack byte value');
-            $number[] = $byte;
-        }
-
-        if (trim($bytes, "\0") === '') {
-            return $alphabet[0];
-        }
-
+        $number = array_values($unpacked);
         $encoded = '';
         while ($number !== []) {
             $quotient = [];
