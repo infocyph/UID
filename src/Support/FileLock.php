@@ -64,8 +64,7 @@ final class FileLock
      */
     private static function assertSafeMetadata(array $metadata, string $errorMessage): void
     {
-        $mode = $metadata['mode'];
-        if (($mode & 0170000) !== 0100000) {
+        if (($metadata['mode'] & 0170000) !== 0100000) {
             throw new FileLockException($errorMessage);
         }
 
@@ -85,22 +84,11 @@ final class FileLock
         }
     }
 
-    private static function changePermissions(string $path, int $permissions): bool
-    {
-        try {
-            return self::invokeFilesystem(static fn(): bool => chmod($path, $permissions));
-        } catch (ErrorException) {
-            return false;
-        }
-    }
-
     /**
-     * @template T
-     * @param callable():T $operation
-     * @return T
-     * @throws ErrorException
+     * @return resource
+     * @throws FileLockException
      */
-    private static function invokeFilesystem(callable $operation): mixed
+    private static function openVerified(string $path, string $errorMessage)
     {
         set_error_handler(
             static function (int $severity, string $message, string $file, int $line): never {
@@ -109,91 +97,59 @@ final class FileLock
         );
 
         try {
-            return $operation();
+            return self::openVerifiedWithHandler($path, $errorMessage);
+        } catch (FileLockException $exception) {
+            throw $exception;
+        } catch (ErrorException $exception) {
+            throw new FileLockException($errorMessage, 0, $exception);
         } finally {
             restore_error_handler();
         }
     }
 
     /**
-     * @param array<string|int, int> $before
-     * @return resource
-     */
-    private static function openExisting(string $path, array $before, string $errorMessage)
-    {
-        $handle = self::openStream($path, 'r+b');
-        if (!is_resource($handle)) {
-            throw new FileLockException($errorMessage);
-        }
-
-        return self::verifyHandle($path, $handle, $before, $errorMessage);
-    }
-
-    /**
-     * @return resource|false
-     */
-    private static function openStream(string $path, string $mode)
-    {
-        try {
-            return self::invokeFilesystem(static fn() => fopen($path, $mode));
-        } catch (ErrorException) {
-            return false;
-        }
-    }
-
-    /**
      * @return resource
      * @throws FileLockException
+     * @throws ErrorException
      */
-    private static function openVerified(string $path, string $errorMessage)
+    private static function openVerifiedWithHandler(string $path, string $errorMessage)
     {
-        $before = self::pathMetadata($path);
+        try {
+            $before = lstat($path);
+        } catch (ErrorException) {
+            $before = false;
+        }
+
         if ($before !== false) {
             self::assertSafeMetadata($before, $errorMessage);
+            $handle = fopen($path, 'r+b');
+            is_resource($handle) || throw new FileLockException($errorMessage);
 
-            return self::openExisting($path, $before, $errorMessage);
+            return self::verifyHandle($path, $handle, $before, $errorMessage);
         }
 
-        $handle = self::openStream($path, 'x+b');
-        if (!is_resource($handle)) {
-            $before = self::pathMetadata($path);
-            if ($before === false) {
-                throw new FileLockException($errorMessage);
-            }
-
+        try {
+            $handle = fopen($path, 'x+b');
+        } catch (ErrorException) {
+            $before = lstat($path);
+            $before !== false || throw new FileLockException($errorMessage);
             self::assertSafeMetadata($before, $errorMessage);
 
-            return self::openExisting($path, $before, $errorMessage);
+            $handle = fopen($path, 'r+b');
+            is_resource($handle) || throw new FileLockException($errorMessage);
+
+            return self::verifyHandle($path, $handle, $before, $errorMessage);
         }
 
-        if (!self::changePermissions($path, 0600)) {
-            fclose($handle);
-
-            throw new FileLockException($errorMessage);
-        }
+        is_resource($handle) || throw new FileLockException($errorMessage);
+        chmod($path, 0600) || throw new FileLockException($errorMessage);
 
         return self::verifyHandle($path, $handle, null, $errorMessage);
     }
 
-    /**
-     * @return array<string|int, int>|false
-     */
-    private static function pathMetadata(string $path): array|false
-    {
-        try {
-            return self::invokeFilesystem(static fn(): array|false => lstat($path));
-        } catch (ErrorException) {
-            return false;
-        }
-    }
-
     private static function runtimeTimeout(?GenerationContext $runtime): int
     {
-        if ($runtime === null) {
-            return self::DEFAULT_TIMEOUT_MICROS;
-        }
-
-        return $runtime->waitTimeoutMicros;
+        return $runtime?->waitTimeoutMicros ?? self::DEFAULT_TIMEOUT_MICROS;
     }
 
     /**
@@ -205,7 +161,7 @@ final class FileLock
     {
         try {
             $after = fstat($handle);
-            $pathState = self::pathMetadata($path);
+            $pathState = lstat($path);
             if ($after === false || $pathState === false) {
                 throw new FileLockException($errorMessage);
             }
