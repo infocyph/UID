@@ -10,7 +10,9 @@ Generation methods include ``uuid1`` through ``uuid8``, ``ulid``, ``typeId``,
 
 ``snowflakeValue`` and ``sonyflakeValue`` are the two configuration-aware value
 factories. They preserve a configured custom epoch so timestamps are interpreted
-in the same ID domain in which they were generated.
+in the same ID domain in which they were generated. ``sonyflakeValue`` also
+preserves the configured ``SonyflakeFormat`` so parsing uses the original bit
+layout.
 
 .. code-block:: php
 
