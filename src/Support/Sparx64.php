@@ -162,5 +162,4 @@ final class Sparx64
             (ord($block[6]) << 8) | ord($block[7]),
         ];
     }
-
 }

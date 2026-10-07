@@ -183,5 +183,4 @@ final class BaseEncoder
 
         return $number;
     }
-
 }

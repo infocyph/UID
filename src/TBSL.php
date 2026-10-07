@@ -274,5 +274,4 @@ final class TBSL
 
         return $candidate;
     }
-
 }

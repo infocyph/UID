@@ -31,4 +31,3 @@ final readonly class RandflakeConfig
         return $this->leaseEnd + 1;
     }
 }
-
