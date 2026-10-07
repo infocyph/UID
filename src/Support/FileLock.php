@@ -149,7 +149,9 @@ final class FileLock
 
     private static function runtimeTimeout(?GenerationContext $runtime): int
     {
-        return $runtime?->waitTimeoutMicros ?? self::DEFAULT_TIMEOUT_MICROS;
+        return $runtime instanceof GenerationContext
+            ? $runtime->waitTimeoutMicros
+            : self::DEFAULT_TIMEOUT_MICROS;
     }
 
     /**
