@@ -8,161 +8,72 @@ Review date: 2026-10-06. Reviewed revision: `322c9d9c033b16e4a47ff88c156ce230e3c
 Latest local release tag: `5.0`, at `4a95eb8058e73c72e74e44fedd25755198899eae`.
 Status: sections A–F implemented and regression-covered; section G, host performance, soak, and exact-final release acceptance remain open.
 
-## Latest gate investigation (2026-10-07)
+## Current acceptance and simplification review (2026-10-07)
 
-Rechecked exact committed revision
-`d3858dc537d08710502f3222ab9f1155bd7def30`. Security & Standards run
-`37588152700` passed. Release Acceptance run `37588152012` passed diagnostics,
-the five-minute soak and eleven of twelve host-performance lanes. The single
-remaining failed job is `host-performance (snowflake-contended, 5, 1)`:
+Latest committed revision: `7721003b7306ff16f6f938af071e79ab81b05a0c`.
+[Security & Standards run 37597332991](https://github.com/infocyph/UID/actions/runs/37597332991)
+passed. [Release Acceptance run 37597332094](https://github.com/infocyph/UID/actions/runs/37597332094)
+passed diagnostics, the five-minute soak and eleven of twelve host-performance
+lanes. Snowflake contention at concurrency five failed: **222956.43 → 214712.95
+successful RPM, a 3.70% regression against the unchanged 2% budget**.
+Earlier local or hosted results do not certify this revision or the working copy.
 
-| Metric | Tag 5.0 | Candidate |
-| --- | ---: | ---: |
-| Median successful RPM | 259926.06731 | 252941.12415 |
-| Trial spread | 0.52804% | 0.87610% |
-| p99 latency | 3.489 ms | 3.376 ms |
+The structural review follows PHPForge's existing engineering principles:
+keep behavior in its cohesive owner, remove unnecessary forwarding, and retain
+meaningful security, interoperability and lifecycle boundaries. Relative to
+5.0, five production types were added and one removed (59 → 63 source files). The added types own:
 
-Both sides were stable and recorded zero failed responses, timeouts and
-within-response duplicates. The 2.69% RPM regression exceeds the unchanged 2%
-budget. This supersedes the three failed lanes on the previous revision below.
+- Passed clock/wait policy (`GenerationContext`) and optional host-owned Runwire
+  adaptation (`RunwireBinding`). Neither starts workers or an event loop.
+- Explicit stored formats (`SonyflakeFormat`, `RandflakeFormat`). These distinguish
+  legacy compatibility from upstream layouts without silently reinterpreting IDs.
+- The upstream cipher (`Sparx64`). This owns the independently tested algorithm.
 
-The working-tree fix retains the original lock-wait policy and clears the PHP
-file-status cache before both pathname checks without evicting realpath entries.
-Fresh `lstat()` ownership/type checks and pre-open/handle/post-open inode matching
-still fence stale path resolution. A process fixture replaces a primed parent
-directory symlink and checks that allocation either uses the current file or
-fails closed, leaving the old target untouched. Cross-process uniqueness
-coverage now exercises reservation sizes one and sixteen.
+The existing `BinaryUnpack` type was expanded for shared decoding; it is not a
+new file. The source count is a review signal, not an architectural quality score.
 
-Remove redundant internal provider resolution after generator entry points have
-already resolved the provider, skip reservation bookkeeping calls when disabled,
-and keep opening/error handling together without an extra wrapper call. The
-public provider/generator signatures and passed-context dispatch are unchanged.
+The working copy adds no production types or files. Filesystem allocation and
+its lock lifetime stay together in `next()`, eliminating `allocateLocked()`.
+Inode comparisons stay in handle verification, eliminating `assertSameFile()`.
+Snowflake reads its epoch constant directly, eliminating `getStartTimeStamp()`.
+Complete provider/domain preparation before sampling the allocation timestamp.
+Keep fresh pathname metadata, owner/type checks, pre/post-open inode verification,
+integer exhaustion checks, cancellation forwarding, bounded waits, explicit
+unlocking and provider-owned history. Public contracts and gate budgets remain
+unchanged.
 
-System-call profiling of 10,000 allocations reduced `newfstatat` calls from
-30,726 to 20,728 while retaining both fresh pathname checks and handle checks.
-The [PHP manual](https://www.php.net/manual/en/function.clearstatcache.php)
-distinguishes file-status invalidation from optional realpath-cache eviction.
-Sustained measurements and final-revision hosted confirmation remain required.
+Selected-source sustained comparisons use production authoritative autoloaders,
+64 CLI server children, OPcache enabled, JIT disabled, and four 60-second trials
+per release in balanced AB/BA order. The PHP 8.4 servers run in matching
+disposable containers (8.4.26); the benchmark client runs PHP 8.5.4. These are
+local matched comparisons, not hosted certification.
 
-An initial lock-backoff experiment passed sustained concurrency-five RPM but
-regressed at concurrency fifty, so it was discarded. Keep the existing 2% budget
-and require all affected workloads to pass; one improved lane cannot excuse
-a regression in another. Keep this plan until final-revision acceptance closes
-the other resource/lifecycle coverage requirements below.
-
-Local PHPForge processors, the detailed suite and final release guard passed on
-the selected implementation: 229 tests / 4,094 assertions, zero dependency
-advisories, and unchanged static/complexity/security gates.
-
-Final selected-source local host measurements used PHP 8.5.4, OPcache enabled,
-JIT disabled, 64 CLI server children, production authoritative autoloaders and
-four 60-second trials per release in balanced AB/BA order:
-
-| Workload | Tag 5.0 RPM | Working-copy RPM | Regression | 2% gate |
+| Server runtime / concurrency | Tag 5.0 RPM | Working-copy RPM | Regression | 2% gate |
 | --- | ---: | ---: | ---: | --- |
-| Snowflake contention, concurrency 5 | 523986.55703 | 516127.45456 | 1.50% | Pass |
-| Snowflake contention, concurrency 50 | 641233.69239 | 620850.10493 | 3.18% | Fail |
+| PHP 8.4 / 5 | 454859.98712 | 445766.25900 | 1.99923677% | Pass, narrow margin |
+| PHP 8.4 / 50 | 627388.07439 | 619860.29262 | 1.20% | Pass |
+| PHP 8.5 / 50 | 656077.42157 | 644697.62155 | 1.73% | Pass |
 
-Both pairs passed result-contract validation and reported stable trials and zero
-failed responses, timeouts or within-response duplicates. Baseline/candidate
-spreads were 1.44641%/0.87400% at concurrency five and 0.78674%/0.98569% at fifty.
-Corresponding p99 values were 2.511/2.529 ms and 13.528/12.547 ms. PHPForge's
-unchanged stable-environment comparison passed concurrency five and rejected
-concurrency fifty; lower p99 does not excuse the RPM failure.
+PHPForge result-contract validation and stable-environment comparison passed
+all three pairs without changing thresholds. PHP 8.4 baseline/candidate trial
+spreads were 1.29221%/0.80187% at concurrency five and 0.58974%/1.34755% at fifty;
+PHP 8.5 concurrency-fifty spreads were 1.29381%/0.44432%. All report
+zero failed responses, timeouts or within-response duplicates; single-ID
+responses do not establish global HTTP uniqueness. CPU/RSS remain unreported
+by this harness. The concurrency-five margin is less than 0.001 percentage point,
+so independent hosted confirmation on the final commit is essential.
 
-The committed revision's hosted PHP 8.4 concurrency-fifty lane passed at
-184408.87 → 183652.12 RPM (0.41% regression). A separate short local comparison
-of exact `d3858dc` production source against the working copy measured
-634802.05397 → 630573.07866 RPM (0.67% regression, four ten-second trials per
-source). This supporting diagnostic does not certify a sustained 5.0 comparison
-or establish that the PHP 8.5 regression is resolved. Keep local and hosted
-runtime evidence separate and require exact-final-commit hosted confirmation.
+A short PHP 8.5 concurrency-five diagnostic measured a 0.49% gain (four
+15-second trials per release), with spreads of 8.26%/7.98%. This does not replace
+a sustained comparison. The selected-source sustained PHP 8.5 concurrency-fifty
+recheck passed at 1.73%; the prior source measured 3.18% on that local runtime.
+The runs occurred separately and do not isolate the effect of individual edits.
 
-The selected production source also passed the no-optional-package smoke and
-strict Sphinx build. Changes remain uncommitted; no release or tag was published.
-
-## 2026-10-07 cross-check
-
-Rechecked committed revision `5f62244d610ae77386d5d193dd86f1780eb9af8b`
-and the complete implementation against the acceptance requirements below.
-The plan remains because the release gates are not complete.
-
-Additional working-tree corrections and regressions:
-
-- Forward each generator config's `GenerationContext` to built-in filesystem and
-  PSR-16 allocation without storing a request binding on the shared provider.
-  Contended-lock tests exercise intermediary forwarding, other-task progress and
-  host cancellation through this config-only path.
-- Check cancellation/completion before fresh and reserved provider allocation,
-  after a cache read and immediately before mutation; preserve terminal binding
-  failures through synchronizer/error handling.
-- Refresh lock pathname metadata rather than trusting PHP's cached `lstat()`
-  result. A process replacement fixture verifies rejection of an externally
-  replaced path while leaving its target untouched.
-- Associate TBSL rollback history weakly with the actual provider and machine,
-  preserving independent clocks. Validate its 60-bit timestamp before normal
-  allocation and correctly parse eleven-digit Unix seconds.
-- Reject Sonyflake epochs in the future even within one 10 ms tick, and reject
-  extreme epochs before overflowing integer division.
-- Keep clock and wait calculations in the supported integer domain, reject
-  overflowing inclusive-to-exclusive Randflake leases, recheck live Randflake
-  provider state after reentrant/suspending allocation, and reject times before
-  Randflake's epoch before allocation.
-- Bound implicit ULID/UUIDv7 rollover waits and fail promptly at timestamp
-  exhaustion; require exact UUID node width including end of input.
-- Validate host response IDs against the workload format and exclude duplicate
-  responses from successful throughput. Protect even-sample median/trial metadata
-  behavior with regression coverage.
-
-Hosted Security & Standards run `37584251034` passed on `5f62244`.
-Hosted Release Acceptance run `37584250265` passed diagnostics and the existing
-five-minute soak, but failed the following required host gates:
-
-| Workload | Baseline RPM | Candidate RPM | Failure |
-| --- | ---: | ---: | --- |
-| Snowflake contention, concurrency 1 | 136025.70070 | 131210.32508 | 3.54% regression; 2% budget |
-| Snowflake contention, concurrency 50 | 556309.78158 | 539240.87060 | 3.07% regression; 2% budget |
-| CUID2 single ID, concurrency 50 | 213626.22967 | 387476.98209 | Candidate spread 16.47568%; 15% stability ceiling |
-
-All three downloaded pairs report zero failed responses, timeouts and
-within-response duplicates. CUID2's gain does not excuse its unstable trials.
-These results certify neither the new working-tree corrections nor a 6.0 release.
-
-The full plan also requires acceptance coverage that the current harness has not
-yet supplied: host CPU/peak and steady RSS fields are null; worker readiness is
-inferred from request counts rather than verified per worker; HTTP duplicate
-detection is within responses rather than across the measured workload; queue,
-lock-wait and predefined resource/latency ceilings are absent. The soak exercises
-in-memory generation and cancellation, but not contention, released provider
-domains or worker replacement. The Runwire profile compares CPU generation only
-and does not measure its intended scheduling benefit under contention.
-Keep these gates open; do not remove this plan or tag 6.0 until final-revision
-evidence closes them without weakening correctness, security or budgets.
-
-Local verification of the corrected source on PHP 8.5.4: PHPForge processors,
-the full detailed suite and the final release guard passed. The final guard ran
-227 tests / 4,074 assertions and reported zero dependency advisories; the existing
-transitive development-only `doctrine/annotations` abandonment remains a warning.
-The strict Sphinx build (`-n -W --keep-going`) passed. A clean authoritative
-`--no-dev` installation executed native generators, both format modes, value
-metadata and codecs with Runwire, PSR-20 and PSR-16 absent. The pathname replacement
-regression was independently run with the committed old opener and failed there.
-
-Short paired PHP 8.5.4 diagnostics (four trials of five seconds, not the required
-sustained acceptance) on the corrected production source retained zero response
-errors, timeouts and within-response duplicates. Snowflake concurrency 1 measured
-384004.51513 → 374224.65428 RPM (2.55% regression); concurrency 50 measured
-652734.08177 → 641236.76811 RPM (1.76% regression). Both pairs were stable under
-the existing spread rule. These short diagnostics leave the required sustained
-Snowflake gate open and do not replace exact-final PHP 8.4/8.5 hosted evidence.
-
-This plan follows `vendor/infocyph/phpforge/resources/engineering-principles.md`:
-correctness and security precede performance; preserve public contracts and named
-arguments; distinguish required changes from optional features; keep dependencies
-and abstractions justified; use successful host RPM as the performance criterion;
-resolve quality findings at their cause without suppressions or weaker gates.
-No production code or dependency constraints were changed during this review.
+Local processors, detailed quality checks and the final release guard passed:
+229 tests / 4,094 assertions. Strict documentation and clean production smoke
+checks passed. Changes are uncommitted. Keep this plan until exact-final-commit
+hosted confirmation and the resource/lifecycle acceptance requirements below
+are complete. No release/tag is published.
 
 ## Complete planned scope
 
@@ -203,34 +114,22 @@ Graphify supplied navigation; findings below were verified in source and with
 targeted PHP probes. Reflection was used only to reach otherwise impractical
 counter boundaries, not as evidence that attackers can mutate private state.
 
-Current local evidence on 64-bit PHP 8.5.4:
+Final selected-source local evidence on 64-bit PHP 8.5.4:
 
 | Check | Result |
 | --- | --- |
-| `composer ic:doctor` / `composer ic:list-config` | Doctor healthy; configurations resolve from PHPForge |
-| `composer validate --strict` | Passed |
-| `composer ic:test:code` | 159 tests, 1,531 assertions, passed; process/fork tests executed |
-| `composer ic:tests` | Failed skip-directive scanner and PHPStan configuration validation |
-| Other full-suite stages | Normalize, syntax, references, duplicates, comments, Pest, Pint, PHPCS, Deptrac, Psalm and Rector passed |
-| `composer audit --locked --format=json` | Zero advisories; abandoned development dependency `doctrine/annotations`; audit exits 1 for abandonment |
-| `composer ic:release:guard` with network access | Audit completed with abandonment treated as a warning; guard failed at skip scanning/configuration |
-| TypeID upstream vectors | All 9 valid encoding/decoding cases and 21 invalid cases passed |
-| Targeted adversarial probes | Reproduced findings R01–R11 below |
+| PHPForge doctor and configuration inspection | Healthy; PHP 8.4/8.5 matrix and vendor-owned quality configuration |
+| Processors, detailed checks and release guard | Passed; 229 tests / 4,094 assertions, including process/fork tests |
+| Static analysis, taint analysis and complexity limits | Passed without suppressions or threshold changes |
+| Dependency audit | Zero advisories; one non-blocking abandoned development dependency (`doctrine/annotations`) |
+| Strict Sphinx build | Passed |
+| Clean production smoke without optional peers | Passed; native generation, formats, values and codecs |
 
-The live [Security & Standards run](https://github.com/infocyph/UID/actions/runs/37178593330)
-for the reviewed SHA failed all four QA lanes: PHP 8.4/8.5 with prefer-stable and
-prefer-lowest. Its analysis lanes, clean install and component benchmark passed.
-Job details show failures at `Run quality suite once`; the requested QA log
-download returned empty output, so its precise diagnostic is not attributed to
-the local failure. Benchmark result validation and regression comparison were
-skipped: a green component benchmark job is not a 2% host-RPM certification.
-
-PHP 8.2/8.3 execution, a Windows run, representative host throughput and a long
-persistent-worker soak were not performed. The existing documented August
-component timings are historical supporting evidence, not current release gates.
-Zero published dependency advisories does not establish absence of code defects.
-The PHP 8.2/8.3 coverage gap describes the reviewed 5.x tree; the next release's
-required runtime matrix begins at PHP 8.4.
+The original review reproduced findings R01–R11 below. Their implementation and
+regression coverage are recorded in sections A–F. Historical component timings
+and green QA do not replace the sustained host and lifecycle requirements. The
+next release's required runtime matrix begins at PHP 8.4. Exact-final-commit
+hosted acceptance remains open for the uncommitted simplification changes.
 
 ## Required findings
 
@@ -587,22 +486,6 @@ RPM/resource budgets. Deliver the profiling decision and reproducible measuremen
 do not assert an improvement solely from historical microsecond timings.
 
 ## Performance and release gates
-
-Previous committed hosted evidence, superseded by the cross-check above:
-Security & Standards run `37572646512` on
-`6a302ef2c72f9d0e499b4cbc6ff6c97d971819a9` passed clean install, component
-benchmarks on PHP 8.4/8.5, analysis on PHP 8.4/8.5, and all four stable/lowest QA
-lanes. This is implementation QA evidence, not host-RPM or soak certification.
-
-Release Acceptance run `37572646018` on that revision passed diagnostics and the
-persistent-worker soak, but six host lanes exceeded the 2% RPM budget: CUID2 batch
-at concurrency 1, 5, 20 and 50, and Snowflake contention at concurrency 1 and 5.
-Working-tree remediation adds grouped radix encoding with independent legacy
-vectors, omits unused default-provider reservation bookkeeping, reduces repeated
-lock ownership lookups, and corrects warm host cache
-configuration and median/report handling. All final hosted gates must run again
-on the revision containing these changes; earlier soak or QA results do not
-certify the modified candidate.
 
 - [ ] Measure corrected code against tag `5.0` with matching runtimes, dependencies,
   hardware and deployment configuration. Separate pure-generator, filesystem,

@@ -79,17 +79,6 @@ final class FileLock
         }
     }
 
-    /**
-     * @param array<string|int, int> $left
-     * @param array<string|int, int> $right
-     */
-    private static function assertSameFile(array $left, array $right, string $errorMessage): void
-    {
-        if ($left['dev'] !== $right['dev'] || $left['ino'] !== $right['ino']) {
-            throw new FileLockException($errorMessage);
-        }
-    }
-
     private static function lockDeadline(?int $timeoutMicros, ?GenerationContext $runtime): int
     {
         $timeout = $timeoutMicros ?? $runtime->waitTimeoutMicros ?? self::DEFAULT_TIMEOUT_MICROS;
@@ -175,9 +164,11 @@ final class FileLock
 
             self::assertSafeMetadata($after, $errorMessage, $ownerId);
             self::assertSafeMetadata($pathState, $errorMessage, $ownerId);
-            self::assertSameFile($after, $pathState, $errorMessage);
-            if ($before !== null) {
-                self::assertSameFile($before, $after, $errorMessage);
+            if (
+                $after['dev'] !== $pathState['dev'] || $after['ino'] !== $pathState['ino']
+                || ($before !== null && ($before['dev'] !== $after['dev'] || $before['ino'] !== $after['ino']))
+            ) {
+                throw new FileLockException($errorMessage);
             }
 
             return $handle;

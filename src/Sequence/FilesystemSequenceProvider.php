@@ -73,40 +73,32 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         );
 
         try {
-            return $this->allocateLocked($handle, $fileLocation, $timestamp, $runtime);
+            [$lastTimestamp, $lastAllocation, $oldLength] = $this->readState($handle);
+            if ($lastTimestamp > $timestamp) {
+                throw new SequenceTimestampException($lastTimestamp, $timestamp);
+            }
+            if ($lastTimestamp === $timestamp && $lastAllocation === PHP_INT_MAX) {
+                throw new FileLockException('Sequence value exhausted');
+            }
+
+            $allocation = $lastTimestamp === $timestamp ? $lastAllocation + 1 : 1;
+            $reservationOffset = $this->reservationSize - 1;
+            if ($allocation > PHP_INT_MAX - $reservationOffset) {
+                throw new FileLockException('Sequence value exhausted');
+            }
+
+            $reservedEnd = $allocation + $reservationOffset;
+            $runtime?->assertActive();
+            $this->writeState($handle, $timestamp . ',' . $reservedEnd, $oldLength);
+            if ($this->reservationSize > 1) {
+                $this->storeReservation($fileLocation, $timestamp, $allocation, $reservedEnd);
+            }
+
+            return $allocation;
         } finally {
             flock($handle, LOCK_UN);
             fclose($handle);
         }
-    }
-
-    /**
-     * @param resource $handle
-     */
-    private function allocateLocked($handle, string $fileLocation, int $timestamp, ?GenerationContext $runtime): int
-    {
-        [$lastTimestamp, $lastAllocation, $oldLength] = $this->readState($handle);
-        if ($lastTimestamp > $timestamp) {
-            throw new SequenceTimestampException($lastTimestamp, $timestamp);
-        }
-        if ($lastTimestamp === $timestamp && $lastAllocation === PHP_INT_MAX) {
-            throw new FileLockException('Sequence value exhausted');
-        }
-
-        $allocation = $lastTimestamp === $timestamp ? $lastAllocation + 1 : 1;
-        $reservationOffset = $this->reservationSize - 1;
-        if ($allocation > PHP_INT_MAX - $reservationOffset) {
-            throw new FileLockException('Sequence value exhausted');
-        }
-
-        $reservedEnd = $allocation + $reservationOffset;
-        $runtime?->assertActive();
-        $this->writeState($handle, $timestamp . ',' . $reservedEnd, $oldLength);
-        if ($this->reservationSize > 1) {
-            $this->storeReservation($fileLocation, $timestamp, $allocation, $reservedEnd);
-        }
-
-        return $allocation;
     }
 
     /**

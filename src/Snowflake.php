@@ -73,7 +73,7 @@ final class Snowflake
         return self::generateInternal(
             $datacenter,
             $workerId,
-            self::getStartTimeStamp(),
+            self::DEFAULT_EPOCH,
             ClockBackwardPolicy::WAIT,
         );
     }
@@ -91,7 +91,7 @@ final class Snowflake
         return self::generateInternal(
             $datacenterId,
             $workerId,
-            $customEpoch ?? self::getStartTimeStamp(),
+            $customEpoch ?? self::DEFAULT_EPOCH,
             $config->clockBackwardPolicy,
             $config->sequenceProvider,
             $config->runtime,
@@ -119,7 +119,7 @@ final class Snowflake
     {
         return self::parseWithEpoch(
             id: $id,
-            startTimestamp: self::getStartTimeStamp(),
+            startTimestamp: self::DEFAULT_EPOCH,
         );
     }
 
@@ -263,9 +263,6 @@ final class Snowflake
     ): string {
         self::assertNodeIds($datacenter, $workerId);
 
-        $currentTime = self::nowMilliseconds($runtime);
-        self::assertTimestampRange($currentTime, $startTimestamp);
-
         $resolvedSequenceProvider = self::resolveSequenceProvider($sequenceProvider);
         $sequenceKey = ($datacenter << self::WORKER_BITS) | $workerId;
         $stateKey = $startTimestamp . ':' . $sequenceKey;
@@ -274,6 +271,9 @@ final class Snowflake
         $sequenceType = $startTimestamp === self::DEFAULT_EPOCH
             ? 'snowflake'
             : 'snowflake_' . $startTimestamp;
+
+        $currentTime = self::nowMilliseconds($runtime);
+        self::assertTimestampRange($currentTime, $startTimestamp);
 
         while (true) {
             [$currentTime, $sequence] = self::nextSequenceAtValidTimestamp(
@@ -321,14 +321,6 @@ final class Snowflake
             | ($datacenter << $datacenterLeftMoveLength)
             | ($workerId << $workerLeftMoveLength)
             | ($sequence));
-    }
-
-    /**
-     * Retrieves the start timestamp.
-     */
-    private static function getStartTimeStamp(): int
-    {
-        return self::DEFAULT_EPOCH;
     }
 
     /**
