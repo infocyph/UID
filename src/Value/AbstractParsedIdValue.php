@@ -32,6 +32,18 @@ abstract readonly class AbstractParsedIdValue implements IdValueInterface
         return $this->toString();
     }
 
+    abstract protected function invalidMessage(): string;
+
+    /**
+     * @return callable(string):TParsed
+     */
+    abstract protected function parser(): callable;
+
+    /**
+     * @return callable(string):bool
+     */
+    abstract protected function validator(): callable;
+
     public function compare(IdValueInterface|string $other): int
     {
         $otherValue = $other instanceof IdValueInterface ? $other->toString() : $other;
@@ -53,16 +65,4 @@ abstract readonly class AbstractParsedIdValue implements IdValueInterface
     {
         return $this->value;
     }
-
-    abstract protected function invalidMessage(): string;
-
-    /**
-     * @return callable(string):TParsed
-     */
-    abstract protected function parser(): callable;
-
-    /**
-     * @return callable(string):bool
-     */
-    abstract protected function validator(): callable;
 }

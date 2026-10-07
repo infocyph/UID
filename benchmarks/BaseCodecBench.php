@@ -12,11 +12,11 @@ use PhpBench\Attributes as Bench;
 
 final class BaseCodecBench
 {
-    /** @var array<int, array<int, string>> */
-    private array $encoded = [];
-
     /** @var array<int, string> */
     private array $decimal = [];
+
+    /** @var array<int, array<int, string>> */
+    private array $encoded = [];
 
     /** @var array<int, string> */
     private array $samples = [];
@@ -71,6 +71,12 @@ final class BaseCodecBench
         BaseEncoder::encodeBytes($this->sample($params), 62);
     }
 
+    #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
+    public function benchDecimal(array $params): void
+    {
+        BaseEncoder::encodeBytes($this->sample($params), 10);
+    }
+
     #[Bench\Revs(250), Bench\Iterations(5), Bench\ParamProviders('provideBaseLengthPairs')]
     public function benchDecode(array $params): void
     {
@@ -79,12 +85,6 @@ final class BaseCodecBench
             $params['base'],
             $params['length'],
         );
-    }
-
-    #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
-    public function benchDecimal(array $params): void
-    {
-        BaseEncoder::encodeBytes($this->sample($params), 10);
     }
 
     #[Bench\Revs(500), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]

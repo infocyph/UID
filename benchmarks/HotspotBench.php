@@ -31,11 +31,11 @@ final class HotspotBench
 {
     private Closure $cuidFingerprint;
 
-    private Closure $resetCuidFingerprint;
-
     private string $opaque;
 
     private RandflakeConfig $randflakeConfig;
+
+    private Closure $resetCuidFingerprint;
 
     private SnowflakeConfig $snowflakeConfig;
 
