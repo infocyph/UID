@@ -24,6 +24,16 @@ final class FileLock
         ?GenerationContext $runtime = null,
     ) {
         $handle = self::openVerified($path, $openErrorMessage);
+        $wouldBlock = 0;
+        if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
+            return $handle;
+        }
+        if ($wouldBlock !== 1) {
+            fclose($handle);
+
+            throw new FileLockException($lockErrorMessage);
+        }
+
         $timeout = $timeoutMicros ?? self::runtimeTimeout($runtime);
         $deadline = hrtime(true) + ($timeout * 1_000);
         $runtimeDeadline = $runtime?->runwire?->deadlineNanoseconds();
@@ -33,18 +43,18 @@ final class FileLock
 
         try {
             do {
+                if ($runtime !== null) {
+                    $runtime->sleepMicroseconds(1_000);
+                } else {
+                    usleep(1_000);
+                }
+
                 $wouldBlock = 0;
                 if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
                     return $handle;
                 }
                 if ($wouldBlock !== 1) {
                     throw new FileLockException($lockErrorMessage);
-                }
-
-                if ($runtime !== null) {
-                    $runtime->sleepMicroseconds(1_000);
-                } else {
-                    usleep(1_000);
                 }
             } while (hrtime(true) < $deadline);
         } catch (\Throwable $exception) {
