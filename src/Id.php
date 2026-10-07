@@ -70,10 +70,15 @@ final class Id
 
     public static function sonyflakeValue(?SonyflakeConfig $config = null): SonyflakeValue
     {
+        $format = SonyflakeFormat::UID;
+        if ($config !== null) {
+            $format = $config->format;
+        }
+
         return new SonyflakeValue(
             self::sonyflake($config),
             $config?->resolveCustomEpochMs(),
-            $config === null ? SonyflakeFormat::UID : $config->format,
+            $format,
         );
     }
 
