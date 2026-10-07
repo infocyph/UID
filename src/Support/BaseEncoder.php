@@ -54,8 +54,7 @@ final class BaseEncoder
     }
 
     /**
-     * @param array<int, int> $bytes
-     * @param-out list<int> $bytes
+     * @param list<int> $bytes
      */
     private static function appendDigit(array &$bytes, int $base, int $digit): void
     {
