@@ -55,9 +55,8 @@ final class BaseEncoder
 
     /**
      * @param list<int> $bytes
-     * @return list<int>
      */
-    private static function appendDigit(array $bytes, int $base, int $digit): array
+    private static function appendDigit(array &$bytes, int $base, int $digit): void
     {
         $carry = $digit;
         for ($index = count($bytes) - 1; $index >= 0; --$index) {
@@ -70,8 +69,6 @@ final class BaseEncoder
             array_unshift($bytes, $carry & 0xff);
             $carry >>= 8;
         }
-
-        return array_values($bytes);
     }
 
     private static function assertByteLength(int $byteLength): void
@@ -88,11 +85,7 @@ final class BaseEncoder
     {
         $decoded = '';
         foreach ($bytes as $byte) {
-            if ($byte < 0 || $byte > 255) {
-                throw new InvalidArgumentException('Byte value must be between 0 and 255');
-            }
-
-            $decoded .= chr($byte);
+            $decoded .= chr($byte & 0xff);
         }
 
         return $decoded;
@@ -126,7 +119,7 @@ final class BaseEncoder
                 throw new InvalidArgumentException('Invalid character for base ' . $base);
             }
 
-            $bytes = self::appendDigit($bytes, $base, $digit);
+            self::appendDigit($bytes, $base, $digit);
             if (count($bytes) > $bytesLength) {
                 throw new InvalidArgumentException('Encoded value exceeds target byte length');
             }
@@ -139,9 +132,8 @@ final class BaseEncoder
 
     /**
      * @param list<int> $number
-     * @return array{0:list<int>,1:int}
      */
-    private static function divide(array $number, int $base): array
+    private static function divide(array &$number, int $base): int
     {
         $quotient = [];
         $remainder = 0;
@@ -154,7 +146,9 @@ final class BaseEncoder
             }
         }
 
-        return [$quotient, $remainder];
+        $number = $quotient;
+
+        return $remainder;
     }
 
     /**
@@ -164,7 +158,7 @@ final class BaseEncoder
     {
         $encoded = '';
         while ($number !== []) {
-            [$number, $remainder] = self::divide($number, $base);
+            $remainder = self::divide($number, $base);
             $encoded = $alphabet[$remainder] . $encoded;
         }
 

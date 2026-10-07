@@ -94,7 +94,7 @@ $samples = [];
 $decimals = [];
 $encoded = [];
 
-foreach ([8, 10, 12, 16, 20, 32] as $length) {
+foreach ([8, 10, 12, 16, 20, 32, 64] as $length) {
     $material = '';
     $counter = 0;
 

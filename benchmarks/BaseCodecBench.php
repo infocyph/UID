@@ -28,7 +28,7 @@ final class BaseCodecBench
         require_once __DIR__ . '/BenchBootstrap.php';
         BenchBootstrap::load();
 
-        foreach ([8, 10, 12, 16, 20, 32] as $length) {
+        foreach ([8, 10, 12, 16, 20, 32, 64] as $length) {
             $sample = random_bytes($length);
             $this->samples[$length] = $sample;
             $this->decimal[$length] = DecimalBytes::fromBytes($sample);
@@ -142,6 +142,7 @@ final class BaseCodecBench
             '16-bytes' => ['length' => 16],
             '20-bytes' => ['length' => 20],
             '32-bytes' => ['length' => 32],
+            '64-bytes' => ['length' => 64],
         ];
     }
 
