@@ -32,9 +32,9 @@ final class Sonyflake
 
     private const int SEQUENCE_BITS = 8;
 
-    private const int UPSTREAM_DEFAULT_EPOCH = 1_409_529_600_000;
-
     private const int TIMESTAMP_BITS = 39;
+
+    private const int UPSTREAM_DEFAULT_EPOCH = 1_409_529_600_000;
 
     private const int WAIT_TIMEOUT_MICROS = 1_000_000;
 
@@ -390,7 +390,8 @@ final class Sonyflake
     private static function providerState(
         SequenceProviderInterface $provider,
         string $domainKey,
-    ): \ArrayObject {
+    ): \ArrayObject
+    {
         self::$lastWallTimeByProvider ??= new \WeakMap();
 
         /** @var \ArrayObject<string, int>|null $state */

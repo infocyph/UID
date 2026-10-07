@@ -62,6 +62,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         }
 
         $lock = $this->acquireLock($key);
+
         try {
             return $this->nextSafely($key, $timestamp);
         } finally {

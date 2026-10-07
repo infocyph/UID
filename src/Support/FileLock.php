@@ -49,6 +49,7 @@ final class FileLock
             } while (hrtime(true) < $deadline);
         } catch (\Throwable $exception) {
             fclose($handle);
+
             throw $exception;
         }
 
@@ -167,12 +168,16 @@ final class FileLock
 
         if (!self::changePermissions($path, 0600)) {
             fclose($handle);
+
             throw new FileLockException($errorMessage);
         }
 
         return self::verifyHandle($path, $handle, null, $errorMessage);
     }
 
+    /**
+     * @return array<string|int, int>|false
+     */
     private static function pathMetadata(string $path): array|false
     {
         try {
@@ -182,12 +187,13 @@ final class FileLock
         }
     }
 
-    /**
-     * @return array<string|int, int>|false
-     */
     private static function runtimeTimeout(?GenerationContext $runtime): int
     {
-        return $runtime?->waitTimeoutMicros ?? self::DEFAULT_TIMEOUT_MICROS;
+        if ($runtime === null) {
+            return self::DEFAULT_TIMEOUT_MICROS;
+        }
+
+        return $runtime->waitTimeoutMicros;
     }
 
     /**

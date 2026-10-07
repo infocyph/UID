@@ -169,7 +169,12 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      */
-    public static function generate(int $nodeId, int $leaseStart, int $leaseEnd, #[\SensitiveParameter] string $secret): string
+    public static function generate(
+        int $nodeId,
+        int $leaseStart,
+        int $leaseEnd,
+        #[\SensitiveParameter] string $secret,
+    ): string
     {
         return self::generateInternal(
             $nodeId,
@@ -186,7 +191,12 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      */
-    public static function generateString(int $nodeId, int $leaseStart, int $leaseEnd, #[\SensitiveParameter] string $secret): string
+    public static function generateString(
+        int $nodeId,
+        int $leaseStart,
+        int $leaseEnd,
+        #[\SensitiveParameter] string $secret,
+    ): string
     {
         return self::encodeString(self::generate($nodeId, $leaseStart, $leaseEnd, $secret));
     }
@@ -569,7 +579,8 @@ final class Randflake
     private static function providerState(
         SequenceProviderInterface $provider,
         string $domainKey,
-    ): \ArrayObject {
+    ): \ArrayObject
+    {
         self::$lastTimestampByProvider ??= new \WeakMap();
 
         /** @var \ArrayObject<string, array{timestamp:int,sequence:int}>|null $state */

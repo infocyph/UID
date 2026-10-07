@@ -26,7 +26,11 @@ final readonly class PersistentDomainClock implements ClockInterface
 function statelessDomainProvider(): CallbackSequenceProvider
 {
     return new CallbackSequenceProvider(
-        static fn(string $type, int $machineId, int $timestamp): int => 1,
+        static function (string $type, int $machineId, int $timestamp): int {
+            unset($type, $machineId, $timestamp);
+
+            return 1;
+        },
     );
 }
 

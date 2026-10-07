@@ -27,11 +27,11 @@ final class Snowflake
 
     private const int DEFAULT_EPOCH = 1_577_836_800_000;
 
+    private const int MAX_PROVIDER_DOMAINS = 1024;
+
     private const int SEQUENCE_BITS = 12;
 
     private const int TIMESTAMP_BITS = 41;
-
-    private const int MAX_PROVIDER_DOMAINS = 1024;
 
     private const int WAIT_TIMEOUT_MICROS = 1_000_000;
 
@@ -387,7 +387,8 @@ final class Snowflake
     private static function providerState(
         SequenceProviderInterface $provider,
         string $stateKey,
-    ): \ArrayObject {
+    ): \ArrayObject
+    {
         self::$lastStateByProvider ??= new \WeakMap();
 
         /** @var \ArrayObject<string, array{timestamp:int, sequence:int}>|null $state */
