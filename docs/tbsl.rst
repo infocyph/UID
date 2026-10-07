@@ -3,7 +3,7 @@ TBSL
 
 Class: ``Infocyph\\UID\\TBSL``
 
-TBSL is a project-specific, time-based, lexicographically sortable uppercase hex ID.
+TBSL is a project-specific, time-based, lexicographically sortable uppercase hex ID. ``TBSL::generate()`` uses sequenced mode by default; ``generateRandom()`` selects the entropy suffix.
 
 Format
 ------
