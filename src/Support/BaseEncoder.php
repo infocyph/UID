@@ -24,16 +24,30 @@ final class BaseEncoder
         if ($encoded === '') {
             throw new InvalidArgumentException('Encoded value must not be empty');
         }
-        self::assertByteLength($bytesLength);
+        if ($bytesLength < 1 || $bytesLength > self::MAX_BYTE_LENGTH) {
+            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
+        }
 
-        return $base === 16
-            ? self::decodeHex($encoded, $bytesLength)
-            : self::decodeRadix($encoded, $base, $bytesLength);
+        if ($base === 16) {
+            if (strlen($encoded) > $bytesLength * 2 || preg_match('/^[0-9a-f]+$/D', $encoded) !== 1) {
+                throw new InvalidArgumentException('Invalid character for base 16');
+            }
+
+            $decoded = hex2bin(str_pad($encoded, $bytesLength * 2, '0', STR_PAD_LEFT));
+            $decoded !== false || throw new InvalidArgumentException('Unable to decode base 16 value');
+
+            return $decoded;
+        }
+
+        return self::decodeRadix($encoded, $base, $bytesLength);
     }
 
     public static function encodeBytes(string $bytes, int $base): string
     {
-        self::assertByteLength(strlen($bytes));
+        $byteLength = strlen($bytes);
+        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
+            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
+        }
 
         if ($base === 16) {
             return ltrim(bin2hex($bytes), '0') ?: '0';
@@ -50,25 +64,6 @@ final class BaseEncoder
     private static function alphabet(int $base): string
     {
         return self::ALPHABETS[$base] ?? throw new InvalidArgumentException('Unsupported base: ' . $base);
-    }
-
-    private static function assertByteLength(int $byteLength): void
-    {
-        if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
-            throw new InvalidArgumentException('Byte length must be between 1 and 1024');
-        }
-    }
-
-    private static function decodeHex(string $encoded, int $bytesLength): string
-    {
-        if (strlen($encoded) > $bytesLength * 2 || preg_match('/^[0-9a-f]+$/D', $encoded) !== 1) {
-            throw new InvalidArgumentException('Invalid character for base 16');
-        }
-
-        $decoded = hex2bin(str_pad($encoded, $bytesLength * 2, '0', STR_PAD_LEFT));
-        $decoded !== false || throw new InvalidArgumentException('Unable to decode base 16 value');
-
-        return $decoded;
     }
 
     private static function decodeRadix(string $encoded, int $base, int $bytesLength): string
