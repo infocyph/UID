@@ -99,6 +99,10 @@ UID is protected by [PHPForge](https://github.com/infocyph/PHPForge), an automat
 tests, static and taint analysis, dependency auditing, architecture checks, and release readiness. Automated controls reduce
 risk but do not replace responsible disclosure or manual review.
 
+Release acceptance also runs `php tests/smoke.php` with a production-only install on PHP 8.4 and 8.5.
+One 100-cycle pass covers every generator and supported format, checking valid output, sample uniqueness,
+and relevant round trips. Long HTTP benchmarks and soak runs are not release gates.
+
 ---
 
 <div align="center">

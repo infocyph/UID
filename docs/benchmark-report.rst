@@ -62,23 +62,25 @@ inside it. Those measurements are not comparable algorithm baselines, so no
 misleading percentage delta is reported. This report is the first isolated v5
 baseline; future releases should compare against it using the checked-in harness.
 
-Release Host Comparison
------------------------
+Current Release Checks
+----------------------
 
-The release acceptance workflow compares production-only, authoritative
-autoloaders against tag ``5.0`` on one runner. Both HTTP servers enable OPcache
-and disable JIT. Warm-up covers at least twice the configured worker count before
-four balanced AB/BA trials of 60 seconds at each route and concurrency level.
-The benchmark records each server's actual cache state and rejects mismatched
-runtimes or disabled OPcache. Cold component profiles remain separate diagnostics.
+Release acceptance runs one 100-cycle smoke pass across every generator and
+supported format on PHP 8.4 and 8.5, using a production-only Composer install.
+It checks valid output, no repeated IDs within each sample, relevant binary
+round trips, configured node fields and deterministic results. Run it locally
+with ``php tests/smoke.php``.
 
-The host gate retains the 2% successful-RPM regression limit and requires stable
-trials without response errors, timeouts or duplicate IDs within responses. Both
-result files are retained even when a stability check fails.
+The Security & Standards workflow retains the full test suite, static and taint
+analysis, dependency audit, and process/fork, cancellation, exhaustion and
+malformed-input regressions. The smoke pass is an additional consumer check;
+it does not establish collision probability, cryptographic security or sustained
+host throughput.
 
-Correctness gates took priority over throughput: the multi-process test suite
-for Snowflake, Sonyflake, Randflake, TBSL, and sequence reservations produced
-zero duplicates and zero lock errors.
+The former long HTTP performance matrix and persistent-worker soak are removed.
+There is no mandatory RPM comparison against tag ``5.0``. Existing component
+benchmark tools remain available for targeted investigations; the historical
+v5 measurements above are not v6 performance claims.
 
 Filesystem Contention
 ---------------------

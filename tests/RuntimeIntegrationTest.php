@@ -252,3 +252,48 @@ test('contended locks suspend cooperatively and stop on host cancellation', func
         rmdir($directory);
     }
 })->with([false, true]);
+
+test('lock timeout forbids allocation after a late cooperative wake', function (): void {
+    $directory = sys_get_temp_dir() . '/uid-late-wake-' . bin2hex(random_bytes(6));
+    mkdir($directory, 0700);
+    $path = $directory . '/uid-test-1.seq';
+    file_put_contents($path, '100,1');
+    $held = fopen($path, 'r+b');
+    expect(flock($held, LOCK_EX))->toBeTrue();
+    $host = RuntimeContext::fromCapabilities(new RuntimeCapabilities(
+        driver: RuntimeDriver::NATIVE,
+        runwireLoopAvailable: true,
+        supportsRunwireCoroutines: true,
+    ), 'uid-late-wake', concurrent: true);
+    $request = RequestContext::create($host);
+    $coroutines = new CoroutineRuntime();
+
+    try {
+        $failure = $coroutines->runRequest($request, function (CoroutineScope $scope) use ($host, $request, $held, $directory): ?\Infocyph\UID\Exceptions\FileLockException {
+            $scope->spawn(function () use ($held): void {
+                // Simulate host work delaying the allocator's scheduled wake.
+                usleep(10_000);
+                flock($held, LOCK_UN);
+            });
+            $provider = new \Infocyph\UID\Sequence\FilesystemSequenceProvider($directory);
+            try {
+                $provider->next('test', 1, 100, new GenerationContext(
+                    runwire: new RunwireBinding($host, $request, $scope),
+                    waitTimeoutMicros: 5_000,
+                ));
+            } catch (\Infocyph\UID\Exceptions\FileLockException $exception) {
+                return $exception;
+            }
+
+            return null;
+        });
+        expect($failure)->toBeInstanceOf(\Infocyph\UID\Exceptions\FileLockException::class)
+            ->and(file_get_contents($path))->toBe('100,1')
+            ->and($request->completed())->toBeFalse();
+    } finally {
+        flock($held, LOCK_UN);
+        fclose($held);
+        unlink($path);
+        rmdir($directory);
+    }
+});

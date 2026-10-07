@@ -86,7 +86,7 @@ final class Snowflake
     public static function generateWithConfig(SnowflakeConfig $config): string
     {
         [$datacenterId, $workerId] = $config->resolveNode();
-        $customEpoch = $config->resolveCustomEpochMs();
+        $customEpoch = $config->customEpoch;
 
         return self::generateInternal(
             $datacenterId,
@@ -388,6 +388,8 @@ final class Snowflake
             /** @var \ArrayObject<string, array{timestamp:int, sequence:int}> $state */
             $state = new \ArrayObject();
             self::$lastStateByProvider[$provider] = $state;
+
+            return $state;
         }
 
         if (!isset($state[$stateKey]) && count($state) >= self::MAX_PROVIDER_DOMAINS) {

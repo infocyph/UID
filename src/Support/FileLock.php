@@ -39,18 +39,18 @@ final class FileLock
             $deadline = self::lockDeadline($timeoutMicros, $runtime);
 
             while (hrtime(true) < $deadline) {
-                if ($runtime !== null) {
-                    $runtime->sleepMicroseconds(1_000);
-                } else {
-                    usleep(1_000);
-                }
-
                 $wouldBlock = 0;
                 if (flock($handle, LOCK_EX | LOCK_NB, $wouldBlock)) {
                     return $handle;
                 }
                 if ($wouldBlock !== 1) {
                     throw new FileLockException($lockErrorMessage);
+                }
+
+                if ($runtime !== null) {
+                    $runtime->sleepMicroseconds(1_000);
+                } else {
+                    usleep(1_000);
                 }
             }
         } catch (\Throwable $exception) {
@@ -162,10 +162,11 @@ final class FileLock
                 throw new FileLockException($errorMessage);
             }
 
-            self::assertSafeMetadata($after, $errorMessage, $ownerId);
-            self::assertSafeMetadata($pathState, $errorMessage, $ownerId);
             if (
-                $after['dev'] !== $pathState['dev'] || $after['ino'] !== $pathState['ino']
+                ($after['mode'] & 0170000) !== 0100000
+                || ($pathState['mode'] & 0170000) !== 0100000
+                || ($ownerId !== null && ($after['uid'] !== $ownerId || $pathState['uid'] !== $ownerId))
+                || $after['dev'] !== $pathState['dev'] || $after['ino'] !== $pathState['ino']
                 || ($before !== null && ($before['dev'] !== $after['dev'] || $before['ino'] !== $after['ino']))
             ) {
                 throw new FileLockException($errorMessage);

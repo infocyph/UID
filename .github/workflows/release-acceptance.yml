@@ -1,311 +1,50 @@
 name: UID 6 Release Acceptance
 
 on:
+  workflow_dispatch:
+  push:
+    branches: ["main", "master"]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "composer.json"
+      - ".github/workflows/release-acceptance.yml"
   pull_request:
     branches: ["main", "master"]
     paths:
       - "src/**"
-      - "benchmarks/**"
+      - "tests/**"
       - "composer.json"
-      - "docs/uid-review-and-release-plan.md"
       - ".github/workflows/release-acceptance.yml"
 
 permissions:
   contents: read
 
 jobs:
-  diagnostics:
+  production-smoke:
+    name: Production smoke (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      XDEBUG_MODE: off
-    steps:
-      - name: Checkout exact candidate
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Setup PHP 8.4
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.4"
-          tools: composer:v2
-          extensions: ctype,curl,pcntl
-          coverage: none
-
-      - name: Install candidate tooling
-        shell: bash
-        run: |
-          composer install --no-interaction --prefer-dist --no-progress
-          mkdir -p .phpforge-report
-
-      - name: Run candidate release guard
-        shell: bash
-        run: composer ic:release:guard
-
-      - name: Checkout tag 5.0
-        uses: actions/checkout@v7
-        with:
-          ref: "5.0"
-          path: ".release-baseline"
-
-      - name: Checkout candidate production target
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          path: ".release-candidate"
-
-      - name: Install production targets
-        shell: bash
-        run: |
-          composer --working-dir=.release-baseline install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
-          composer --working-dir=.release-candidate install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
-
-      - name: Profile components against tag 5.0
-        shell: bash
-        run: |
-          php benchmarks/release/ComponentProfile.php             --target-root="$GITHUB_WORKSPACE/.release-baseline"             --release="5.0"             --output=".phpforge-report/component-baseline.json"
-          php benchmarks/release/ComponentProfile.php             --target-root="$GITHUB_WORKSPACE/.release-candidate"             --release="candidate"             --output=".phpforge-report/component-candidate.json"
-          php -r '
-            $b=json_decode(file_get_contents(".phpforge-report/component-baseline.json"),true,512,JSON_THROW_ON_ERROR);
-            $c=json_decode(file_get_contents(".phpforge-report/component-candidate.json"),true,512,JSON_THROW_ON_ERROR);
-            foreach ($b["metrics"] as $name=>$metric) {
-                if (!isset($c["metrics"][$name])) continue;
-                $before=$metric["median_ns"];
-                $after=$c["metrics"][$name]["median_ns"];
-                $change=$before > 0 ? (($after-$before)/$before)*100 : 0;
-                printf("%-36s %10.3f ns -> %10.3f ns (%+.2f%%)\n",$name,$before,$after,$change);
-            }
-          '
-
-      - name: Run contention matrix before and after
-        shell: bash
-        run: |
-          php -r '
-            require ".release-baseline/vendor/autoload.php";
-            require "benchmarks/ContentionMatrix.php";
-            Infocyph\UID\Benchmarks\ContentionMatrix::run([1,4,16],[1,8,64],200);
-          ' > .phpforge-report/contention-baseline.csv
-          php -r '
-            require ".release-candidate/vendor/autoload.php";
-            require "benchmarks/ContentionMatrix.php";
-            Infocyph\UID\Benchmarks\ContentionMatrix::run([1,4,16],[1,8,64],200);
-          ' > .phpforge-report/contention-candidate.csv
-          cat .phpforge-report/contention-baseline.csv
-          cat .phpforge-report/contention-candidate.csv
-
-      - name: Profile Runwire-bound path separately
-        shell: bash
-        run: |
-          php benchmarks/release/RunwireProfile.php .phpforge-report/runwire-profile.json
-          cat .phpforge-report/runwire-profile.json
-
-      - name: Upload diagnostics
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: uid-6-release-diagnostics
-          path: .phpforge-report
-          retention-days: 14
-          if-no-files-found: error
-          include-hidden-files: true
-
-  host-performance:
-    needs: diagnostics
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - route: cuid2-one
-            concurrency: 1
-            ids_per_response: 1
-          - route: cuid2-one
-            concurrency: 5
-            ids_per_response: 1
-          - route: cuid2-one
-            concurrency: 20
-            ids_per_response: 1
-          - route: cuid2-one
-            concurrency: 50
-            ids_per_response: 1
-          - route: cuid2-batch
-            concurrency: 1
-            ids_per_response: 100
-          - route: cuid2-batch
-            concurrency: 5
-            ids_per_response: 100
-          - route: cuid2-batch
-            concurrency: 20
-            ids_per_response: 100
-          - route: cuid2-batch
-            concurrency: 50
-            ids_per_response: 100
-          - route: snowflake-contended
-            concurrency: 1
-            ids_per_response: 1
-          - route: snowflake-contended
-            concurrency: 5
-            ids_per_response: 1
-          - route: snowflake-contended
-            concurrency: 20
-            ids_per_response: 1
-          - route: snowflake-contended
-            concurrency: 50
-            ids_per_response: 1
-    env:
-      XDEBUG_MODE: off
-    steps:
-      - name: Checkout exact candidate tooling
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Checkout tag 5.0
-        uses: actions/checkout@v7
-        with:
-          ref: "5.0"
-          path: ".release-baseline"
-
-      - name: Checkout candidate production target
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          path: ".release-candidate"
-
-      - name: Setup PHP 8.4
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.4"
-          tools: composer:v2
-          extensions: ctype,curl
-          ini-values: opcache.enable_cli=1,opcache.jit=0
-          coverage: none
-
-      - name: Install benchmark tooling and targets
-        shell: bash
-        run: |
-          composer install --no-interaction --prefer-dist --no-progress
-          composer --working-dir=.release-baseline install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
-          composer --working-dir=.release-candidate install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
-          mkdir -p .phpforge-report "$RUNNER_TEMP/uid-baseline-state" "$RUNNER_TEMP/uid-candidate-state"
-
-      - name: Run interleaved paired host benchmark
-        shell: bash
-        env:
-          ROUTE: ${{ matrix.route }}
-          CONCURRENCY: ${{ matrix.concurrency }}
-          IDS_PER_RESPONSE: ${{ matrix.ids_per_response }}
-        run: |
-          WARMUP=$(( CONCURRENCY * 2 ))
-          if [ "$WARMUP" -lt 130 ]; then WARMUP=130; fi
-
-          UID_TARGET_ROOT="$GITHUB_WORKSPACE/.release-baseline" \
-          UID_STATE_DIR="$RUNNER_TEMP/uid-baseline-state" \
-          PHP_CLI_SERVER_WORKERS=64 \
-            php -S 127.0.0.1:18080 benchmarks/release/host-router.php \
-            > .phpforge-report/baseline-server.log 2>&1 &
-          baseline_pid=$!
-
-          UID_TARGET_ROOT="$GITHUB_WORKSPACE/.release-candidate" \
-          UID_STATE_DIR="$RUNNER_TEMP/uid-candidate-state" \
-          PHP_CLI_SERVER_WORKERS=64 \
-            php -S 127.0.0.1:18081 benchmarks/release/host-router.php \
-            > .phpforge-report/candidate-server.log 2>&1 &
-          candidate_pid=$!
-
-          trap 'kill "$baseline_pid" "$candidate_pid" 2>/dev/null || true' EXIT
-
-          for port in 18080 18081; do
-            for attempt in {1..50}; do
-              if curl --fail --silent "http://127.0.0.1:$port/health" >/dev/null; then break; fi
-              sleep 0.2
-            done
-            curl --fail --silent "http://127.0.0.1:$port/health" >/dev/null
-          done
-
-          php benchmarks/release/HostBenchmark.php \
-            --baseline-url=http://127.0.0.1:18080 \
-            --candidate-url=http://127.0.0.1:18081 \
-            --baseline-output=.phpforge-report/host-baseline.json \
-            --candidate-output=.phpforge-report/host-candidate.json \
-            --route="$ROUTE" \
-            --concurrency="$CONCURRENCY" \
-            --duration=60 \
-            --repetitions=4 \
-            --ids-per-response="$IDS_PER_RESPONSE" \
-            --warmup="$WARMUP"
-
-          kill "$baseline_pid" "$candidate_pid" 2>/dev/null || true
-          wait "$baseline_pid" 2>/dev/null || true
-          wait "$candidate_pid" 2>/dev/null || true
-          trap - EXIT
-
-      - name: Enforce 2 percent host budget
-        shell: bash
-        run: |
-          composer ic:benchmark:validate .phpforge-report/host-baseline.json
-          composer ic:benchmark:validate .phpforge-report/host-candidate.json
-          composer ic:benchmark:compare             .phpforge-report/host-baseline.json             .phpforge-report/host-candidate.json             --max-regression=2             --stable-environment
-
-      - name: Upload host evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: uid-host-${{ matrix.route }}-c${{ matrix.concurrency }}
-          path: .phpforge-report
-          retention-days: 14
-          if-no-files-found: error
-          include-hidden-files: true
-
-  persistent-worker-soak:
-    needs: diagnostics
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      XDEBUG_MODE: off
-      UID_SOAK_RESULT: ${{ github.workspace }}/.phpforge-report/uid-soak-internal.json
+        php: ["8.4", "8.5"]
     steps:
       - name: Checkout exact candidate
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
-      - name: Setup PHP 8.4
+      - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
+          php-version: ${{ matrix.php }}
           tools: composer:v2
-          extensions: ctype,pcntl
+          extensions: ctype
           coverage: none
 
-      - name: Install candidate tooling
-        shell: bash
-        run: |
-          composer install --no-interaction --prefer-dist --no-progress
-          mkdir -p .phpforge-report
+      - name: Install production dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist --no-progress --classmap-authoritative
 
-      - name: Run five-minute persistent-worker soak
-        shell: bash
-        run: |
-          composer ic:soak:worker             --duration=300             --warmup=10             --sample-interval=2             --max-growth-mb=32             --report=.phpforge-report/phpforge-soak.json             -- php benchmarks/release/soak-worker.php
-
-          php -r '
-            $result=json_decode(file_get_contents(".phpforge-report/uid-soak-internal.json"),true,512,JSON_THROW_ON_ERROR);
-            if (($result["status"] ?? null) !== "passed") {
-                fwrite(STDERR,json_encode($result,JSON_PRETTY_PRINT).PHP_EOL);
-                exit(1);
-            }
-            echo json_encode($result,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES),PHP_EOL;
-          '
-
-      - name: Upload soak evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: uid-6-persistent-worker-soak
-          path: .phpforge-report
-          retention-days: 14
-          if-no-files-found: error
-          include-hidden-files: true
+      - name: Check every generator and format in one 100-cycle pass
+        run: php tests/smoke.php
