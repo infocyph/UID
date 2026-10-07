@@ -125,3 +125,119 @@ test('byte radix codecs round trip zero and fixed-width boundary values', functi
 test('the installed runtime satisfies the 64-bit package contract', function () {
     expect(PHP_INT_SIZE)->toBe(8);
 });
+
+
+test('v5 public helper and facade parameter names remain stable', function (): void {
+    $functions = [
+        'Infocyph\\UID\\cuid2' => ['length'],
+        'Infocyph\\UID\\ksuid' => ['dateTime'],
+        'Infocyph\\UID\\nano_id' => ['length'],
+        'Infocyph\\UID\\object_id' => ['dateTime'],
+        'Infocyph\\UID\\randflake' => ['config'],
+        'Infocyph\\UID\\random_id' => ['length', 'alphabet'],
+        'Infocyph\\UID\\snowflake' => ['config'],
+        'Infocyph\\UID\\sonyflake' => ['config'],
+        'Infocyph\\UID\\tbsl' => ['config'],
+        'Infocyph\\UID\\type_id' => ['type'],
+        'Infocyph\\UID\\ulid' => ['dateTime', 'mode'],
+        'Infocyph\\UID\\uuid1' => ['node'],
+        'Infocyph\\UID\\uuid3' => ['namespace', 'string'],
+        'Infocyph\\UID\\uuid4' => [],
+        'Infocyph\\UID\\uuid5' => ['namespace', 'string'],
+        'Infocyph\\UID\\uuid6' => ['node'],
+        'Infocyph\\UID\\uuid7' => ['dateTime'],
+        'Infocyph\\UID\\uuid8' => ['node'],
+        'Infocyph\\UID\\xid' => [],
+    ];
+
+    foreach ($functions as $function => $expected) {
+        $actual = array_map(
+            static fn(ReflectionParameter $parameter): string => $parameter->getName(),
+            (new ReflectionFunction($function))->getParameters(),
+        );
+        expect($actual)->toBe($expected);
+    }
+
+    $methods = [
+        'cuid2' => ['length'],
+        'deterministic' => ['payload', 'length', 'namespace'],
+        'ksuid' => ['dateTime'],
+        'nanoId' => ['length'],
+        'objectId' => ['dateTime'],
+        'randflake' => ['config'],
+        'random' => ['length', 'alphabet'],
+        'snowflake' => ['config'],
+        'snowflakeValue' => ['config'],
+        'sonyflake' => ['config'],
+        'sonyflakeValue' => ['config'],
+        'tbsl' => ['config'],
+        'typeId' => ['type'],
+        'ulid' => ['dateTime', 'mode'],
+        'uuid' => ['dateTime'],
+        'uuid1' => ['node'],
+        'uuid3' => ['namespace', 'string'],
+        'uuid4' => [],
+        'uuid5' => ['namespace', 'string'],
+        'uuid6' => ['node'],
+        'uuid7' => ['dateTime'],
+        'uuid8' => ['node'],
+        'xid' => [],
+    ];
+
+    foreach ($methods as $method => $expected) {
+        $actual = array_map(
+            static fn(ReflectionParameter $parameter): string => $parameter->getName(),
+            (new ReflectionMethod(\Infocyph\UID\Id::class, $method))->getParameters(),
+        );
+        expect($actual)->toBe($expected);
+    }
+});
+
+test('v5 configuration constructor parameters remain an unchanged prefix', function (): void {
+    $contracts = [
+        \Infocyph\UID\Configuration\SnowflakeConfig::class => [
+            'datacenterId', 'workerId', 'nodeResolver', 'customEpoch',
+            'sequenceProvider', 'clockBackwardPolicy',
+        ],
+        \Infocyph\UID\Configuration\SonyflakeConfig::class => [
+            'machineId', 'machineIdResolver', 'customEpoch',
+            'sequenceProvider', 'clockBackwardPolicy',
+        ],
+        \Infocyph\UID\Configuration\TBSLConfig::class => [
+            'machineId', 'sequenced', 'machineIdResolver',
+            'sequenceProvider', 'clockBackwardPolicy',
+        ],
+        \Infocyph\UID\Configuration\RandflakeConfig::class => [
+            'nodeId', 'leaseStart', 'leaseEnd', 'secret', 'sequenceProvider',
+        ],
+    ];
+
+    foreach ($contracts as $class => $expectedPrefix) {
+        $constructor = (new ReflectionClass($class))->getConstructor();
+        expect($constructor)->not->toBeNull();
+
+        $names = array_map(
+            static fn(ReflectionParameter $parameter): string => $parameter->getName(),
+            $constructor?->getParameters() ?? [],
+        );
+        expect(array_slice($names, 0, count($expectedPrefix)))->toBe($expectedPrefix);
+    }
+});
+
+test('legacy Snowflake and Sonyflake stored-layout vectors still parse identically', function (): void {
+    $epoch = 1_577_836_800_000;
+    $snowflake = (string) ((1 << 22) | (2 << 17) | (3 << 12) | 4);
+    $snowflakeParts = \Infocyph\UID\Snowflake::parseWithEpoch($snowflake, $epoch);
+
+    expect($snowflakeParts['sequence'])->toBe(4)
+        ->and($snowflakeParts['worker_id'])->toBe(3)
+        ->and($snowflakeParts['datacenter_id'])->toBe(2)
+        ->and($snowflakeParts['time']->format('Uv'))->toBe((string) ($epoch + 1));
+
+    $sonyflake = (string) ((1 << 24) | (42 << 8) | 1);
+    $sonyflakeParts = \Infocyph\UID\Sonyflake::parseWithEpoch($sonyflake, $epoch);
+
+    expect($sonyflakeParts['sequence'])->toBe(1)
+        ->and($sonyflakeParts['machine_id'])->toBe(42)
+        ->and($sonyflakeParts['time']->format('Uv'))->toBe((string) ($epoch + 10));
+});
