@@ -109,6 +109,15 @@ final class Id
         return UUID::v1($node);
     }
 
+    public static function uuid2(
+        int $localIdentifier,
+        int $localDomain = UUID::DCE_DOMAIN_PERSON,
+        ?string $node = null,
+        ?int $clockSequence = null,
+    ): string {
+        return UUID::v2($localIdentifier, $localDomain, $node, $clockSequence);
+    }
+
     public static function uuid3(string $namespace, string $string): string
     {
         return UUID::v3($namespace, $string);

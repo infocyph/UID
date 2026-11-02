@@ -13,7 +13,7 @@ use Throwable;
 final readonly class UuidValue implements IdValueInterface
 {
     /**
-     * @var array{version: int|null, variant: string|null, time: DateTimeInterface|null, node: string|null, tail: string|null}
+     * @var array{version: int|null, variant: string|null, time: DateTimeInterface|null, node: string|null, tail: string|null, local_domain?: int, local_identifier?: int}
      */
     private array $parsed;
 

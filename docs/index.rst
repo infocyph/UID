@@ -5,7 +5,7 @@ UID is an all-in-one ID toolkit for PHP with generation, parsing, validation, an
 
 It supports:
 
-- UUID (v1, v3, v4, v5, v6, v7, v8)
+- UUID (v1, v2, v3, v4, v5, v6, v7, v8)
 - ULID
 - TypeID
 - ObjectID
@@ -51,7 +51,6 @@ It supports:
    helpers
    db-storage
    compatibility
-   benchmark-report
    framework-integration
    exceptions
    references

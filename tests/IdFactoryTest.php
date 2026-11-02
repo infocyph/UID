@@ -18,6 +18,7 @@ test('Id factory basic methods', function () {
     $typeId = Id::typeId('user');
     $objectId = Id::objectId();
     $uuid1 = Id::uuid1();
+    $uuid2 = Id::uuid2(1001);
     $namespace = Id::uuid4();
     $uuid3 = Id::uuid3($namespace, 'id-factory');
     $uuid4 = Id::uuid4();
@@ -42,6 +43,7 @@ test('Id factory basic methods', function () {
         ->and($typeId)->toStartWith('user_')->toHaveLength(31)
         ->and($objectId)->toHaveLength(24)
         ->and($uuid1)->toBeString()->toHaveLength(36)
+        ->and($uuid2)->toBeString()->toHaveLength(36)
         ->and($uuid3)->toBeString()->toHaveLength(36)
         ->and($uuid4)->toBeString()->toHaveLength(36)
         ->and($uuid5)->toBeString()->toHaveLength(36)

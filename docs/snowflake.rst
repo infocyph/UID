@@ -79,6 +79,9 @@ Custom Epoch APIs
 
 The epoch is immutable global-domain configuration: supply it through a config
 and retain it when parsing. Changing an epoch creates a different ID domain.
+Parsing supports negative epoch milliseconds, including fractional seconds before
+1970. An epoch plus encoded offset that exceeds PHP's integer range throws
+``SnowflakeException``.
 
 Binary and Alternate Bases
 --------------------------

@@ -200,6 +200,12 @@ final class HotspotBench
     }
 
     #[Bench\Revs(1000), Bench\Iterations(5)]
+    public function benchUuidV2(): void
+    {
+        UUID::v2(1001);
+    }
+
+    #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUuidV4(): void
     {
         UUID::v4();

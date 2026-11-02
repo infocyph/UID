@@ -22,7 +22,7 @@ application domain that owns their node/machine ID, epoch, sequence provider and
 runtime policy. SnowflakeConfig, SonyflakeConfig, RandflakeConfig and TBSLConfig
 may receive a GenerationContext without changing the ordinary synchronous APIs.
 
-Runwire 2.1.1+ Integration
+Runwire 3.0 Integration
 --------------------------
 
 Runwire support is optional. UID never discovers a runtime globally and never
@@ -58,8 +58,8 @@ operation.
 Construct bindings after worker creation/fork and do not retain a request binding
 in static provider selectors or worker-wide mutable state. The binding validates
 the process, request/runtime identity, request completion, active coroutine
-capability, cancellation and deadlines using Runwire 2.1.1 public APIs. UID's
-development fixture targets ``infocyph/runwire ^2.1.1``.
+capability, cancellation and deadlines using Runwire 3.0 public APIs. UID's
+development fixture targets ``infocyph/runwire ^3.0``.
 
 A CoroutineScope does not expose public request identity. Therefore the host
 boundary that owns both objects is responsible for pairing the correct scope with

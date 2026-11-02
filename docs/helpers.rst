@@ -18,7 +18,7 @@ Import them explicitly before use:
    $objectId = object_id();
    $random = random_id(24);
 
-Available helpers are ``uuid1``, ``uuid3``, ``uuid4``, ``uuid5``, ``uuid6``,
+Available helpers are ``uuid1``, ``uuid2``, ``uuid3``, ``uuid4``, ``uuid5``, ``uuid6``,
 ``uuid7``, ``uuid8``, ``ulid``, ``type_id``, ``object_id``, ``snowflake``,
 ``sonyflake``, ``randflake``, ``tbsl``, ``ksuid``, ``xid``, ``nano_id``,
 ``cuid2``, and ``random_id``.

@@ -180,3 +180,25 @@ test('Sonyflake rejects extreme epochs with a domain error before integer divisi
     expect(fn(): string => Sonyflake::generateWithConfig($config))
         ->toThrow(SonyflakeException::class, 'maximum life cycle');
 });
+
+test('custom epoch parsers preserve negative fractional timestamps', function (int $epoch, string $expected): void {
+    expect(\Infocyph\UID\Snowflake::parseWithEpoch('0', $epoch)['time']->format('Y-m-d H:i:s.u'))->toBe($expected);
+    foreach ([SonyflakeFormat::UID, SonyflakeFormat::UPSTREAM] as $format) {
+        expect(Sonyflake::parseWithEpoch('0', $epoch, $format)['time']->format('Y-m-d H:i:s.u'))->toBe($expected);
+    }
+})->with([
+    [-1500, '1969-12-31 23:59:58.500000'],
+    [-500, '1969-12-31 23:59:59.500000'],
+    [-1, '1969-12-31 23:59:59.999000'],
+    [0, '1970-01-01 00:00:00.000000'],
+    [500, '1970-01-01 00:00:00.500000'],
+]);
+
+test('custom epoch parsers reject timestamp overflow with domain exceptions', function (): void {
+    expect(fn(): array => \Infocyph\UID\Snowflake::parseWithEpoch((string) PHP_INT_MAX, PHP_INT_MAX))
+        ->toThrow(\Infocyph\UID\Exceptions\SnowflakeException::class);
+    foreach ([SonyflakeFormat::UID, SonyflakeFormat::UPSTREAM] as $format) {
+        expect(fn(): array => Sonyflake::parseWithEpoch((string) PHP_INT_MAX, PHP_INT_MAX, $format))
+            ->toThrow(SonyflakeException::class);
+    }
+});

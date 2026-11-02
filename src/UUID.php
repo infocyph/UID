@@ -14,6 +14,12 @@ use const STR_PAD_LEFT;
 
 final class UUID
 {
+    public const int DCE_DOMAIN_GROUP = 1;
+
+    public const int DCE_DOMAIN_ORG = 2;
+
+    public const int DCE_DOMAIN_PERSON = 0;
+
     private const int MAX_V7_TIMESTAMP = 281_474_976_710_655;
 
     private const array NS_LIST = [
@@ -221,7 +227,7 @@ final class UUID
      * Parses a UUID string and returns an array with information about the UUID.
      *
      * @param string $uuid The UUID string to parse.
-     * @return array{version: int|null, variant: string|null, time: DateTimeInterface|null, node: string|null, tail: string|null}
+     * @return array{version: int|null, variant: string|null, time: DateTimeInterface|null, node: string|null, tail: string|null, local_domain?: int, local_identifier?: int}
      * @throws Exception
      */
     public static function parse(string $uuid): array
@@ -247,18 +253,16 @@ final class UUID
         if (count($uuidData) !== 5) {
             return $data;
         }
-        $variantN = hexdec($uuidData[3][0]);
         $data['version'] = (int) $uuidData[2][0];
-        $data['time'] = in_array($data['version'], [1, 6, 7], true) ? self::getTime($uuidData, $data['version']) : null;
+        $data['time'] = in_array($data['version'], [1, 2, 6, 7], true) ? self::getTime($uuidData, $data['version']) : null;
         $data['tail'] = $uuidData[4];
         $data['node'] = in_array($data['version'], [7, 8], true) ? null : $uuidData[4];
-        $data['variant'] = match (true) {
-            $variantN <= 7 => 'NCS',
-            $variantN >= 8 && $variantN <= 11 => 'DCE 1.1, ISO/IEC 11578:1996',
-            $variantN === 12 || $variantN === 13 => 'Microsoft GUID',
-            $variantN === 14 => 'Reserved',
-            default => 'Unknown',
-        };
+        $data['variant'] = 'DCE 1.1, ISO/IEC 11578:1996';
+
+        if ($data['version'] === 2) {
+            $data['local_domain'] = (int) hexdec(substr($uuidData[3], 2, 2));
+            $data['local_identifier'] = (int) hexdec($uuidData[0]);
+        }
 
         return $data;
     }
@@ -340,6 +344,36 @@ final class UUID
             $clockSequence | 0x8000,
             $node === null ? self::getNode() : self::normalizeNode($node),
         );
+    }
+
+    /**
+     * Encodes a DCE identity; fixed nodes require a caller-coordinated six-bit sequence.
+     *
+     * @throws UUIDException|Exception
+     */
+    public static function v2(
+        int $localIdentifier,
+        int $localDomain = self::DCE_DOMAIN_PERSON,
+        ?string $node = null,
+        ?int $clockSequence = null,
+    ): string {
+        if ($localIdentifier < 0 || $localIdentifier > 0xffffffff) {
+            throw new UUIDException('UUID v2 local identifier must be between 0 and 4294967295');
+        }
+        if ($localDomain < self::DCE_DOMAIN_PERSON || $localDomain > self::DCE_DOMAIN_ORG) {
+            throw new UUIDException('UUID v2 local domain must be person (0), group (1), or organization (2)');
+        }
+        if ($clockSequence !== null && ($clockSequence < 0 || $clockSequence > 63)) {
+            throw new UUIDException('UUID v2 clock sequence must be between 0 and 63');
+        }
+        if ($node !== null && $clockSequence === null) {
+            throw new UUIDException('Explicit UUID v2 nodes require a caller-coordinated clock sequence');
+        }
+
+        $uuid = substr_replace(self::v1($node), sprintf('%08x', $localIdentifier), 0, 8);
+        $uuid[14] = '2';
+
+        return substr_replace($uuid, sprintf('%02x%02x', 0x80 | ($clockSequence ?? random_int(0, 63)), $localDomain), 19, 4);
     }
 
     /**
@@ -476,9 +510,10 @@ final class UUID
     {
         $timestamp = match ($version) {
             1 => substr((string) $uuid[2], -3) . $uuid[1] . $uuid[0],
+            2 => substr((string) $uuid[2], -3) . $uuid[1] . '00000000',
             6 => $uuid[0] . $uuid[1] . substr((string) $uuid[2], -3),
             7 => $uuid[0] . $uuid[1],
-            default => throw new UUIDException('Invalid version (applicable: 1, 6, 7)'),
+            default => throw new UUIDException('Invalid version (applicable: 1, 2, 6, 7)'),
         };
 
         switch ($version) {
@@ -491,11 +526,14 @@ final class UUID
 
                 break;
             default:
-                $unixIntervals = (int) hexdec($timestamp) - self::TIME_OFFSET;
+                // Truncate Gregorian ticks before subtracting the Unix epoch so
+                // pre-epoch values retain the correct microsecond boundary.
+                $microseconds = intdiv((int) hexdec($timestamp), 10) - intdiv(self::TIME_OFFSET, 10);
+                $magnitude = abs($microseconds);
                 $time = [
-                    (string) intdiv($unixIntervals, self::SECOND_INTERVALS),
+                    ($microseconds < 0 ? '-' : '') . intdiv($magnitude, 1_000_000),
                     str_pad(
-                        (string) intdiv($unixIntervals % self::SECOND_INTERVALS, 10),
+                        (string) ($magnitude % 1_000_000),
                         6,
                         '0',
                         STR_PAD_LEFT,
