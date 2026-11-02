@@ -73,6 +73,15 @@ function uuid1(?string $node = null): string
     return UUID::v1($node);
 }
 
+function uuid2(
+    int $localIdentifier,
+    int $localDomain = UUID::DCE_DOMAIN_PERSON,
+    ?string $node = null,
+    ?int $clockSequence = null,
+): string {
+    return UUID::v2($localIdentifier, $localDomain, $node, $clockSequence);
+}
+
 function uuid3(string $namespace, string $string): string
 {
     return UUID::v3($namespace, $string);

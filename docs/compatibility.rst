@@ -5,6 +5,7 @@ Format Compatibility
 --------------------
 
 - UUID v1/v3/v4/v5 follows RFC 4122-compatible layouts; UUID v6/v7 follows RFC 9562.
+- UUID v2 uses the DCE Security layout, including local identifier and domain fields.
 - UUID v8 uses an application-defined payload. Generic parsing does not infer a timestamp.
 - TypeID implements the TypeID v0.3 text format over 16 UUID bytes.
 - ObjectID implements the BSON 12-byte ObjectID layout and canonical lowercase hexadecimal text.
@@ -26,6 +27,7 @@ Format                 Uniqueness model
 =====================  ==============================================================
 UUID v4                Probabilistic cryptographic randomness
 UUID v7                Randomness plus process-local monotonic generation
+UUID v2                Random nodes by default; caller coordination for fixed nodes
 ULID                    Randomness plus optional process-local monotonic generation
 TypeID                  Inherits the encoded UUID's uniqueness properties
 ObjectID                Timestamp, process-random value, and process-local counter
@@ -54,6 +56,7 @@ UUID v4/v7             Identifiers, not authorization secrets
 Snowflake/Sonyflake    Structured values whose metadata may be inferred
 TBSL                   Structured value whose timestamp is recoverable
 ObjectID/XID/KSUID      Timestamp metadata is recoverable
+UUID v2                 Local identity and coarse timestamp are recoverable
 Randflake               Obscures fields; it is not authenticated encryption
 OpaqueId                Reversible obfuscation only
 DeterministicId         Stable deterministic token; it does not provide secrecy
@@ -66,6 +69,6 @@ Runtime Requirements
 
 - PHP 8.4 or newer on a 64-bit runtime.
 - The ctype extension is required.
-- Runwire 2.1.1+ and PSR-20 clocks are optional passed-instance integrations.
+- Runwire 3.0 and PSR-20 clocks are optional passed-instance integrations.
 - No BCMath dependency.
 - PSR-16 is optional and needed only for the PSR simple-cache sequence provider.

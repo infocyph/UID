@@ -32,6 +32,7 @@ test('process-local generator state is reseeded after a fork', function (Closure
         ->and($parentId)->not()->toBe($childId);
 })->with([
     'uuid-v1' => [fn(): string => UUID::v1()],
+    'uuid-v2' => [fn(): string => UUID::v2(1001)],
     'uuid-v7' => [fn(): string => UUID::v7(new DateTimeImmutable('@1700000000.123'))],
     'ulid' => [fn(): string => ULID::generateMonotonic(new DateTimeImmutable('@1700000000.123'))],
     'cuid2' => [fn(): string => CUID2::generate()],

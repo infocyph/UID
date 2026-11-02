@@ -12,7 +12,7 @@ All-in-one unique ID toolkit for PHP.
 
 ## Features
 
-- UUID (`v1`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`)
+- UUID (`v1`, `v2`, `v3`, `v4`, `v5`, `v6`, `v7`, `v8`)
 - ULID (monotonic and random modes)
 - Snowflake, Sonyflake, Randflake, TBSL
 - TypeID, ObjectID, NanoID, RandomId, CUID2, KSUID, XID
@@ -21,7 +21,7 @@ All-in-one unique ID toolkit for PHP.
 - Binary conversion and base encoders (`10`, `16`, `32`, `36`, `58`, `62`)
 - Pluggable sequence providers (filesystem, memory, PSR-16 cache, callback)
 - Explicit legacy/upstream Sonyflake and Randflake compatibility modes
-- Optional PSR-20 clocks and Runwire 2.1.1+ cooperative wait integration
+- Optional PSR-20 clocks and Runwire 3.0 cooperative wait integration
 
 ## Requirements
 

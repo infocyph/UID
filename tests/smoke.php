@@ -69,9 +69,10 @@ $seen = [];
 
 try {
     for ($cycle = 0; $cycle < 100; ++$cycle) {
-        foreach ([1, 3, 4, 5, 6, 7, 8] as $version) {
+        foreach ([1, 2, 3, 4, 5, 6, 7, 8] as $version) {
             $id = match ($version) {
                 1 => UUID::v1(),
+                2 => UUID::v2(1001),
                 3 => UUID::v3('00000000-0000-0000-0000-000000000000', 'smoke-' . $cycle),
                 4 => UUID::v4(),
                 5 => UUID::v5('00000000-0000-0000-0000-000000000000', 'smoke-' . $cycle),

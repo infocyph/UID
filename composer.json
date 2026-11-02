@@ -37,7 +37,7 @@
     },
     "require-dev": {
         "infocyph/phpforge": "dev-main@dev",
-        "infocyph/runwire": "^2.1.1",
+        "infocyph/runwire": "^3.0",
         "psr/clock": "^1.0",
         "psr/simple-cache": "^3.0"
     },

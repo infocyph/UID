@@ -136,7 +136,11 @@ final class Snowflake
         }
 
         $numericId = (int) $id;
-        $timestamp = ($numericId >> 22) + $startTimestamp;
+        $elapsed = $numericId >> 22;
+        if ($startTimestamp > PHP_INT_MAX - $elapsed) {
+            throw new SnowflakeException('Parsed Snowflake timestamp exceeds the supported integer domain');
+        }
+        $timestamp = $elapsed + $startTimestamp;
         [$seconds, $fraction] = self::timestampParts($timestamp);
 
         return [
@@ -409,7 +413,10 @@ final class Snowflake
      */
     private static function timestampParts(int $timestamp): array
     {
-        return [(string) intdiv($timestamp, 1000), (string) (($timestamp % 1000) * 1000)];
+        return [
+            ($timestamp < 0 ? '-' : '') . abs(intdiv($timestamp, 1000)),
+            (string) (abs($timestamp % 1000) * 1000),
+        ];
     }
 
     private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int

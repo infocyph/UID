@@ -5,6 +5,7 @@ Standards and Specs
 -------------------
 
 - UUID RFC 9562: https://datatracker.ietf.org/doc/html/rfc9562
+- DCE UUID v2 interoperability guide and example vector: https://uuid.ramsey.dev/en/stable/rfc4122/version2.html
 - ULID spec: https://github.com/ulid/spec
 - Twitter Snowflake (archived): https://github.com/twitter-archive/snowflake/tree/snowflake-2010
 - Sonyflake: https://github.com/sony/sonyflake

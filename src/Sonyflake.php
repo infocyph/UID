@@ -299,12 +299,15 @@ final class Sonyflake
         SonyflakeFormat $format,
     ): array {
         $numericId = (int) $id;
-        $elapsed = $numericId >> 24;
-        $timestamp = $startTimestamp + ($elapsed * 10);
+        $elapsed = ($numericId >> 24) * 10;
+        if ($startTimestamp > PHP_INT_MAX - $elapsed) {
+            throw new SonyflakeException('Parsed Sonyflake timestamp exceeds the supported integer domain');
+        }
+        $timestamp = $startTimestamp + $elapsed;
 
         return [
-            'seconds' => (string) intdiv($timestamp, 1000),
-            'fraction' => (string) (($timestamp % 1000) * 1000),
+            'seconds' => ($timestamp < 0 ? '-' : '') . abs(intdiv($timestamp, 1000)),
+            'fraction' => (string) (abs($timestamp % 1000) * 1000),
             'sequence' => $format === SonyflakeFormat::UPSTREAM
                 ? ($numericId >> 16) & 0xff
                 : $numericId & 0xff,

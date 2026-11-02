@@ -81,6 +81,9 @@ The epoch is immutable domain configuration: supply it through a config and
 retain both epoch and format metadata when parsing. The upstream mode uses its
 upstream default epoch unless a custom epoch is explicitly configured. Changing
 format or epoch creates a different ID domain.
+Parsing supports negative epoch milliseconds, including fractional seconds before
+1970. An epoch plus encoded offset that exceeds PHP's integer range throws
+``SonyflakeException``.
 
 Binary and Alternate Bases
 --------------------------
