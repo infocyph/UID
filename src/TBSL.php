@@ -76,6 +76,9 @@ final class TBSL
         return self::generate($machineId, false);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function generateWithConfig(TBSLConfig $config): string
     {
         return self::generateInternal(
@@ -158,6 +161,9 @@ final class TBSL
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UIDException
+     */
     private static function assertTimestamp(int $timestamp, int $machineId): void
     {
         if ($timestamp < 0 || $timestamp > intdiv(0x0fffffffffffffff - $machineId, 100)) {
@@ -271,6 +277,9 @@ final class TBSL
         } while (true);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UIDException
+     */
     private static function waitUntilNextTimeSequence(int $last, ?GenerationContext $runtime): int
     {
         $deadline = $runtime?->waitDeadlineNanoseconds()

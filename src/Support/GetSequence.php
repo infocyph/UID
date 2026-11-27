@@ -96,6 +96,7 @@ trait GetSequence
      * @param int $dateTime The current time.
      * @param int $machineId The machine ID.
      * @param string $type The type identifier.
+     * @throws \Infocyph\UID\Exceptions\FileLockException
      */
     private static function sequence(
         int $dateTime,

@@ -8,6 +8,9 @@ use InvalidArgumentException;
 
 final class RandomSampler
 {
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function assertAlphabet(string $alphabet): void
     {
         $length = strlen($alphabet);
@@ -45,6 +48,9 @@ final class RandomSampler
         return true;
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function generate(int $length, string $alphabet): string
     {
         self::assertAlphabet($alphabet);

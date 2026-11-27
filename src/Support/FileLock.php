@@ -15,6 +15,7 @@ final class FileLock
     /**
      * @return resource
      * @throws FileLockException
+     * @throws \Throwable
      */
     public static function acquire(
         string $path,
@@ -151,6 +152,7 @@ final class FileLock
      * @param resource $handle
      * @param array<string|int, int>|null $before
      * @return resource
+     * @throws \Throwable
      */
     private static function verifyHandle(string $path, $handle, ?array $before, string $errorMessage, ?int $ownerId)
     {

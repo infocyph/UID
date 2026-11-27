@@ -28,6 +28,9 @@ final class BaseEncoder
         62 => [916_132_832, 5],
     ];
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function decodeToBytes(string $encoded, int $base, int $bytesLength): string
     {
         if ($encoded === '') {
@@ -92,6 +95,9 @@ final class BaseEncoder
         return self::ALPHABETS[$base] ?? throw new InvalidArgumentException('Unsupported base: ' . $base);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     private static function assertByteLength(int $byteLength): void
     {
         if ($byteLength < 1 || $byteLength > self::MAX_BYTE_LENGTH) {
@@ -99,6 +105,9 @@ final class BaseEncoder
         }
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     private static function decodeRadix(string $encoded, int $base, int $bytesLength): string
     {
         $alphabet = self::alphabet($base);
