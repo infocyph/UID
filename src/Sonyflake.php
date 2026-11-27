@@ -412,7 +412,7 @@ final class Sonyflake
     ): \ArrayObject {
         self::$lastWallTimeByProvider ??= new \WeakMap();
 
-            $state = self::$lastWallTimeByProvider[$provider] ?? null;
+        $state = self::$lastWallTimeByProvider[$provider] ?? null;
         if ($state === null) {
             /** @var \ArrayObject<string, int> $state */
             $state = new \ArrayObject();

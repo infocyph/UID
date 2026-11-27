@@ -40,7 +40,7 @@ final class SequenceTestCache implements CacheInterface
     public function deleteMultiple(iterable $keys): bool
     {
         foreach ($keys as $key) {
-            $this->delete($key));
+            $this->delete($key);
         }
 
         return true;
@@ -94,7 +94,7 @@ final class SequenceTestCache implements CacheInterface
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
     {
         foreach ($values as $key => $value) {
-            if (!$this->set($key), $value, $ttl)) {
+            if (!$this->set($key, $value, $ttl)) {
                 return false;
             }
         }

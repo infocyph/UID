@@ -390,7 +390,7 @@ final class Snowflake
     ): \ArrayObject {
         self::$lastStateByProvider ??= new \WeakMap();
 
-            $state = self::$lastStateByProvider[$provider] ?? null;
+        $state = self::$lastStateByProvider[$provider] ?? null;
         if ($state === null) {
             /** @var \ArrayObject<string, array{timestamp:int, sequence:int}> $state */
             $state = new \ArrayObject();

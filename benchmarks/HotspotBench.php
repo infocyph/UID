@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Infocyph\UID\Benchmarks;
 
 use Closure;
-use ReflectionMethod;
-use ReflectionProperty;
 use Infocyph\UID\Configuration\RandflakeConfig;
 use Infocyph\UID\Configuration\SnowflakeConfig;
 use Infocyph\UID\Configuration\SonyflakeConfig;
@@ -28,6 +26,8 @@ use Infocyph\UID\ULID;
 use Infocyph\UID\UUID;
 use Infocyph\UID\XID;
 use PhpBench\Attributes as Bench;
+use ReflectionMethod;
+use ReflectionProperty;
 
 /**
  * PHPBench discovers this entry point by reflection.

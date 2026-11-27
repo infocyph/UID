@@ -56,7 +56,7 @@ final class DomainLimitCache implements CacheInterface
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
     {
         foreach ($values as $key => $value) {
-            $this->set($key), $value, $ttl);
+            $this->set($key, $value, $ttl);
         }
 
         return true;
@@ -66,7 +66,7 @@ final class DomainLimitCache implements CacheInterface
     public function deleteMultiple(iterable $keys): bool
     {
         foreach ($keys as $key) {
-            $this->delete($key));
+            $this->delete($key);
         }
 
         return true;

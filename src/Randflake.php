@@ -598,7 +598,7 @@ final class Randflake
     ): \ArrayObject {
         self::$lastTimestampByProvider ??= new \WeakMap();
 
-            $state = self::$lastTimestampByProvider[$provider] ?? null;
+        $state = self::$lastTimestampByProvider[$provider] ?? null;
         if ($state === null) {
             /** @var \ArrayObject<string, array{timestamp:int,sequence:int}> $state */
             $state = new \ArrayObject();
