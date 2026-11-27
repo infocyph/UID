@@ -34,10 +34,6 @@ final class TypeIdCodec
             }
         }
 
-        if (count($bytes) > 16) {
-            throw new InvalidArgumentException('TypeID suffix exceeds 128 bits');
-        }
-
         $decoded = '';
         foreach ($bytes as $byte) {
             $decoded .= chr($byte);
