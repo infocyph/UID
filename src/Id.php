@@ -16,36 +16,62 @@ use Infocyph\UID\Value\SonyflakeValue;
 
 final class Id
 {
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Exception
+     */
     public static function cuid2(int $length = 24): string
     {
         return CUID2::generate($length);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function deterministic(string $payload, int $length = 24, string $namespace = 'default'): string
     {
         return DeterministicId::fromPayload($payload, $length, $namespace);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function ksuid(?DateTimeInterface $dateTime = null): string
     {
         return KSUID::generate($dateTime);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function nanoId(int $length = 21): string
     {
         return NanoID::generate($length);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ObjectIDException
+     */
     public static function objectId(?DateTimeInterface $dateTime = null): string
     {
         return ObjectID::generate($dateTime);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     public static function randflake(RandflakeConfig $config): string
     {
         return Randflake::generateWithConfig($config);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function random(
         int $length = 21,
         string $alphabet = RandomId::DEFAULT_ALPHABET,
@@ -53,21 +79,53 @@ final class Id
         return RandomId::generate($length, $alphabet);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     * @throws \UnexpectedValueException
+     */
     public static function snowflake(?SnowflakeConfig $config = null): string
     {
         return $config === null ? Snowflake::generate() : Snowflake::generateWithConfig($config);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \LogicException
+     * @throws \Throwable
+     * @throws \UnexpectedValueException
+     */
     public static function snowflakeValue(?SnowflakeConfig $config = null): SnowflakeValue
     {
         return new SnowflakeValue(self::snowflake($config), $config?->resolveCustomEpochMs());
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     * @throws \UnexpectedValueException
+     */
     public static function sonyflake(?SonyflakeConfig $config = null): string
     {
         return $config === null ? Sonyflake::generate() : Sonyflake::generateWithConfig($config);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \LogicException
+     * @throws \Throwable
+     * @throws \UnexpectedValueException
+     */
     public static function sonyflakeValue(?SonyflakeConfig $config = null): SonyflakeValue
     {
         $format = SonyflakeFormat::UID;
@@ -82,16 +140,26 @@ final class Id
         );
     }
 
+    /**
+     * @throws \Exception
+     * @throws \Throwable
+     */
     public static function tbsl(?TBSLConfig $config = null): string
     {
         return $config === null ? TBSL::generate() : TBSL::generateWithConfig($config);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function typeId(string $type = ''): string
     {
         return TypeID::generate($type);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function ulid(
         ?DateTimeInterface $dateTime = null,
         UlidGenerationMode $mode = UlidGenerationMode::MONOTONIC,
@@ -99,16 +167,26 @@ final class Id
         return ULID::generate($dateTime, $mode);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid(?DateTimeInterface $dateTime = null): string
     {
         return UUID::v7($dateTime);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid1(?string $node = null): string
     {
         return UUID::v1($node);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Exception
+     */
     public static function uuid2(
         int $localIdentifier,
         int $localDomain = UUID::DCE_DOMAIN_PERSON,
@@ -118,36 +196,57 @@ final class Id
         return UUID::v2($localIdentifier, $localDomain, $node, $clockSequence);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     */
     public static function uuid3(string $namespace, string $string): string
     {
         return UUID::v3($namespace, $string);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid4(): string
     {
         return UUID::v4();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     */
     public static function uuid5(string $namespace, string $string): string
     {
         return UUID::v5($namespace, $string);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid6(?string $node = null): string
     {
         return UUID::v6($node);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid7(?DateTimeInterface $dateTime = null): string
     {
         return UUID::v7($dateTime);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid8(?string $node = null): string
     {
         return UUID::v8($node);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function xid(): string
     {
         return XID::generate();

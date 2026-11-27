@@ -82,7 +82,7 @@ final class ULID
     ): string {
         self::resetAfterFork();
         $time = $dateTime === null
-            ? (int) floor(microtime(true) * 1000)
+            ? (int) floor(microtime(true) * 1000.0)
             : (int) $dateTime->format('Uv');
         self::assertTimestamp($time);
 
@@ -178,6 +178,8 @@ final class ULID
      * Encodes ULID bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws ULIDException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function toBase(string $ulid, int $base): string
     {
@@ -213,6 +215,9 @@ final class ULID
         return $bytes;
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ULIDException
+     */
     private static function assertTimestamp(int $timestamp): void
     {
         if ($timestamp < 0 || $timestamp > self::MAX_TIMESTAMP) {
@@ -318,6 +323,9 @@ final class ULID
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ULIDException
+     */
     private static function waitForNextMillisecond(int $lastTimestamp): int
     {
         if ($lastTimestamp >= self::MAX_TIMESTAMP) {
@@ -329,7 +337,7 @@ final class ULID
                 throw new ULIDException('Timed out waiting for the next ULID timestamp');
             }
             usleep(1000);
-            $next = (int) floor(microtime(true) * 1000);
+            $next = (int) floor(microtime(true) * 1000.0);
         } while ($next <= $lastTimestamp);
 
         return $next;

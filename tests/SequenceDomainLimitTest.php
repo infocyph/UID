@@ -12,11 +12,13 @@ final class DomainLimitCache implements CacheInterface
     /** @var array<string, mixed> */
     private array $values = [];
 
+    #[\Override]
     public function get(string $key, mixed $default = null): mixed
     {
         return $this->values[$key] ?? $default;
     }
 
+    #[\Override]
     public function set(string $key, mixed $value, null|int|DateInterval $ttl = null): bool
     {
         unset($ttl);
@@ -25,6 +27,7 @@ final class DomainLimitCache implements CacheInterface
         return true;
     }
 
+    #[\Override]
     public function delete(string $key): bool
     {
         unset($this->values[$key]);
@@ -32,6 +35,7 @@ final class DomainLimitCache implements CacheInterface
         return true;
     }
 
+    #[\Override]
     public function clear(): bool
     {
         $this->values = [];
@@ -39,6 +43,7 @@ final class DomainLimitCache implements CacheInterface
         return true;
     }
 
+    #[\Override]
     public function getMultiple(iterable $keys, mixed $default = null): iterable
     {
         foreach ($keys as $key) {
@@ -46,24 +51,33 @@ final class DomainLimitCache implements CacheInterface
         }
     }
 
+    /**
+     * @param iterable<mixed, mixed> $values
+     * @throws InvalidArgumentException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    #[\Override]
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
     {
         foreach ($values as $key => $value) {
-            $this->set((string) $key, $value, $ttl);
+            is_string($key) || throw new InvalidArgumentException('Cache key must be a string');
+            $this->set($key, $value, $ttl);
         }
 
         return true;
     }
 
+    #[\Override]
     public function deleteMultiple(iterable $keys): bool
     {
         foreach ($keys as $key) {
-            $this->delete((string) $key);
+            $this->delete($key);
         }
 
         return true;
     }
 
+    #[\Override]
     public function has(string $key): bool
     {
         return array_key_exists($key, $this->values);

@@ -15,6 +15,11 @@ final class RunwireBinding
 {
     private static ?TaskLocal $scopeProbe = null;
 
+    /**
+     * @throws \LogicException
+     * @throws \Infocyph\Runwire\Exception\CancelledException
+     * @throws \Throwable
+     */
     public function __construct(
         public readonly RuntimeContext $runtime,
         public readonly ?RequestContext $request = null,
@@ -23,6 +28,11 @@ final class RunwireBinding
         $this->assertActive();
     }
 
+    /**
+     * @throws \LogicException
+     * @throws \Infocyph\Runwire\Exception\CancelledException
+     * @throws \Throwable
+     */
     public function assertActive(): void
     {
         $pid = getmypid();
@@ -52,6 +62,11 @@ final class RunwireBinding
         }
     }
 
+    /**
+     * @throws \LogicException
+     * @throws \Infocyph\Runwire\Exception\CancelledException
+     * @throws \Throwable
+     */
     public function deadlineNanoseconds(): ?int
     {
         $this->assertActive();
@@ -68,6 +83,11 @@ final class RunwireBinding
         return min($requestDeadline, $scopeDeadline);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     public function sleep(float $seconds): void
     {
         $this->assertActive();
@@ -75,7 +95,7 @@ final class RunwireBinding
         if ($this->scope !== null) {
             $this->scope->sleep($seconds);
         } else {
-            usleep((int) ceil($seconds * 1_000_000));
+            usleep((int) ceil($seconds * 1_000_000.0));
         }
 
         $this->assertActive();

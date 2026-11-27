@@ -11,6 +11,8 @@ final class OpaqueId
 {
     /**
      * Encodes an integer in a hashid-style opaque token.
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function fromInt(int $value, string $salt = ''): string
     {

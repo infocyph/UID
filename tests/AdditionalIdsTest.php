@@ -15,13 +15,13 @@ test('KSUID generation and parsing', function () {
 
     expect(KSUID::isValid($id))->toBeTrue()
         ->and($id)->toHaveLength(27)
-        ->and($parsed['time'])->not()->toBeNull();
+        ->and($parsed['time']->getTimestamp())->toBeGreaterThan(0);
 });
 
 test('KSUID matches the reference text and binary vector', function () {
     $bytes = hex2bin('0669f7efb5a1cd34b5f99d1154fb6853345c9735');
-    expect($bytes)->toBeString()
-        ->and(KSUID::fromBytes($bytes))->toBe('0ujtsYcgvSTl8PAuAdqWYSMnLOv')
+    $bytes !== false || throw new RuntimeException('Invalid reference vector');
+    expect(KSUID::fromBytes($bytes))->toBe('0ujtsYcgvSTl8PAuAdqWYSMnLOv')
         ->and(KSUID::toBytes('0ujtsYcgvSTl8PAuAdqWYSMnLOv'))->toBe($bytes);
 });
 
@@ -31,13 +31,13 @@ test('XID generation and parsing', function () {
 
     expect(XID::isValid($id))->toBeTrue()
         ->and($id)->toHaveLength(20)
-        ->and($parsed['time'])->not()->toBeNull();
+        ->and($parsed['time']->getTimestamp())->toBeGreaterThan(0);
 });
 
 test('XID matches the upstream text and binary vector', function () {
     $bytes = hex2bin('4d88e15b60f486e428412dc9');
-    expect($bytes)->toBeString()
-        ->and(XID::fromBytes($bytes))->toBe('9m4e2mr0ui3e8a215n4g')
+    $bytes !== false || throw new RuntimeException('Invalid reference vector');
+    expect(XID::fromBytes($bytes))->toBe('9m4e2mr0ui3e8a215n4g')
         ->and(XID::toBytes('9m4e2mr0ui3e8a215n4g'))->toBe($bytes);
 });
 

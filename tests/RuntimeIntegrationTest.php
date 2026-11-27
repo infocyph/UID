@@ -23,6 +23,7 @@ final readonly class FrozenUidClock implements ClockInterface
 {
     public function __construct(private DateTimeImmutable $time) {}
 
+    #[\Override]
     public function now(): DateTimeImmutable
     {
         return $this->time;
@@ -31,6 +32,7 @@ final readonly class FrozenUidClock implements ClockInterface
 
 final class OverflowUidSequenceProvider implements SequenceProviderInterface
 {
+    #[\Override]
     public function next(string $type, int $machineId, int $timestamp): int
     {
         unset($type, $machineId, $timestamp);
@@ -152,6 +154,14 @@ test('a cancellation after allocation never recycles the consumed allocation', f
 });
 
 
+/**
+ * @throws \UnexpectedValueException
+ * @throws \Infocyph\UID\Exceptions\SnowflakeException
+ * @throws \Infocyph\UID\Exceptions\FileLockException
+ * @throws \InvalidArgumentException
+ * @throws \LogicException
+ * @throws \Throwable
+ */
 function forwardUidSnowflake(SnowflakeConfig $config): string
 {
     return Snowflake::generateWithConfig($config);
@@ -166,7 +176,7 @@ test('Runwire bindings survive intermediary config forwarding without rediscover
         runtime: new GenerationContext(runwire: $binding),
     );
 
-    expect(forwardUidSnowflake($config))->toBeString()
+    expect(Snowflake::isValid(forwardUidSnowflake($config)))->toBeTrue()
         ->and($config->runtime?->runwire)->toBe($binding)
         ->and($binding->runtime)->toBe($host)
         ->and($binding->request)->toBe($request);
@@ -201,6 +211,7 @@ test('contended locks suspend cooperatively and stop on host cancellation', func
     $path = $directory . '/uid-snowflake-0.seq';
     file_put_contents($path, '1700000000000,7');
     $held = fopen($path, 'r+b');
+    $held !== false || throw new RuntimeException('Unable to open lock fixture');
     expect(flock($held, LOCK_EX))->toBeTrue();
     $host = RuntimeContext::fromCapabilities(new RuntimeCapabilities(
         driver: RuntimeDriver::NATIVE,
@@ -259,6 +270,7 @@ test('lock timeout forbids allocation after a late cooperative wake', function (
     $path = $directory . '/uid-test-1.seq';
     file_put_contents($path, '100,1');
     $held = fopen($path, 'r+b');
+    $held !== false || throw new RuntimeException('Unable to open lock fixture');
     expect(flock($held, LOCK_EX))->toBeTrue();
     $host = RuntimeContext::fromCapabilities(new RuntimeCapabilities(
         driver: RuntimeDriver::NATIVE,
@@ -296,4 +308,137 @@ test('lock timeout forbids allocation after a late cooperative wake', function (
         unlink($path);
         rmdir($directory);
     }
+});
+
+final class AdvancingUidClock implements ClockInterface
+{
+    private DateTimeImmutable $time;
+
+    public function __construct()
+    {
+        $this->time = new DateTimeImmutable('@1700000000');
+    }
+
+    #[\Override]
+    public function now(): DateTimeImmutable
+    {
+        $this->time = $this->time->modify('+20 milliseconds');
+
+        return $this->time;
+    }
+}
+
+test('advancing clocks cannot renew exhausted generation retry budgets', function (string $family, bool $rollback): void {
+    $fixture = new class {
+        public int $attempts = 0;
+
+        public bool $failing = true;
+    };
+    $runtime = new GenerationContext(clock: new AdvancingUidClock(), waitTimeoutMicros: 3_000);
+    $provider = new \Infocyph\UID\Sequence\CallbackSequenceProvider(
+        static function (string $type, int $machineId, int $timestamp) use ($fixture, $family, $rollback): int {
+            unset($type, $machineId);
+            if (++$fixture->attempts > 20) {
+                throw new RuntimeException('Retry probe exceeded its safety limit');
+            }
+            if (!$fixture->failing) {
+                return 1;
+            }
+
+            usleep(1_000);
+            if ($rollback) {
+                throw new \Infocyph\UID\Exceptions\SequenceTimestampException($timestamp + 1, $timestamp);
+            }
+
+            return match ($family) {
+                'snowflake' => 4_097,
+                'sonyflake', 'sonyflake-upstream' => 257,
+                'tbsl' => 0x100001,
+                default => throw new LogicException('Unknown generator family'),
+            };
+        },
+    );
+    $format = $family === 'sonyflake-upstream' ? \Infocyph\UID\Enums\SonyflakeFormat::UPSTREAM : \Infocyph\UID\Enums\SonyflakeFormat::UID;
+    $generate = static fn(): string => match ($family) {
+        'snowflake' => Snowflake::generateWithConfig(new SnowflakeConfig(sequenceProvider: $provider, runtime: $runtime)),
+        'sonyflake', 'sonyflake-upstream' => \Infocyph\UID\Sonyflake::generateWithConfig(new \Infocyph\UID\Configuration\SonyflakeConfig(
+            sequenceProvider: $provider,
+            runtime: $runtime,
+            format: $format,
+        )),
+        'tbsl' => \Infocyph\UID\TBSL::generateWithConfig(new \Infocyph\UID\Configuration\TBSLConfig(sequenceProvider: $provider, runtime: $runtime)),
+        default => throw new LogicException('Unknown generator family'),
+    };
+
+    expect($generate)->toThrow(\Infocyph\UID\Exceptions\UIDException::class, 'Timed out')
+        ->and($fixture->attempts)->toBeGreaterThan(0)->toBeLessThan(20);
+
+    $fixture->failing = false;
+    $fixture->attempts = 0;
+    expect($generate())->not()->toBeEmpty()
+        ->and($fixture->attempts)->toBe(1);
+})->with(['snowflake', 'sonyflake', 'sonyflake-upstream', 'tbsl'])->with([false, true]);
+
+test('Snowflake monotonic retries share the outer generation deadline', function (): void {
+    $fixture = new class {
+        public ?SnowflakeConfig $config = null;
+
+        public bool $nested = false;
+
+        public int $attempts = 0;
+    };
+    $provider = new \Infocyph\UID\Sequence\CallbackSequenceProvider(
+        static function (string $type, int $machineId, int $timestamp) use ($fixture): int {
+            unset($type, $machineId, $timestamp);
+            if (++$fixture->attempts > 20) {
+                throw new RuntimeException('Retry probe exceeded its safety limit');
+            }
+            if (!$fixture->nested) {
+                $config = $fixture->config ?? throw new LogicException('Missing test configuration');
+                $fixture->nested = true;
+                try {
+                    usleep(1_000);
+                    Snowflake::generateWithConfig($config);
+                } finally {
+                    $fixture->nested = false;
+                }
+            }
+
+            return 1;
+        },
+    );
+    $fixture->config = new SnowflakeConfig(
+        sequenceProvider: $provider,
+        runtime: new GenerationContext(clock: new AdvancingUidClock(), waitTimeoutMicros: 3_000),
+    );
+    expect(fn(): string => Snowflake::generateWithConfig($fixture->config ?? throw new LogicException('Missing test configuration')))
+        ->toThrow(SnowflakeException::class, 'Timed out')
+        ->and($fixture->attempts)->toBeGreaterThan(1)->toBeLessThan(20);
+});
+
+test('host request deadlines remain terminal during generation retries', function (): void {
+    $host = RuntimeContext::standalone();
+    $request = RequestContext::create($host, new \Infocyph\Runwire\Runtime\RequestExecutionPolicy(maxExecutionSeconds: 0.005));
+    $attempts = 0;
+    $provider = new \Infocyph\UID\Sequence\CallbackSequenceProvider(
+        static function (string $type, int $machineId, int $timestamp) use (&$attempts): int {
+            unset($type, $machineId, $timestamp);
+            if (++$attempts > 20) {
+                throw new RuntimeException('Retry probe exceeded its safety limit');
+            }
+            usleep(1_000);
+
+            return 4_097;
+        },
+    );
+
+    expect(fn(): string => Snowflake::generateWithConfig(new SnowflakeConfig(
+        sequenceProvider: $provider,
+        runtime: new GenerationContext(
+            clock: new AdvancingUidClock(),
+            runwire: new RunwireBinding($host, $request),
+            waitTimeoutMicros: 1_000_000,
+        ),
+    )))->toThrow(CancelledException::class)
+        ->and($request->completed())->toBeFalse();
 });

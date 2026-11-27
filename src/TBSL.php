@@ -56,6 +56,7 @@ final class TBSL
      * @param bool $sequenced Whether to use sequencing.
      * @return string The generated unique identifier.
      * @throws Exception
+     * @throws \Throwable
      */
     public static function generate(int $machineId = 0, bool $sequenced = true): string
     {
@@ -70,12 +71,17 @@ final class TBSL
      * Generates TBSL using configuration object.
      *
      * @throws Exception
+     * @throws \Throwable
      */
     public static function generateRandom(int $machineId = 0): string
     {
         return self::generate($machineId, false);
     }
 
+    /**
+     * @throws \Exception
+     * @throws \Throwable
+     */
     public static function generateWithConfig(TBSLConfig $config): string
     {
         return self::generateInternal(
@@ -158,6 +164,9 @@ final class TBSL
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UIDException
+     */
     private static function assertTimestamp(int $timestamp, int $machineId): void
     {
         if ($timestamp < 0 || $timestamp > intdiv(0x0fffffffffffffff - $machineId, 100)) {
@@ -167,6 +176,7 @@ final class TBSL
 
     /**
      * @throws Exception
+     * @throws \Throwable
      */
     private static function generateInternal(
         int $machineId,
@@ -182,6 +192,8 @@ final class TBSL
         /** @var \ArrayObject<int, int> $state */
         $state = self::$lastTimeByProvider[$sequenceProvider] ??= new \ArrayObject();
         $lastTime = $state[$machineId] ?? 0;
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
         $timeSequence = self::nowMicroseconds($runtime);
 
         if ($timeSequence < $lastTime) {
@@ -189,7 +201,7 @@ final class TBSL
                 throw new UIDException('Clock moved backwards while generating TBSL ID');
             }
 
-            $timeSequence = self::waitUntilNextTimeSequence($lastTime, $runtime);
+            $timeSequence = self::waitUntilNextTimeSequence($lastTime, $runtime, $deadline);
         }
         self::assertTimestamp($timeSequence, $machineId);
         [$timeSequence, $tail] = self::resolveTail(
@@ -199,6 +211,7 @@ final class TBSL
             $clockBackwardPolicy,
             $sequenceProvider,
             $runtime,
+            $deadline,
         );
         self::assertTimestamp($timeSequence, $machineId);
         $state[$machineId] = max($state[$machineId] ?? 0, $timeSequence);
@@ -218,7 +231,7 @@ final class TBSL
 
     private static function nowMicroseconds(?GenerationContext $runtime): int
     {
-        return $runtime?->nowMicroseconds() ?? (int) floor(microtime(true) * 1_000_000);
+        return $runtime?->nowMicroseconds() ?? (int) floor(microtime(true) * 1_000_000.0);
     }
 
     /**
@@ -229,6 +242,7 @@ final class TBSL
      * @param int $timeSequence The timestamp sequence.
      * @return array{0:int, 1:string}
      * @throws Exception
+     * @throws \Throwable
      */
     private static function resolveTail(
         int $machineId,
@@ -236,7 +250,8 @@ final class TBSL
         int $timeSequence,
         ClockBackwardPolicy $clockBackwardPolicy,
         SequenceProviderInterface $sequenceProvider,
-        ?GenerationContext $runtime = null,
+        ?GenerationContext $runtime,
+        int $deadline,
     ): array {
         if (!$enableSequence) {
             return [$timeSequence, substr(bin2hex(random_bytes(3)), 0, 5)];
@@ -254,7 +269,7 @@ final class TBSL
                     );
                 }
 
-                $timeSequence = self::waitUntilNextTimeSequence($exception->lastTimestamp, $runtime);
+                $timeSequence = self::waitUntilNextTimeSequence($exception->lastTimestamp, $runtime, $deadline);
 
                 continue;
             }
@@ -267,18 +282,26 @@ final class TBSL
                 return [$timeSequence, str_pad(dechex($sequence - 1), 5, '0', STR_PAD_LEFT)];
             }
 
-            $timeSequence = self::waitUntilNextTimeSequence($timeSequence, $runtime);
+            $timeSequence = self::waitUntilNextTimeSequence($timeSequence, $runtime, $deadline);
         } while (true);
     }
 
-    private static function waitUntilNextTimeSequence(int $last, ?GenerationContext $runtime): int
+    /**
+     * @throws \Infocyph\UID\Exceptions\UIDException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
+    private static function waitUntilNextTimeSequence(int $last, ?GenerationContext $runtime, int $deadline): int
     {
-        $deadline = $runtime?->waitDeadlineNanoseconds()
-            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
-
-        while (($candidate = self::nowMicroseconds($runtime)) <= $last) {
+        while (true) {
+            $candidate = self::nowMicroseconds($runtime);
             if (hrtime(true) >= $deadline) {
                 throw new UIDException('Timed out waiting for the next TBSL timestamp');
+            }
+
+            if ($candidate > $last) {
+                return $candidate;
             }
 
             if ($runtime !== null) {
@@ -287,7 +310,5 @@ final class TBSL
                 usleep(100);
             }
         }
-
-        return $candidate;
     }
 }

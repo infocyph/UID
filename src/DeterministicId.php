@@ -16,6 +16,7 @@ final class DeterministicId
 
     /**
      * Generates a deterministic opaque ID from payload.
+     * @throws \InvalidArgumentException
      */
     public static function fromPayload(string $payload, int $length = 24, string $namespace = 'default'): string
     {

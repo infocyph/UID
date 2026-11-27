@@ -10,6 +10,9 @@ final class TypeIdCodec
 {
     private const string ALPHABET = '0123456789abcdefghjkmnpqrstvwxyz';
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function decode(string $suffix): string
     {
         if (strlen($suffix) !== 26 || $suffix[0] > '7') {
@@ -34,10 +37,6 @@ final class TypeIdCodec
             }
         }
 
-        if (count($bytes) > 16) {
-            throw new InvalidArgumentException('TypeID suffix exceeds 128 bits');
-        }
-
         $decoded = '';
         foreach ($bytes as $byte) {
             $decoded .= chr($byte);
@@ -46,6 +45,10 @@ final class TypeIdCodec
         return str_repeat("\0", 16 - strlen($decoded)) . $decoded;
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     public static function encode(string $bytes): string
     {
         if (strlen($bytes) !== 16) {

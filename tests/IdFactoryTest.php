@@ -11,6 +11,7 @@ use Infocyph\UID\Enums\UlidGenerationMode;
 use Infocyph\UID\Id;
 use Infocyph\UID\RandomId;
 use Infocyph\UID\Value\UuidValue;
+use Infocyph\UID\Value\UlidValue;
 
 test('Id factory basic methods', function () {
     $ksuid = Id::ksuid();
@@ -38,30 +39,33 @@ test('Id factory basic methods', function () {
         secret: 'super-secret-key',
     ));
 
-    expect($ksuid)->toBeString()->toHaveLength(27)
-        ->and($xid)->toBeString()->toHaveLength(20)
+    expect($ksuid)->toHaveLength(27)
+        ->and($xid)->toHaveLength(20)
         ->and($typeId)->toStartWith('user_')->toHaveLength(31)
         ->and($objectId)->toHaveLength(24)
-        ->and($uuid1)->toBeString()->toHaveLength(36)
-        ->and($uuid2)->toBeString()->toHaveLength(36)
-        ->and($uuid3)->toBeString()->toHaveLength(36)
-        ->and($uuid4)->toBeString()->toHaveLength(36)
-        ->and($uuid5)->toBeString()->toHaveLength(36)
-        ->and($uuid6)->toBeString()->toHaveLength(36)
-        ->and($uuid)->toBeString()->toHaveLength(36)
-        ->and($uuid8)->toBeString()->toHaveLength(36)
-        ->and($ulid)->toBeString()->toHaveLength(26)
-        ->and((string)$snowflake)->toBeString()->not()->toBeEmpty()
-        ->and((string)$sonyflake)->toBeString()->not()->toBeEmpty()
-        ->and((string)$tbsl)->toBeString()->toHaveLength(20)
-        ->and((string)$randflake)->toBeString()->not()->toBeEmpty();
+        ->and($uuid1)->toHaveLength(36)
+        ->and($uuid2)->toHaveLength(36)
+        ->and($uuid3)->toHaveLength(36)
+        ->and($uuid4)->toHaveLength(36)
+        ->and($uuid5)->toHaveLength(36)
+        ->and($uuid6)->toHaveLength(36)
+        ->and($uuid)->toHaveLength(36)
+        ->and($uuid8)->toHaveLength(36)
+        ->and($ulid)->toHaveLength(26)
+        ->and($snowflake)->not()->toBeEmpty()
+        ->and($sonyflake)->not()->toBeEmpty()
+        ->and($tbsl)->toHaveLength(20)
+        ->and($randflake)->not()->toBeEmpty();
 });
 
 test('value objects remain available from their owning type', function () {
     $uuidValue = new UuidValue(Id::uuid7());
-    expect($uuidValue)->toBeInstanceOf(UuidValue::class)
-        ->and($uuidValue->toString())->toHaveLength(36)
+    expect($uuidValue->toString())->toHaveLength(36)
         ->and($uuidValue->getVersion())->toBe(7);
+    $ulid = Id::ulid();
+    $ulidValue = new UlidValue($ulid);
+    expect($ulidValue->toString())->toBe($ulid)
+        ->and($ulidValue->isSortable())->toBeTrue();
 });
 
 test('Id factory random strategy', function () {
@@ -88,10 +92,10 @@ test('configuration objects keep generation policy separate from representation'
         secret: 'super-secret-key',
     ));
 
-    expect($snowflake)->toBeString()
-        ->and($sonyflake)->toBeString()
+    expect($snowflake)->not()->toBeEmpty()
+        ->and($sonyflake)->not()->toBeEmpty()
         ->and($tbsl)->toHaveLength(20)
-        ->and($randflake)->toBeString();
+        ->and($randflake)->not()->toBeEmpty();
 });
 
 

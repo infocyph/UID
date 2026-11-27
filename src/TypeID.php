@@ -10,6 +10,9 @@ use Infocyph\UID\Support\TypeIdCodec;
 
 final class TypeID
 {
+    /**
+     * @throws \Infocyph\UID\Exceptions\TypeIDException
+     */
     public static function fromUuid(string $type, string $uuid): string
     {
         self::assertPrefix($type);
@@ -23,6 +26,9 @@ final class TypeID
         return $type === '' ? $suffix : $type . '_' . $suffix;
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function generate(string $type = ''): string
     {
         return self::fromUuid($type, UUID::v7());
@@ -41,6 +47,9 @@ final class TypeID
 
     /**
      * @return array{type:string, uuid:string, time:?DateTimeImmutable}
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Infocyph\UID\Exceptions\TypeIDException
+     * @throws \InvalidArgumentException
      */
     public static function parse(string $typeId): array
     {
@@ -56,6 +65,11 @@ final class TypeID
         ];
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Infocyph\UID\Exceptions\TypeIDException
+     * @throws \InvalidArgumentException
+     */
     public static function toUuid(string $typeId): string
     {
         [, $suffix] = self::split($typeId);
@@ -63,6 +77,9 @@ final class TypeID
         return UUID::fromBytes(TypeIdCodec::decode($suffix));
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\TypeIDException
+     */
     private static function assertPrefix(string $type): void
     {
         $length = strlen($type);
@@ -73,6 +90,7 @@ final class TypeID
 
     /**
      * @return array{0:string,1:string}
+     * @throws \Infocyph\UID\Exceptions\TypeIDException
      */
     private static function split(string $typeId): array
     {

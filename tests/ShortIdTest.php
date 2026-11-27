@@ -11,7 +11,6 @@ use function Infocyph\UID\nano_id;
 test('CUID2', function () {
     $string = CUID2::generate();
     expect($string)
-        ->toBeString()
         ->not()->toBeEmpty()
         ->toHaveLength(24)
         ->toMatch('/^[a-z][0-9a-z]+$/');
@@ -24,7 +23,7 @@ test('CUID2 custom length', function () {
 
 test('nanoId', function () {
     $string = NanoID::generate();
-    expect($string)->toBeString()->not()->toBeEmpty()->toHaveLength(21);
+    expect($string)->not()->toBeEmpty()->toHaveLength(21);
 });
 
 test('namespaced helper functions for NanoID and CUID2', function () {

@@ -17,6 +17,9 @@ abstract readonly class AbstractParsedIdValue implements IdValueInterface
 
     private string $value;
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(string $value)
     {
         $validator = $this->validator();
@@ -44,6 +47,7 @@ abstract readonly class AbstractParsedIdValue implements IdValueInterface
      */
     abstract protected function validator(): callable;
 
+    #[\Override]
     public function compare(IdValueInterface|string $other): int
     {
         $otherValue = $other instanceof IdValueInterface ? $other->toString() : $other;
@@ -51,16 +55,19 @@ abstract readonly class AbstractParsedIdValue implements IdValueInterface
         return IdComparator::compare($this->value, $otherValue);
     }
 
+    #[\Override]
     public function getVersion(): ?int
     {
         return null;
     }
 
+    #[\Override]
     public function isSortable(): bool
     {
         return true;
     }
 
+    #[\Override]
     public function toString(): string
     {
         return $this->value;

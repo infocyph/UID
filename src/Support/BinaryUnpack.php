@@ -8,6 +8,7 @@ final class BinaryUnpack
 {
     /**
      * @return list<int>
+     * @throws \LogicException
      */
     public static function bytes(string $bytes): array
     {
@@ -44,6 +45,7 @@ final class BinaryUnpack
 
     /**
      * @return list<int>
+     * @throws \LogicException
      */
     public static function words(string $bytes): array
     {

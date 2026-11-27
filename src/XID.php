@@ -97,6 +97,9 @@ final class XID
         return substr(pack('N', self::$counter), 1, 3);
     }
 
+    /**
+     * @throws \LogicException
+     */
     private static function decodeText(string $xid): string
     {
         $buffer = 0;
@@ -157,7 +160,7 @@ final class XID
 
     private static function machine(): string
     {
-        return self::$machine ??= substr(hash('sha256', gethostname() ?: 'localhost', true), 0, 3);
+        return self::$machine ??= substr(hash('sha256', (($host = gethostname()) === false || $host === '' || $host === '0' ? 'localhost' : $host), true), 0, 3);
     }
 
     private static function pidBytes(): string

@@ -22,7 +22,7 @@ application domain that owns their node/machine ID, epoch, sequence provider and
 runtime policy. SnowflakeConfig, SonyflakeConfig, RandflakeConfig and TBSLConfig
 may receive a GenerationContext without changing the ordinary synchronous APIs.
 
-Runwire 3.0 Integration
+Runwire 4.0.1 Integration
 --------------------------
 
 Runwire support is optional. UID never discovers a runtime globally and never
@@ -58,8 +58,8 @@ operation.
 Construct bindings after worker creation/fork and do not retain a request binding
 in static provider selectors or worker-wide mutable state. The binding validates
 the process, request/runtime identity, request completion, active coroutine
-capability, cancellation and deadlines using Runwire 3.0 public APIs. UID's
-development fixture targets ``infocyph/runwire ^3.0``.
+capability, cancellation and deadlines using Runwire 4.0.1 public APIs. UID's
+development fixture targets ``infocyph/runwire ^4.0.1``.
 
 A CoroutineScope does not expose public request identity. Therefore the host
 boundary that owns both objects is responsible for pairing the correct scope with
@@ -85,3 +85,8 @@ PSR-20 Clock Injection
 controllable wall clock. Monotonic wait accounting remains based on hrtime() and
 Runwire deadlines, so a frozen test clock cannot create an infinite lock or
 rollover wait. Explicit timestamp APIs continue to work without a clock object.
+
+Snowflake, Sonyflake and TBSL share one monotonic wait deadline across the retries
+of a generation call. Clock advancement, repeated sequence exhaustion and clock
+rollback do not renew that budget. A later generation call gets a fresh budget;
+an earlier host deadline or cancellation remains terminal.

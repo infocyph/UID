@@ -16,6 +16,11 @@ final class InMemorySequenceProvider implements SequenceProviderInterface
      */
     private array $state = [];
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \Infocyph\UID\Exceptions\SequenceTimestampException
+     */
+    #[\Override]
     public function next(string $type, int $machineId, int $timestamp): int
     {
         $key = $this->key($type, $machineId);

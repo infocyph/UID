@@ -12,6 +12,9 @@ use Infocyph\UID\Snowflake;
  */
 final readonly class SnowflakeValue extends AbstractParsedIdValue
 {
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(string $value, private ?int $customEpoch = null)
     {
         parent::__construct($value);
@@ -22,11 +25,13 @@ final readonly class SnowflakeValue extends AbstractParsedIdValue
         return $this->parsed['datacenter_id'];
     }
 
+    #[\Override]
     public function getMachineId(): string
     {
         return $this->parsed['datacenter_id'] . ':' . $this->parsed['worker_id'];
     }
 
+    #[\Override]
     public function getTimestamp(): DateTimeImmutable
     {
         return $this->parsed['time'];
@@ -37,11 +42,13 @@ final readonly class SnowflakeValue extends AbstractParsedIdValue
         return $this->parsed['worker_id'];
     }
 
+    #[\Override]
     protected function invalidMessage(): string
     {
         return 'Invalid Snowflake ID string';
     }
 
+    #[\Override]
     protected function parser(): callable
     {
         return $this->customEpoch === null
@@ -49,6 +56,7 @@ final readonly class SnowflakeValue extends AbstractParsedIdValue
             : fn(string $id): array => Snowflake::parseWithEpoch($id, $this->customEpoch);
     }
 
+    #[\Override]
     protected function validator(): callable
     {
         return Snowflake::isValid(...);

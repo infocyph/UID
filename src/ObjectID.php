@@ -17,6 +17,9 @@ final class ObjectID
 
     private static ?int $sourcePid = null;
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ObjectIDException
+     */
     public static function fromBytes(string $bytes): string
     {
         if (strlen($bytes) !== 12) {
@@ -26,6 +29,9 @@ final class ObjectID
         return bin2hex($bytes);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ObjectIDException
+     */
     public static function generate(?DateTimeInterface $dateTime = null): string
     {
         self::ensureProcessState();
@@ -47,6 +53,7 @@ final class ObjectID
 
     /**
      * @return array{time:DateTimeImmutable, process_random:string, counter:int}
+     * @throws \Exception
      */
     public static function parse(string $id): array
     {
@@ -60,6 +67,9 @@ final class ObjectID
         ];
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ObjectIDException
+     */
     public static function toBytes(string $id): string
     {
         if (!self::isValid($id)) {

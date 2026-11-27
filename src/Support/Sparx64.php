@@ -17,6 +17,9 @@ final class Sparx64
     /** @var array<int, array<int, int>> */
     private array $subkeys;
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(#[\SensitiveParameter] string $key)
     {
         if (strlen($key) !== 16) {
@@ -35,6 +38,9 @@ final class Sparx64
         }
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function decrypt(string $block): string
     {
         $state = self::unpackBlock($block);
@@ -58,6 +64,9 @@ final class Sparx64
         return self::packBlock($state);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function encrypt(string $block): string
     {
         $state = self::unpackBlock($block);
@@ -148,7 +157,10 @@ final class Sparx64
         $left = self::rotateLeft16(($left - $right) & 0xffff, 7);
     }
 
-    /** @return array<int, int> */
+    /**
+     * @return array<int, int>
+     * @throws \InvalidArgumentException
+     */
     private static function unpackBlock(string $block): array
     {
         if (strlen($block) !== 8) {

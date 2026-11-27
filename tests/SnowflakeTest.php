@@ -50,7 +50,9 @@ test('Snowflake Max Sequence Handling', function () {
 
     $id1 = Snowflake::generate();
     for ($i = 0; $i <= $maxSeq; $i++) {
-        $id1 = Snowflake::generate();
+        $next = Snowflake::generate();
+        expect((int) $next)->toBeGreaterThan((int) $id1);
+        $id1 = $next;
     }
     $id2 = Snowflake::generate();
 
@@ -137,7 +139,7 @@ test('Snowflake config returns a canonical decimal string', function () {
 
 test('Snowflake config rejects invalid epochs and resolver output', function () {
     $invalidResolver = new SnowflakeConfig(nodeResolver: fn (): string => 'invalid');
-    $futureEpoch = ((int) floor(microtime(true) * 1000)) + 60_000;
+    $futureEpoch = ((int) floor(microtime(true) * 1000.0)) + 60_000;
 
     expect(fn () => Snowflake::generateWithConfig(new SnowflakeConfig(customEpoch: $futureEpoch)))
         ->toThrow(\Infocyph\UID\Exceptions\SnowflakeException::class)

@@ -20,6 +20,7 @@ final class SequenceTestCache implements CacheInterface
     /** @var array<string, mixed> */
     private array $store = [];
 
+    #[\Override]
     public function clear(): bool
     {
         $this->store = [];
@@ -27,6 +28,7 @@ final class SequenceTestCache implements CacheInterface
         return true;
     }
 
+    #[\Override]
     public function delete(string $key): bool
     {
         unset($this->store[$key]);
@@ -34,15 +36,17 @@ final class SequenceTestCache implements CacheInterface
         return true;
     }
 
+    #[\Override]
     public function deleteMultiple(iterable $keys): bool
     {
         foreach ($keys as $key) {
-            $this->delete((string) $key);
+            $this->delete($key);
         }
 
         return true;
     }
 
+    #[\Override]
     public function get(string $key, mixed $default = null): mixed
     {
         ($this->beforeRead ?? static function (): void {})();
@@ -50,6 +54,7 @@ final class SequenceTestCache implements CacheInterface
         return $this->store[$key] ?? $default;
     }
 
+    #[\Override]
     public function getMultiple(iterable $keys, mixed $default = null): iterable
     {
         $values = [];
@@ -60,6 +65,7 @@ final class SequenceTestCache implements CacheInterface
         return $values;
     }
 
+    #[\Override]
     public function has(string $key): bool
     {
         return isset($this->store[$key]);
@@ -70,6 +76,7 @@ final class SequenceTestCache implements CacheInterface
         $this->store[$key] = $value;
     }
 
+    #[\Override]
     public function set(string $key, mixed $value, null|int|DateInterval $ttl = null): bool
     {
         $this->lastTtl = $ttl;
@@ -82,10 +89,17 @@ final class SequenceTestCache implements CacheInterface
         return true;
     }
 
+    /**
+     * @param iterable<mixed, mixed> $values
+     * @throws InvalidArgumentException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    #[\Override]
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
     {
         foreach ($values as $key => $value) {
-            if (!$this->set((string) $key, $value, $ttl)) {
+            is_string($key) || throw new InvalidArgumentException('Cache key must be a string');
+            if (!$this->set($key, $value, $ttl)) {
                 return false;
             }
         }
@@ -101,14 +115,16 @@ test('bound cache providers reject cancellation before writes and inside synchro
         runwire: new \Infocyph\UID\Runtime\RunwireBinding($host, $request),
     );
     $cache = new SequenceTestCache();
-    $cancel = static fn() => $request->cancel(\Infocyph\Runwire\Runtime\Enum\CancellationReason::HOST_CANCELLED);
+    $cancel = static fn(): bool => $request->cancel(\Infocyph\Runwire\Runtime\Enum\CancellationReason::HOST_CANCELLED);
     $synchronizer = static function (string $key, callable $allocate) use ($cancel, $phase): int {
         unset($key);
         if ($phase === 'synchronizer') {
             $cancel();
         }
 
-        return $allocate();
+        $result = $allocate();
+        is_int($result) || throw new LogicException('Invalid allocation result');
+        return $result;
     };
     $provider = new PsrSimpleCacheSequenceProvider($cache, synchronizer: $synchronizer, runtime: $runtime);
 
@@ -128,6 +144,8 @@ final class FutureOnceSequenceProvider implements SequenceProviderInterface
 {
     public int $calls = 0;
 
+    /** @throws \Infocyph\UID\Exceptions\SequenceTimestampException */
+    #[\Override]
     public function next(string $type, int $machineId, int $timestamp): int
     {
         unset($type, $machineId);
@@ -206,7 +224,9 @@ test('psr-16 sequence provider supports custom synchronizer callback', function 
         expect($key)->toContain('uid.seq.');
         $synchronizerCalls++;
 
-        return $criticalSection();
+        $result = $criticalSection();
+        is_int($result) || throw new LogicException('Invalid allocation result');
+        return $result;
     };
 
     Snowflake::setSequenceProvider(new PsrSimpleCacheSequenceProvider($cache, synchronizer: $synchronizer));
@@ -217,6 +237,31 @@ test('psr-16 sequence provider supports custom synchronizer callback', function 
     expect((int) $id2)->toBeGreaterThan((int) $id1)
         ->and($synchronizerCalls)->toBe(2);
 });
+
+test('psr-16 sequence provider rejects negative timestamps before accessing storage', function (bool $synchronized): void {
+    $cache = new SequenceTestCache();
+    $synchronizer = $synchronized
+        ? static function (string $key, callable $allocate): int {
+            unset($key);
+            $result = $allocate();
+            is_int($result) || throw new LogicException('Invalid allocation result');
+
+            return $result;
+        }
+        : null;
+    $provider = new PsrSimpleCacheSequenceProvider($cache, synchronizer: $synchronizer);
+    $cache->beforeRead = static function (): void {
+        throw new LogicException('Invalid timestamp must not access storage');
+    };
+
+    expect(fn(): int => $provider->next('audit', 1, -1))
+        ->toThrow(InvalidArgumentException::class, 'Sequence timestamp must not be negative')
+        ->and($cache->has('uid.seq.audit.1'))->toBeFalse();
+
+    $cache->beforeRead = null;
+    expect($provider->next('audit', 1, 0))->toBe(1)
+        ->and($provider->next('audit', 1, 0))->toBe(2);
+})->with([false, true]);
 
 test('psr-16 sequence provider fails safely when state cannot be persisted', function () {
     $cache = new SequenceTestCache();

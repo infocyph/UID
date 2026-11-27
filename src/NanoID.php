@@ -23,12 +23,9 @@ final class NanoID
         }
 
         $byteLength = intdiv(($length * 3) + 3, 4);
-        if ($byteLength < 1) {
-            throw new \LogicException('Unable to calculate NanoID entropy length');
-        }
 
         return substr(
-            rtrim(strtr(base64_encode(random_bytes($byteLength)), '+/', '-_'), '='),
+            rtrim(strtr(base64_encode(random_bytes(max(1, $byteLength))), '+/', '-_'), '='),
             0,
             $length,
         );
@@ -50,6 +47,7 @@ final class NanoID
      * Parses NanoID information.
      *
      * @return array{length: int, alphabet: string}
+     * @throws \InvalidArgumentException
      */
     public static function parse(string $id, ?int $length = null): array
     {

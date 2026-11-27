@@ -35,7 +35,8 @@ test('filesystem sequences support namespaces and atomic local reservations', fu
             ->and((new FilesystemSequenceProvider($directory, 'billing', reservationSize: 4))
                 ->next('snowflake', 7, 100))->toBe(5);
     } finally {
-        foreach (glob($directory . DIRECTORY_SEPARATOR . '*') ?: [] as $file) {
+        $files = glob($directory . DIRECTORY_SEPARATOR . '*');
+        foreach ($files === false ? [] : $files as $file) {
             unlink($file);
         }
         rmdir($directory);
@@ -96,14 +97,20 @@ test('filesystem reservation ranges never overlap across processes', function (i
         foreach ($children as $pid => $output) {
             pcntl_waitpid($pid, $status);
             $json = file_get_contents($output);
-            expect($json)->toBeString();
-            $allocations = [...$allocations, ...json_decode($json, true, 512, JSON_THROW_ON_ERROR)];
+            $json !== false || throw new RuntimeException('Unable to read child output');
+            $values = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            is_array($values) || throw new RuntimeException('Invalid child output');
+            foreach (array_keys($values) as $index) {
+                is_int($values[$index]) || throw new RuntimeException('Invalid child value');
+                $allocations[] = $values[$index];
+            }
         }
 
         expect($allocations)->toHaveCount(400)
             ->and(array_unique($allocations))->toHaveCount(400);
     } finally {
-        foreach (glob($directory . DIRECTORY_SEPARATOR . '*') ?: [] as $file) {
+        $files = glob($directory . DIRECTORY_SEPARATOR . '*');
+        foreach ($files === false ? [] : $files as $file) {
             unlink($file);
         }
         rmdir($directory);
@@ -138,6 +145,7 @@ test('coordinated generators remain unique across processes', function (string $
                             sequenceProvider: $provider,
                         )),
                         'tbsl' => TBSL::generateWithConfig(new TBSLConfig(sequenceProvider: $provider)),
+                        default => throw new InvalidArgumentException('Unknown coordinated generator'),
                     };
                 }
 
@@ -153,14 +161,20 @@ test('coordinated generators remain unique across processes', function (string $
         foreach ($children as $pid => $output) {
             pcntl_waitpid($pid, $status);
             $json = file_get_contents($output);
-            expect($json)->toBeString();
-            $ids = [...$ids, ...json_decode($json, true, 512, JSON_THROW_ON_ERROR)];
+            $json !== false || throw new RuntimeException('Unable to read child output');
+            $values = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            is_array($values) || throw new RuntimeException('Invalid child output');
+            foreach (array_keys($values) as $index) {
+                is_string($values[$index]) || throw new RuntimeException('Invalid child value');
+                $ids[] = $values[$index];
+            }
         }
 
         expect($ids)->toHaveCount(400)
             ->and(array_unique($ids))->toHaveCount(400);
     } finally {
-        foreach (glob($directory . DIRECTORY_SEPARATOR . '*') ?: [] as $file) {
+        $files = glob($directory . DIRECTORY_SEPARATOR . '*');
+        foreach ($files === false ? [] : $files as $file) {
             unlink($file);
         }
         rmdir($directory);

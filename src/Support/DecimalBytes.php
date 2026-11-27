@@ -19,11 +19,19 @@ final class DecimalBytes
 
     private const string TWO_TO_64 = '18446744073709551616';
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     public static function fromBytes(string $bytes): string
     {
         return BaseEncoder::encodeBytes($bytes, 10);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     public static function fromLittleEndianSigned64(string $bytes): string
     {
         if (strlen($bytes) !== 8) {
@@ -74,6 +82,9 @@ final class DecimalBytes
         return BaseEncoder::decodeToBytes(UnsignedDecimal::normalize($decimal), 10, $byteLength);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function toLittleEndianSigned64(string $value): string
     {
         if (!self::isSigned64($value)) {
@@ -91,6 +102,10 @@ final class DecimalBytes
         return strrev(self::toFixedBytes($unsigned, 8));
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     private static function subtract(string $left, string $right): string
     {
         if (UnsignedDecimal::compare($left, $right) < 0) {

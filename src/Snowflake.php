@@ -44,6 +44,7 @@ final class Snowflake
      * Decodes one of bases: 16, 32, 36, 58, 62 into Snowflake decimal.
      *
      * @throws SnowflakeException
+     * @throws \LogicException
      */
     public static function fromBase(string $encoded, int $base): string
     {
@@ -54,6 +55,7 @@ final class Snowflake
      * Converts 8-byte Snowflake binary data to decimal string.
      *
      * @throws SnowflakeException
+     * @throws \LogicException
      */
     public static function fromBytes(string $bytes): string
     {
@@ -67,6 +69,9 @@ final class Snowflake
      * @param int $workerId The ID of the worker (default: 0)
      * @return string The generated snowflake ID
      * @throws SnowflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generate(int $datacenter = 0, int $workerId = 0): string
     {
@@ -82,6 +87,10 @@ final class Snowflake
      * Generates Snowflake using configuration object.
      *
      * @throws SnowflakeException|FileLockException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generateWithConfig(SnowflakeConfig $config): string
     {
@@ -160,6 +169,8 @@ final class Snowflake
      * Encodes Snowflake bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws SnowflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function toBase(string $id, int $base): string
     {
@@ -176,6 +187,9 @@ final class Snowflake
         return self::encodeNumericBytes($id);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     */
     private static function assertDecodedId(string $id): string
     {
         if (!self::isValid($id)) {
@@ -218,6 +232,10 @@ final class Snowflake
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \LogicException
+     */
     private static function decodeNumericBase(string $encoded, int $base): string
     {
         $id = NumericConversion::decimalFromBase(
@@ -230,6 +248,10 @@ final class Snowflake
         return self::assertDecodedId($id);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \LogicException
+     */
     private static function decodeNumericBytes(string $bytes): string
     {
         $id = NumericConversion::decimalFromBytes(
@@ -256,6 +278,9 @@ final class Snowflake
 
     /**
      * @throws SnowflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function generateInternal(
         int $datacenter,
@@ -276,6 +301,8 @@ final class Snowflake
             ? 'snowflake'
             : 'snowflake_' . $startTimestamp;
 
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
         $currentTime = self::nowMilliseconds($runtime);
         self::assertTimestampRange($currentTime, $startTimestamp);
 
@@ -289,6 +316,7 @@ final class Snowflake
                 $resolvedSequenceProvider,
                 $sequenceType,
                 $runtime,
+                $deadline,
             );
 
             $lastState = $providerState[$stateKey] ?? null;
@@ -303,7 +331,7 @@ final class Snowflake
                 $currentTime < $lastState['timestamp']
                 || ($currentTime === $lastState['timestamp'] && $sequence <= $lastState['sequence'])
             ) {
-                $currentTime = self::waitUntil($lastState['timestamp'] + 1, $runtime);
+                $currentTime = self::waitUntil($lastState['timestamp'] + 1, $runtime, $deadline);
                 self::assertTimestampRange($currentTime, $startTimestamp);
 
                 continue;
@@ -330,6 +358,9 @@ final class Snowflake
     /**
      * @return array{0:int, 1:int}
      * @throws FileLockException|SnowflakeException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
+     * @throws \LogicException
      */
     private static function nextSequenceAtValidTimestamp(
         int $currentTime,
@@ -340,6 +371,7 @@ final class Snowflake
         SequenceProviderInterface $sequenceProvider,
         string $sequenceType,
         ?GenerationContext $runtime,
+        int $deadline,
     ): array {
         while (true) {
             try {
@@ -353,7 +385,7 @@ final class Snowflake
                     );
                 }
 
-                $currentTime = self::waitUntil($exception->lastTimestamp, $runtime);
+                $currentTime = self::waitUntil($exception->lastTimestamp, $runtime, $deadline);
                 self::assertTimestampRange($currentTime, $startTimestamp);
 
                 continue;
@@ -367,18 +399,19 @@ final class Snowflake
                 return [$currentTime, $allocation - 1];
             }
 
-            $currentTime = self::waitUntil($currentTime + 1, $runtime);
+            $currentTime = self::waitUntil($currentTime + 1, $runtime, $deadline);
             self::assertTimestampRange($currentTime, $startTimestamp);
         }
     }
 
     private static function nowMilliseconds(?GenerationContext $runtime): int
     {
-        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
+        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000.0);
     }
 
     /**
      * @return \ArrayObject<string, array{timestamp:int, sequence:int}>
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
      */
     private static function providerState(
         SequenceProviderInterface $provider,
@@ -386,7 +419,6 @@ final class Snowflake
     ): \ArrayObject {
         self::$lastStateByProvider ??= new \WeakMap();
 
-        /** @var \ArrayObject<string, array{timestamp:int, sequence:int}>|null $state */
         $state = self::$lastStateByProvider[$provider] ?? null;
         if ($state === null) {
             /** @var \ArrayObject<string, array{timestamp:int, sequence:int}> $state */
@@ -419,14 +451,22 @@ final class Snowflake
         ];
     }
 
-    private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
+    private static function waitUntil(int $timestamp, ?GenerationContext $runtime, int $deadline): int
     {
-        $deadline = $runtime?->waitDeadlineNanoseconds()
-            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
-
-        while (($now = self::nowMilliseconds($runtime)) < $timestamp) {
+        while (true) {
+            $now = self::nowMilliseconds($runtime);
             if (hrtime(true) >= $deadline) {
                 throw new SnowflakeException('Timed out waiting for a valid Snowflake timestamp');
+            }
+
+            if ($now >= $timestamp) {
+                return $now;
             }
 
             if ($runtime !== null) {
@@ -435,7 +475,5 @@ final class Snowflake
                 usleep(1_000);
             }
         }
-
-        return $now;
     }
 }

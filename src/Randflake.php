@@ -54,6 +54,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \LogicException
      */
     public static function decodeString(
         string $id,
@@ -95,6 +96,8 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function encodeString(
         string $id,
@@ -114,6 +117,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \LogicException
      */
     public static function fromBase(
         string $encoded,
@@ -144,6 +148,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \LogicException
      */
     public static function fromBytes(
         string $bytes,
@@ -167,6 +172,9 @@ final class Randflake
 
     /**
      * @throws RandflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generate(
         int $nodeId,
@@ -189,6 +197,9 @@ final class Randflake
 
     /**
      * @throws RandflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generateString(
         int $nodeId,
@@ -202,6 +213,9 @@ final class Randflake
 
     /**
      * @throws RandflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generateWithConfig(RandflakeConfig $config): string
     {
@@ -249,6 +263,7 @@ final class Randflake
     /**
      * @return array{timestamp: int, node_id: int, sequence: int}
      * @throws RandflakeException
+     * @throws \LogicException
      */
     public static function inspectString(
         string $id,
@@ -314,6 +329,8 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function toBase(
         string $id,
@@ -359,6 +376,10 @@ final class Randflake
 
     /**
      * @return array{0:int,1:int}
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
      */
     private static function allocateSequence(
         SequenceProviderInterface $provider,
@@ -389,6 +410,9 @@ final class Randflake
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     */
     private static function assertGenerationTime(
         int $now,
         int $leaseStart,
@@ -405,6 +429,11 @@ final class Randflake
         }
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \LogicException
+     */
     private static function encodeGeneratedPayload(
         int $timestamp,
         int $nodeId,
@@ -425,6 +454,9 @@ final class Randflake
 
     /**
      * @throws RandflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function generateInternal(
         int $nodeId,
@@ -515,6 +547,7 @@ final class Randflake
 
     /**
      * @param array{timestamp:int,sequence:int}|null $last
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function normalizeAllocation(int $allocation, ?array $last, int $now): int
     {
@@ -554,6 +587,7 @@ final class Randflake
 
     /**
      * Small secret-key permutation over 64-bit blocks to protect payload fields.
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function permute(string $block, string $secret, bool $decrypt): string
     {
@@ -584,6 +618,7 @@ final class Randflake
 
     /**
      * @return \ArrayObject<string, array{timestamp:int,sequence:int}>
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function providerState(
         SequenceProviderInterface $provider,
@@ -591,7 +626,6 @@ final class Randflake
     ): \ArrayObject {
         self::$lastTimestampByProvider ??= new \WeakMap();
 
-        /** @var \ArrayObject<string, array{timestamp:int,sequence:int}>|null $state */
         $state = self::$lastTimestampByProvider[$provider] ?? null;
         if ($state === null) {
             /** @var \ArrayObject<string, array{timestamp:int,sequence:int}> $state */
@@ -626,6 +660,7 @@ final class Randflake
 
     /**
      * @return array<int, int>
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function roundKeys(string $secret): array
     {
@@ -648,6 +683,9 @@ final class Randflake
         return self::$roundKeyCache[$fingerprint] = $keys;
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     private static function sparx(
         #[\SensitiveParameter]
         string $secret,
@@ -684,6 +722,7 @@ final class Randflake
 
     /**
      * @return array{0:int,1:int,2:int}
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function unpackPayload(string $payload): array
     {

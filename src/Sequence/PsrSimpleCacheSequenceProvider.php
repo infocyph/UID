@@ -24,6 +24,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
 
     /**
      * @param callable(string, callable():int):mixed|null $synchronizer
+     * @throws \InvalidArgumentException
      */
     public function __construct(
         private readonly CacheInterface $cache,
@@ -49,12 +50,19 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
 
     /**
      * @throws FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
      */
+    #[\Override]
     public function next(string $type, int $machineId, int $timestamp, ?GenerationContext $runtime = null): int
     {
         $this->runtime?->assertActive();
         $runtime ??= $this->runtime;
         $runtime?->assertActive();
+        if ($timestamp < 0) {
+            throw new InvalidArgumentException('Sequence timestamp must not be negative');
+        }
+
         $key = $this->key($type, $machineId);
         if (!isset($this->observedState[$key]) && count($this->observedState) >= self::MAX_OBSERVED_DOMAINS) {
             throw new FileLockException('Observed PSR-16 sequence domain limit exceeded');
@@ -77,6 +85,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
     /**
      * @param array{timestamp:int,sequence:int}|null $state
      * @param array{timestamp:int,sequence:int}|null $observed
+     * @throws \Infocyph\UID\Exceptions\FileLockException
      */
     private static function assertNotRegressed(?array $state, ?array $observed, string $key): void
     {
@@ -93,6 +102,8 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
 
     /**
      * @param array{timestamp:int,sequence:int}|null $state
+     * @throws \Infocyph\UID\Exceptions\SequenceTimestampException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
      */
     private static function nextSequence(?array $state, int $timestamp, string $key): int
     {
@@ -119,6 +130,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
     /**
      * @return resource
      * @throws FileLockException
+     * @throws \Throwable
      */
     private function acquireLock(string $key, ?GenerationContext $runtime)
     {
@@ -133,6 +145,9 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         );
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     private function key(string $type, int $machineId): string
     {
         if (preg_match('/^[A-Za-z0-9_.]+$/D', $type) !== 1) {
@@ -147,6 +162,10 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         return $key;
     }
 
+    /**
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     private function nextFromCacheState(string $key, int $timestamp, ?GenerationContext $runtime): int
     {
         $runtime?->assertActive();
@@ -169,6 +188,9 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         return $sequence;
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     private function nextSafely(string $key, int $timestamp, ?GenerationContext $runtime): int
     {
         try {
@@ -182,6 +204,9 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     private function nextSynchronized(Closure $synchronizer, string $key, int $timestamp, ?GenerationContext $runtime): int
     {
         try {
@@ -206,6 +231,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
 
     /**
      * @return array{timestamp:int,sequence:int}|null
+     * @throws \Infocyph\UID\Exceptions\FileLockException
      */
     private function normalizeState(mixed $state, string $key): ?array
     {

@@ -19,6 +19,7 @@ final readonly class SonyflakeConfig
 
     /**
      * @param callable():mixed|null $machineIdResolver
+     * @throws \InvalidArgumentException
      */
     public function __construct(
         public int $machineId = 0,

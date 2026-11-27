@@ -24,6 +24,7 @@ final readonly class ReleaseBoundaryClock implements ClockInterface
 {
     public function __construct(private DateTimeImmutable $time) {}
 
+    #[\Override]
     public function now(): DateTimeImmutable
     {
         return $this->time;
@@ -99,7 +100,7 @@ test('TBSL preserves eleven-digit seconds within its 60-bit timestamp field', fu
 test('generation rejects out-of-domain clocks and keeps large wait budgets integer safe', function (): void {
     $negative = new GenerationContext(clock: new ReleaseBoundaryClock(new DateTimeImmutable('1969-12-31T23:59:59.500000Z')));
     expect(fn(): int => $negative->nowMicroseconds())->toThrow(InvalidArgumentException::class)
-        ->and((new GenerationContext(waitTimeoutMicros: PHP_INT_MAX))->waitDeadlineNanoseconds())->toBeInt();
+        ->and((new GenerationContext(waitTimeoutMicros: PHP_INT_MAX))->waitDeadlineNanoseconds())->toBeGreaterThan(hrtime(true));
 });
 
 test('upstream Randflake lease conversion fails with a domain error at integer exhaustion', function (): void {
@@ -113,20 +114,23 @@ test('upstream Randflake lease conversion fails with a domain error at integer e
 
 test('Randflake rechecks live domain state after reentrant provider work', function (\Infocyph\UID\Enums\RandflakeFormat $format): void {
     $nested = false;
-    $config = null;
+    $fixture = new class {
+        public ?\Infocyph\UID\Configuration\RandflakeConfig $config = null;
+    };
     $nestedId = null;
     $provider = new \Infocyph\UID\Sequence\CallbackSequenceProvider(
-        function (string $type, int $machineId, int $timestamp) use (&$nested, &$config, &$nestedId): int {
+        function (string $type, int $machineId, int $timestamp) use (&$nested, $fixture, &$nestedId): int {
             unset($type, $machineId, $timestamp);
             if (!$nested) {
                 $nested = true;
+                $config = $fixture->config ?? throw new LogicException('Missing reentrant configuration');
                 $nestedId = \Infocyph\UID\Randflake::generateWithConfig($config);
             }
 
             return 1;
         },
     );
-    $config = new \Infocyph\UID\Configuration\RandflakeConfig(
+    $config = $fixture->config = new \Infocyph\UID\Configuration\RandflakeConfig(
         0, 1_730_000_000, 1_730_000_005, '0123456789abcdef',
         sequenceProvider: $provider,
         runtime: new GenerationContext(clock: new ReleaseBoundaryClock(new DateTimeImmutable('@1730000001'))),
@@ -151,7 +155,7 @@ test('implicit ULID and UUID generation fail promptly at terminal timestamp exha
         [\Infocyph\UID\UUID::class, 'nextV7Timestamp', \Infocyph\UID\Exceptions\UUIDException::class],
     ] as [$class, $method, $exception]) {
         $wait = new ReflectionMethod($class, $method);
-        expect(fn(): int => $wait->invoke(null, 281_474_976_710_655))->toThrow($exception, 'exhausted');
+        expect(fn(): mixed => $wait->invoke(null, 281_474_976_710_655))->toThrow($exception, 'exhausted');
     }
 });
 
@@ -202,3 +206,57 @@ test('custom epoch parsers reject timestamp overflow with domain exceptions', fu
             ->toThrow(SonyflakeException::class);
     }
 });
+
+test('date epochs preserve fractional milliseconds on both sides of Unix zero', function (string $date, int $milliseconds, bool $mutable): void {
+    $epoch = $mutable ? new DateTime($date) : new DateTimeImmutable($date);
+    $snowflake = new \Infocyph\UID\Configuration\SnowflakeConfig(customEpoch: $epoch);
+    $sonyflake = new SonyflakeConfig(customEpoch: $epoch);
+
+    expect($snowflake->customEpoch)->toBe($milliseconds)
+        ->and($sonyflake->customEpoch)->toBe($milliseconds);
+})->with([
+    ['1969-12-31T23:59:59.500000Z', -500],
+    ['1969-12-31T23:59:58.500000Z', -1_500],
+    ['1969-12-31T23:59:59.999999Z', -1],
+    ['1969-12-31T23:59:59Z', -1_000],
+    ['1970-01-01T05:29:59.500000+05:30', -500],
+    ['1970-01-01T00:00:00Z', 0],
+    ['1970-01-01T00:00:00.001000Z', 1],
+    ['1970-01-01T00:00:01.500000Z', 1_500],
+    ['@9223372036854775.807', PHP_INT_MAX],
+    ['@-9223372036854775.808', PHP_INT_MIN],
+])->with([false, true]);
+
+test('date epochs outside integer milliseconds fail instead of saturating', function (string $date): void {
+    $epoch = new DateTimeImmutable($date);
+    expect(fn(): \Infocyph\UID\Configuration\SnowflakeConfig => new \Infocyph\UID\Configuration\SnowflakeConfig(customEpoch: $epoch))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn(): SonyflakeConfig => new SonyflakeConfig(customEpoch: $epoch))
+        ->toThrow(InvalidArgumentException::class);
+})->with([
+    '@9223372036854775.808',
+    '@-9223372036854775.809',
+    '@9223372036854776',
+    '@-9223372036854776.001',
+]);
+
+test('equivalent date and integer epochs generate identical IDs', function (string $family): void {
+    $runtime = new GenerationContext(clock: new ReleaseBoundaryClock(new DateTimeImmutable('@1700000000')));
+    $format = $family === 'sonyflake-upstream' ? SonyflakeFormat::UPSTREAM : SonyflakeFormat::UID;
+    $ids = [];
+    foreach ([new DateTimeImmutable('1969-12-31T23:59:59.500000Z'), -500] as $epoch) {
+        $provider = new InMemorySequenceProvider();
+        $ids[] = match ($family) {
+            'snowflake' => \Infocyph\UID\Snowflake::generateWithConfig(new \Infocyph\UID\Configuration\SnowflakeConfig(
+                customEpoch: $epoch, sequenceProvider: $provider, runtime: $runtime,
+            )),
+            'sonyflake', 'sonyflake-upstream' => Sonyflake::generateWithConfig(new SonyflakeConfig(
+                customEpoch: $epoch, sequenceProvider: $provider, runtime: $runtime,
+                format: $format,
+            )),
+            default => throw new LogicException('Unknown generator family'),
+        };
+    }
+
+    expect($ids[0])->toBe($ids[1]);
+})->with(['snowflake', 'sonyflake', 'sonyflake-upstream']);

@@ -12,6 +12,10 @@ use Infocyph\UID\Sequence\InMemorySequenceProvider;
 use Infocyph\UID\Snowflake;
 use PhpBench\Attributes as Bench;
 
+/**
+ * PHPBench discovers this entry point by reflection.
+ * @api
+ */
 final class SequenceProviderBench
 {
     private RandflakeConfig $randflakeFilesystem;
@@ -36,24 +40,54 @@ final class SequenceProviderBench
         $this->randflakeInMemory = new RandflakeConfig(1, $leaseStart, $leaseEnd, $secret, $memory);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchRandflakeFilesystem(): void
     {
         Randflake::generateWithConfig($this->randflakeFilesystem);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchRandflakeInMemory(): void
     {
         Randflake::generateWithConfig($this->randflakeInMemory);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchSnowflakeFilesystem(): void
     {
         Snowflake::generateWithConfig($this->snowflakeFilesystem);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchSnowflakeInMemory(): void
     {

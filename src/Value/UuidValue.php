@@ -19,6 +19,10 @@ final readonly class UuidValue implements IdValueInterface
 
     private string $value;
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Exception
+     */
     public function __construct(string $value)
     {
         $this->value = UUID::normalize($value);
@@ -30,6 +34,7 @@ final readonly class UuidValue implements IdValueInterface
         return $this->toString();
     }
 
+    #[\Override]
     public function compare(IdValueInterface|string $other): int
     {
         $otherValue = $other instanceof IdValueInterface ? $other->toString() : UUID::normalize($other);
@@ -37,11 +42,13 @@ final readonly class UuidValue implements IdValueInterface
         return strcmp($this->value, $otherValue);
     }
 
+    #[\Override]
     public function getMachineId(): ?string
     {
         return $this->parsed['node'];
     }
 
+    #[\Override]
     public function getTimestamp(): ?DateTimeImmutable
     {
         $time = $this->parsed['time'];
@@ -60,16 +67,19 @@ final readonly class UuidValue implements IdValueInterface
         }
     }
 
+    #[\Override]
     public function getVersion(): ?int
     {
         return $this->parsed['version'];
     }
 
+    #[\Override]
     public function isSortable(): bool
     {
         return in_array($this->getVersion(), [6, 7], true);
     }
 
+    #[\Override]
     public function toString(): string
     {
         return $this->value;

@@ -32,7 +32,7 @@ final class CUID2
         );
 
         self::ensureProcessState();
-        $time = (string) (int) floor(microtime(true) * 1000);
+        $time = (string) (int) floor(microtime(true) * 1000.0);
         $counter = (string) self::$counter;
         if (self::$counter === PHP_INT_MAX) {
             self::$counter = random_int(0, self::INITIAL_COUNTER_MAX);
@@ -67,6 +67,7 @@ final class CUID2
      * Parses CUID2 information.
      *
      * @return array{length: int}
+     * @throws \InvalidArgumentException
      */
     public static function parse(string $id, ?int $length = null): array
     {

@@ -10,11 +10,17 @@ final class RandomId
 {
     public const string DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyz123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function generate(int $length = 21, string $alphabet = self::DEFAULT_ALPHABET): string
     {
         return RandomSampler::generate($length, $alphabet);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function isValid(
         string $id,
         ?int $length = null,

@@ -62,7 +62,9 @@ test('generated TypeIDs contain ordered UUIDv7 values', function () {
 });
 
 test('ObjectID matches unsigned timestamp boundary vectors', function (string $hex, string $expected) {
-    $id = ObjectID::fromBytes(hex2bin($hex . str_repeat('00', 8)) ?: '');
+    $bytes = hex2bin($hex . str_repeat('00', 8));
+    $bytes !== false || throw new RuntimeException('Invalid ObjectID fixture');
+    $id = ObjectID::fromBytes($bytes);
 
     expect(ObjectID::parse($id)['time']->format('Y-m-d H:i:s'))->toBe($expected)
         ->and(ObjectID::toBytes($id))->toBe(hex2bin($hex . str_repeat('00', 8)));
@@ -83,6 +85,10 @@ test('ObjectID generation is canonical and increments its counter', function () 
 });
 
 test('random sampler maps every accepted byte uniformly', function (int $size) {
+    if ($size < 2 || $size > 256) {
+        throw new InvalidArgumentException('Alphabet fixture size must be between 2 and 256');
+    }
+
     $alphabet = '';
     for ($index = 0; $index < $size; ++$index) {
         $alphabet .= chr($index);
@@ -213,12 +219,11 @@ test('v5 configuration constructor parameters remain an unchanged prefix', funct
     ];
 
     foreach ($contracts as $class => $expectedPrefix) {
-        $constructor = (new ReflectionClass($class))->getConstructor();
-        expect($constructor)->not->toBeNull();
+        $constructor = new ReflectionMethod($class, '__construct');
 
         $names = array_map(
             static fn(ReflectionParameter $parameter): string => $parameter->getName(),
-            $constructor?->getParameters() ?? [],
+            $constructor->getParameters(),
         );
         expect(array_slice($names, 0, count($expectedPrefix)))->toBe($expectedPrefix);
     }

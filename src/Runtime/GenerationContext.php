@@ -11,6 +11,9 @@ final readonly class GenerationContext
 {
     private const int DEFAULT_WAIT_TIMEOUT_MICROS = 1_000_000;
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(
         public ?ClockInterface $clock = null,
         public ?RunwireBinding $runwire = null,
@@ -26,12 +29,15 @@ final readonly class GenerationContext
         $this->runwire?->assertActive();
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function nowMicroseconds(): int
     {
         $this->assertActive();
 
         if ($this->clock === null) {
-            return (int) floor(microtime(true) * 1_000_000);
+            return (int) floor(microtime(true) * 1_000_000.0);
         }
 
         $now = $this->clock->now();
@@ -43,16 +49,27 @@ final readonly class GenerationContext
         return ($seconds * 1_000_000) + (int) $now->format('u');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function nowMilliseconds(): int
     {
         return intdiv($this->nowMicroseconds(), 1_000);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function nowSeconds(): int
     {
         return intdiv($this->nowMicroseconds(), 1_000_000);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     public function sleepMicroseconds(int $microseconds): void
     {
         $this->assertActive();

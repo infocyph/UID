@@ -142,7 +142,7 @@ Supported bases: ``10``, ``16``, ``32``, ``36``, ``58``, ``62``.
 GUID Helper
 -----------
 
-``UUID::guid(bool $trim = true)`` generates GUID-format text.
+``UUID::guid(bool $trim = true)`` generates GUID-format text using the PHP CSPRNG on every platform.
 
 Exception Type
 --------------

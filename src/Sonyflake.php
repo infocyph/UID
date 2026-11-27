@@ -17,7 +17,7 @@ use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\GetSequence;
-use Infocyph\UID\Support\NumericIdCodec;
+use Infocyph\UID\Support\NumericConversion;
 use Infocyph\UID\Support\UnsignedDecimal;
 
 final class Sonyflake
@@ -45,12 +45,15 @@ final class Sonyflake
      * Decodes one of bases: 16, 32, 36, 58, 62 into Sonyflake decimal.
      *
      * @throws SonyflakeException
+     * @throws \LogicException
      */
     public static function fromBase(string $encoded, int $base): string
     {
-        $id = self::decodeNumeric(
-            fn(): string => NumericIdCodec::decimalFromBase($encoded, $base, 8),
-            null,
+        $id = NumericConversion::decimalFromBase(
+            $encoded,
+            $base,
+            8,
+            static fn(string $message, \InvalidArgumentException $exception): SonyflakeException => new SonyflakeException($message, 0, $exception),
         );
 
         return self::assertDecodedId($id);
@@ -60,12 +63,15 @@ final class Sonyflake
      * Converts 8-byte Sonyflake binary data to decimal string.
      *
      * @throws SonyflakeException
+     * @throws \LogicException
      */
     public static function fromBytes(string $bytes): string
     {
-        $id = self::decodeNumeric(
-            fn(): string => NumericIdCodec::decimalFromBytes($bytes, 8),
+        $id = NumericConversion::decimalFromBytes(
+            $bytes,
+            8,
             'Sonyflake binary data must be exactly 8 bytes',
+            static fn(string $message, \InvalidArgumentException $exception): SonyflakeException => new SonyflakeException($message, 0, $exception),
         );
 
         return self::assertDecodedId($id);
@@ -77,6 +83,9 @@ final class Sonyflake
      * @param int $machineId The machine identifier. Must be between 0 and the maximum machine ID.
      * @return string The generated unique identifier.
      * @throws SonyflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generate(int $machineId = 0): string
     {
@@ -92,6 +101,10 @@ final class Sonyflake
      * Generates Sonyflake using configuration object.
      *
      * @throws SonyflakeException|FileLockException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generateWithConfig(SonyflakeConfig $config): string
     {
@@ -160,6 +173,8 @@ final class Sonyflake
      * Encodes Sonyflake bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws SonyflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function toBase(string $id, int $base): string
     {
@@ -173,19 +188,23 @@ final class Sonyflake
      */
     public static function toBytes(string $id): string
     {
-        return self::decodeNumeric(
-            fn(): string => NumericIdCodec::bytesFromDecimal(
-                $id,
-                8,
-                self::isValid(...),
-                'Invalid Sonyflake ID string',
-            ),
+        return NumericConversion::bytesFromDecimal(
+            $id,
+            8,
+            self::isValid(...),
+            'Invalid Sonyflake ID string',
             'Unable to convert Sonyflake ID to bytes',
+            static fn(string $message, \InvalidArgumentException $exception): SonyflakeException => new SonyflakeException($message, 0, $exception),
         );
     }
 
     /**
      * @return array{0:int,1:int}
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
+     * @throws \LogicException
      */
     private static function allocateSequence(
         SequenceProviderInterface $provider,
@@ -195,6 +214,7 @@ final class Sonyflake
         ClockBackwardPolicy $policy,
         ?GenerationContext $runtime,
         SonyflakeFormat $format,
+        int $deadline,
     ): array {
         $sequenceType = $format === SonyflakeFormat::UID
             ? 'sonyflake_' . $startTimestamp
@@ -212,7 +232,7 @@ final class Sonyflake
                     );
                 }
 
-                $elapsedTime = self::waitUntilElapsed($exception->lastTimestamp, $startTimestamp, $runtime);
+                $elapsedTime = self::waitUntilElapsed($exception->lastTimestamp, $startTimestamp, $runtime, $deadline);
 
                 continue;
             }
@@ -224,10 +244,13 @@ final class Sonyflake
                 return [$elapsedTime, $allocation - 1];
             }
 
-            $elapsedTime = self::waitUntilElapsed($elapsedTime, $startTimestamp, $runtime);
+            $elapsedTime = self::waitUntilElapsed($elapsedTime, $startTimestamp, $runtime, $deadline);
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     */
     private static function assertDecodedId(string $id): string
     {
         if (!self::isValid($id)) {
@@ -237,6 +260,9 @@ final class Sonyflake
         return $id;
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     */
     private static function assertMachineId(int $machineId): void
     {
         $maximum = -1 ^ (-1 << self::MACHINE_BITS);
@@ -246,20 +272,8 @@ final class Sonyflake
     }
 
     /**
-     * @param callable():string $operation
-     * @throws SonyflakeException
-     */
-    private static function decodeNumeric(callable $operation, ?string $customMessage): string
-    {
-        try {
-            return $operation();
-        } catch (\InvalidArgumentException $exception) {
-            throw new SonyflakeException($customMessage ?? $exception->getMessage(), 0, $exception);
-        }
-    }
-
-    /**
      * Calculates the elapsed time in 10ms units.
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
      */
     private static function elapsedTime(int $currentTime, int $startTimestamp): int
     {
@@ -292,6 +306,7 @@ final class Sonyflake
 
     /**
      * @return array{seconds:string,fraction:string,sequence:int,machine_id:int}
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
      */
     private static function extractParts(
         string $id,
@@ -319,6 +334,9 @@ final class Sonyflake
 
     /**
      * @throws SonyflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function generateInternal(
         int $machineId,
@@ -333,11 +351,14 @@ final class Sonyflake
         $provider = self::resolveSequenceProvider($sequenceProvider);
         $domainKey = $format->value . ':' . $startTimestamp . ':' . $machineId;
         $providerState = self::providerState($provider, $domainKey);
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
         $currentTime = self::resolveWallTime(
             self::nowMilliseconds($runtime),
             $providerState[$domainKey] ?? 0,
             $clockBackwardPolicy,
             $runtime,
+            $deadline,
         );
         $elapsedTime = self::elapsedTime($currentTime, $startTimestamp);
         self::ensureEffectiveRuntime($elapsedTime);
@@ -350,6 +371,7 @@ final class Sonyflake
             $clockBackwardPolicy,
             $runtime,
             $format,
+            $deadline,
         );
         $providerState[$domainKey] = max($currentTime, $startTimestamp + ($elapsedTime * 10));
         self::ensureEffectiveRuntime($elapsedTime);
@@ -369,7 +391,7 @@ final class Sonyflake
 
     private static function nowMilliseconds(?GenerationContext $runtime): int
     {
-        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
+        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000.0);
     }
 
     private static function packId(
@@ -395,6 +417,7 @@ final class Sonyflake
 
     /**
      * @return \ArrayObject<string, int>
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
      */
     private static function providerState(
         SequenceProviderInterface $provider,
@@ -402,7 +425,6 @@ final class Sonyflake
     ): \ArrayObject {
         self::$lastWallTimeByProvider ??= new \WeakMap();
 
-        /** @var \ArrayObject<string, int>|null $state */
         $state = self::$lastWallTimeByProvider[$provider] ?? null;
         if ($state === null) {
             /** @var \ArrayObject<string, int> $state */
@@ -422,11 +444,18 @@ final class Sonyflake
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     private static function resolveWallTime(
         int $currentTime,
         int $lastWallTime,
         ClockBackwardPolicy $policy,
         ?GenerationContext $runtime,
+        int $deadline,
     ): int {
         if ($currentTime >= $lastWallTime) {
             return $currentTime;
@@ -435,49 +464,62 @@ final class Sonyflake
             throw new SonyflakeException('Clock moved backwards while generating Sonyflake ID');
         }
 
-        return self::waitUntilWallTime($lastWallTime, $runtime);
+        return self::waitUntilWallTime($lastWallTime, $runtime, $deadline);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     private static function waitUntilElapsed(
         int $elapsedTime,
         int $startTimestamp,
         ?GenerationContext $runtime,
+        int $deadline,
     ): int {
-        $deadline = $runtime?->waitDeadlineNanoseconds()
-            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
-
-        while (($next = self::elapsedTime(self::nowMilliseconds($runtime), $startTimestamp)) <= $elapsedTime) {
+        while (true) {
+            $next = self::elapsedTime(self::nowMilliseconds($runtime), $startTimestamp);
             if (hrtime(true) >= $deadline) {
                 throw new SonyflakeException('Timed out waiting for the next Sonyflake timestamp');
             }
 
+            if ($next > $elapsedTime) {
+                return $next;
+            }
+
             if ($runtime !== null) {
                 $runtime->sleepMicroseconds(1_000);
             } else {
                 usleep(1_000);
             }
         }
-
-        return $next;
     }
 
-    private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime): int
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
+    private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime, int $deadline): int
     {
-        $deadline = $runtime?->waitDeadlineNanoseconds()
-            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
-
-        while (($currentTime = self::nowMilliseconds($runtime)) < $lastTime) {
+        while (true) {
+            $currentTime = self::nowMilliseconds($runtime);
             if (hrtime(true) >= $deadline) {
                 throw new SonyflakeException('Timed out waiting for the Sonyflake clock to recover');
             }
 
+            if ($currentTime >= $lastTime) {
+                return $currentTime;
+            }
+
             if ($runtime !== null) {
                 $runtime->sleepMicroseconds(1_000);
             } else {
                 usleep(1_000);
             }
         }
-
-        return $currentTime;
     }
 }

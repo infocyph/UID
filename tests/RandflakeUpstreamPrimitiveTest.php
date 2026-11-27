@@ -19,8 +19,12 @@ test('signed 64-bit decimal conversion preserves boundary bit patterns', functio
 });
 
 test('SPARX64 encryption round trips fixed blocks', function (): void {
-    $cipher = new Sparx64(hex2bin('000102030405060708090a0b0c0d0e0f'));
+    $key = hex2bin('000102030405060708090a0b0c0d0e0f');
     $plain = hex2bin('0011223344556677');
+    if ($key === false || $plain === false) {
+        throw new RuntimeException('Invalid SPARX64 vector');
+    }
+    $cipher = new Sparx64($key);
     $encrypted = $cipher->encrypt($plain);
 
     expect($encrypted)->not()->toBe($plain)

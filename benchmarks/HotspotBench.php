@@ -26,7 +26,13 @@ use Infocyph\UID\ULID;
 use Infocyph\UID\UUID;
 use Infocyph\UID\XID;
 use PhpBench\Attributes as Bench;
+use ReflectionMethod;
+use ReflectionProperty;
 
+/**
+ * PHPBench discovers this entry point by reflection.
+ * @api
+ */
 final class HotspotBench
 {
     private Closure $cuidFingerprint;
@@ -48,24 +54,11 @@ final class HotspotBench
         require_once __DIR__ . '/BenchBootstrap.php';
         BenchBootstrap::load();
 
-        $fingerprint = Closure::bind(
-            static fn(): string => CUID2::fingerprint(),
-            null,
-            CUID2::class,
-        );
-        $resetFingerprint = Closure::bind(
-            static function (): void {
-                CUID2::$fingerprint = null;
-            },
-            null,
-            CUID2::class,
-        );
-        if (!$fingerprint instanceof Closure || !$resetFingerprint instanceof Closure) {
-            throw new \LogicException('Unable to bind CUID2 benchmark helpers');
-        }
-
-        $this->cuidFingerprint = $fingerprint;
-        $this->resetCuidFingerprint = $resetFingerprint;
+        $this->cuidFingerprint = (new ReflectionMethod(CUID2::class, 'fingerprint'))->getClosure();
+        $property = new ReflectionProperty(CUID2::class, 'fingerprint');
+        $this->resetCuidFingerprint = static function () use ($property): void {
+            $property->setValue(null, null);
+        };
         ($this->cuidFingerprint)();
 
         $provider = new FilesystemSequenceProvider(namespace: 'phpbench');
@@ -77,12 +70,20 @@ final class HotspotBench
         $this->opaque = OpaqueId::fromInt(123456, 'bench');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchCuid2(): void
     {
         CUID2::generate();
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Exception
+     */
     #[Bench\Revs(100), Bench\Iterations(5)]
     public function benchCuid2ColdGenerate(): void
     {
@@ -103,120 +104,197 @@ final class HotspotBench
         ($this->cuidFingerprint)();
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchDeterministicId(): void
     {
         DeterministicId::fromPayload('payload', 24, 'bench');
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchKsuid(): void
     {
         KSUID::generate();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchNanoId(): void
     {
         NanoID::generate();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ObjectIDException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchObjectId(): void
     {
         ObjectID::generate();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchOpaqueIdDecode(): void
     {
         OpaqueId::toInt($this->opaque, 'bench');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchOpaqueIdEncode(): void
     {
         OpaqueId::fromInt(123456, 'bench');
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchRandflakeFilesystem(): void
     {
         Randflake::generateWithConfig($this->randflakeConfig);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchRandomId62(): void
     {
         RandomId::generate(21, '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchRandomId64(): void
     {
         RandomId::generate(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchRandomIdDefault61(): void
     {
         RandomId::generate();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchSnowflakeFilesystem(): void
     {
         Snowflake::generateWithConfig($this->snowflakeConfig);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchSonyflakeFilesystem(): void
     {
         Sonyflake::generateWithConfig($this->sonyflakeConfig);
     }
 
+    /**
+     * @throws \Exception
+     * @throws \Throwable
+     */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchTbslFilesystem(): void
     {
         TBSL::generateWithConfig($this->tbslConfig);
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchTypeId(): void
     {
         TypeID::generate('user');
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUlidMonotonic(): void
     {
         ULID::generateMonotonic();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUlidRandom(): void
     {
         ULID::generateRandom();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUuidV2(): void
     {
         UUID::v2(1001);
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUuidV4(): void
     {
         UUID::v4();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUuidV7(): void
     {
         UUID::v7();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchXid(): void
     {

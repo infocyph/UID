@@ -34,6 +34,7 @@ final class NumericConversion
     /**
      * @template T of \Throwable
      * @param callable(string, \InvalidArgumentException):T $exceptionFactory
+     * @throws \LogicException
      */
     public static function decimalFromBase(
         string $encoded,
@@ -51,6 +52,7 @@ final class NumericConversion
     /**
      * @template T of \Throwable
      * @param callable(string, \InvalidArgumentException):T $exceptionFactory
+     * @throws \LogicException
      */
     public static function decimalFromBytes(
         string $bytes,

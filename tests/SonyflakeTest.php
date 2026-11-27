@@ -109,7 +109,7 @@ test('Sonyflake config returns a canonical decimal string', function () {
 
 test('Sonyflake config rejects invalid epochs and resolver output', function () {
     $invalidResolver = new SonyflakeConfig(machineIdResolver: fn (): string => '1');
-    $futureEpoch = ((int) floor(microtime(true) * 1000)) + 60_000;
+    $futureEpoch = ((int) floor(microtime(true) * 1000.0)) + 60_000;
 
     expect(fn () => Sonyflake::generateWithConfig(new SonyflakeConfig(customEpoch: $futureEpoch)))
         ->toThrow(\Infocyph\UID\Exceptions\SonyflakeException::class)

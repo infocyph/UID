@@ -69,6 +69,6 @@ Runtime Requirements
 
 - PHP 8.4 or newer on a 64-bit runtime.
 - The ctype extension is required.
-- Runwire 3.0 and PSR-20 clocks are optional passed-instance integrations.
+- Runwire 4.0.1 and PSR-20 clocks are optional passed-instance integrations.
 - No BCMath dependency.
 - PSR-16 is optional and needed only for the PSR simple-cache sequence provider.
