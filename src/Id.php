@@ -25,6 +25,9 @@ final class Id
         return CUID2::generate($length);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function deterministic(string $payload, int $length = 24, string $namespace = 'default'): string
     {
         return DeterministicId::fromPayload($payload, $length, $namespace);
@@ -46,6 +49,9 @@ final class Id
         return NanoID::generate($length);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ObjectIDException
+     */
     public static function objectId(?DateTimeInterface $dateTime = null): string
     {
         return ObjectID::generate($dateTime);
@@ -101,6 +107,9 @@ final class Id
         return $config === null ? TBSL::generate() : TBSL::generateWithConfig($config);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function typeId(string $type = ''): string
     {
         return TypeID::generate($type);

@@ -360,6 +360,7 @@ final class Randflake
     /**
      * @return array{0:int,1:int}
      * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
      */
     private static function allocateSequence(
         SequenceProviderInterface $provider,
@@ -409,6 +410,10 @@ final class Randflake
         }
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     */
     private static function encodeGeneratedPayload(
         int $timestamp,
         int $nodeId,
@@ -655,6 +660,9 @@ final class Randflake
         return self::$roundKeyCache[$fingerprint] = $keys;
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     private static function sparx(
         #[\SensitiveParameter]
         string $secret,

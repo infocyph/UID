@@ -15,6 +15,11 @@ final class RunwireBinding
 {
     private static ?TaskLocal $scopeProbe = null;
 
+    /**
+     * @throws \LogicException
+     * @throws \Infocyph\Runwire\Exception\CancelledException
+     * @throws \Throwable
+     */
     public function __construct(
         public readonly RuntimeContext $runtime,
         public readonly ?RequestContext $request = null,
@@ -57,6 +62,11 @@ final class RunwireBinding
         }
     }
 
+    /**
+     * @throws \LogicException
+     * @throws \Infocyph\Runwire\Exception\CancelledException
+     * @throws \Throwable
+     */
     public function deadlineNanoseconds(): ?int
     {
         $this->assertActive();

@@ -56,6 +56,8 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
     /**
      * @throws \Infocyph\UID\Exceptions\FileLockException
      * @throws \Infocyph\UID\Exceptions\SequenceTimestampException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
      */
     #[\Override]
     public function next(string $type, int $machineId, int $timestamp, ?GenerationContext $runtime = null): int

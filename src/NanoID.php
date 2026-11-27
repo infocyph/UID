@@ -25,7 +25,7 @@ final class NanoID
         $byteLength = intdiv(($length * 3) + 3, 4);
 
         return substr(
-            rtrim(strtr(base64_encode(random_bytes($byteLength)), '+/', '-_'), '='),
+            rtrim(strtr(base64_encode(random_bytes(max(1, $byteLength))), '+/', '-_'), '='),
             0,
             $length,
         );

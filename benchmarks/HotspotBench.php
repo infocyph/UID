@@ -104,6 +104,9 @@ final class HotspotBench
         ($this->cuidFingerprint)();
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchDeterministicId(): void
     {
@@ -128,6 +131,9 @@ final class HotspotBench
         NanoID::generate();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ObjectIDException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchObjectId(): void
     {
@@ -143,6 +149,9 @@ final class HotspotBench
         OpaqueId::toInt($this->opaque, 'bench');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchOpaqueIdEncode(): void
     {
@@ -197,12 +206,18 @@ final class HotspotBench
         Sonyflake::generateWithConfig($this->sonyflakeConfig);
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchTbslFilesystem(): void
     {
         TBSL::generateWithConfig($this->tbslConfig);
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchTypeId(): void
     {

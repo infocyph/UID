@@ -87,7 +87,10 @@ final class BaseCodecBench
         BaseEncoder::encodeBytes($this->sample($params), 10);
     }
 
-    /** @param array{base:int,length:int} $params */
+    /**
+     * @param array{base:int,length:int} $params
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(250), Bench\Iterations(5), Bench\ParamProviders('provideBaseLengthPairs')]
     public function benchDecode(array $params): void
     {
@@ -118,12 +121,19 @@ final class BaseCodecBench
         DecimalBytes::toFixedBytes($this->decimal[$params['length']], $params['length']);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchTypeIdDecode(): void
     {
         TypeIdCodec::decode($this->typeIdEncoded);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchTypeIdEncode(): void
     {
