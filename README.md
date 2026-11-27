@@ -21,7 +21,7 @@ All-in-one unique ID toolkit for PHP.
 - Binary conversion and base encoders (`10`, `16`, `32`, `36`, `58`, `62`)
 - Pluggable sequence providers (filesystem, memory, PSR-16 cache, callback)
 - Explicit legacy/upstream Sonyflake and Randflake compatibility modes
-- Optional PSR-20 clocks and Runwire 3.0 cooperative wait integration
+- Optional PSR-20 clocks and Runwire 4.0.1 cooperative wait integration
 
 ## Requirements
 
@@ -101,7 +101,7 @@ UID is protected by [PHPForge](https://github.com/infocyph/PHPForge), an automat
 tests, static and taint analysis, dependency auditing, architecture checks, and release readiness. Automated controls reduce
 risk but do not replace responsible disclosure or manual review.
 
-Release acceptance also runs `php tests/smoke.php` with a production-only install on PHP 8.4 and 8.5.
+Release acceptance also runs `php tests/smoke.php` with a production-only install on PHP 8.4, 8.5, and 8.6.
 One 100-cycle pass covers every generator and supported format, checking valid output, sample uniqueness,
 and relevant round trips. Long HTTP benchmarks and soak runs are not release gates.
 

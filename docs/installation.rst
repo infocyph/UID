@@ -30,7 +30,7 @@ only the integration used by the application:
 
 .. code-block:: bash
 
-   composer require infocyph/runwire:^3.0
+   composer require infocyph/runwire:^4.0.1
    composer require psr/clock:^1.0
    composer require psr/simple-cache:^3.0
 
