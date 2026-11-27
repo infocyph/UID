@@ -10,14 +10,13 @@ test('Basic', function () {
     $startedAt = time() - 1;
     $ulid = ULID::generate();
     $finishedAt = time() + 1;
-    expect($ulid)->toBeString()
-        ->and(ULID::isValid($ulid))->toBeTrue()
+    expect(ULID::isValid($ulid))->toBeTrue()
         ->and(ULID::getTime($ulid)->getTimestamp())->toBeBetween($startedAt, $finishedAt);
 });
 
 test('Monotonic overflow on fixed timestamp throws ULIDException', function () {
     $dateTime = DateTimeImmutable::createFromFormat('U.u', '1700000000.123000');
-    expect($dateTime)->not()->toBeFalse();
+    $dateTime !== false || throw new RuntimeException('Invalid fixed timestamp');
 
     $class = new ReflectionClass(ULID::class);
     $lastGenTime = $class->getProperty('lastGenTime');
@@ -46,7 +45,7 @@ test('ULID bytes conversion roundtrip', function () {
 
 test('ULID random mode does not depend on monotonic state', function () {
     $fixed = DateTimeImmutable::createFromFormat('U.u', '1700000000.123000');
-    expect($fixed)->not()->toBeFalse();
+    $fixed !== false || throw new RuntimeException('Invalid fixed timestamp');
 
     $id1 = ULID::generate($fixed, UlidGenerationMode::RANDOM);
     $id2 = ULID::generate($fixed, UlidGenerationMode::RANDOM);

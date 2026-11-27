@@ -24,6 +24,7 @@ final readonly class ReleaseBoundaryClock implements ClockInterface
 {
     public function __construct(private DateTimeImmutable $time) {}
 
+    #[\Override]
     public function now(): DateTimeImmutable
     {
         return $this->time;
@@ -99,7 +100,7 @@ test('TBSL preserves eleven-digit seconds within its 60-bit timestamp field', fu
 test('generation rejects out-of-domain clocks and keeps large wait budgets integer safe', function (): void {
     $negative = new GenerationContext(clock: new ReleaseBoundaryClock(new DateTimeImmutable('1969-12-31T23:59:59.500000Z')));
     expect(fn(): int => $negative->nowMicroseconds())->toThrow(InvalidArgumentException::class)
-        ->and((new GenerationContext(waitTimeoutMicros: PHP_INT_MAX))->waitDeadlineNanoseconds())->toBeInt();
+        ->and((new GenerationContext(waitTimeoutMicros: PHP_INT_MAX))->waitDeadlineNanoseconds())->toBeGreaterThan(hrtime(true));
 });
 
 test('upstream Randflake lease conversion fails with a domain error at integer exhaustion', function (): void {
@@ -120,6 +121,7 @@ test('Randflake rechecks live domain state after reentrant provider work', funct
             unset($type, $machineId, $timestamp);
             if (!$nested) {
                 $nested = true;
+                $config !== null || throw new LogicException('Missing reentrant configuration');
                 $nestedId = \Infocyph\UID\Randflake::generateWithConfig($config);
             }
 
@@ -151,7 +153,7 @@ test('implicit ULID and UUID generation fail promptly at terminal timestamp exha
         [\Infocyph\UID\UUID::class, 'nextV7Timestamp', \Infocyph\UID\Exceptions\UUIDException::class],
     ] as [$class, $method, $exception]) {
         $wait = new ReflectionMethod($class, $method);
-        expect(fn(): int => $wait->invoke(null, 281_474_976_710_655))->toThrow($exception, 'exhausted');
+        expect(fn(): mixed => $wait->invoke(null, 281_474_976_710_655))->toThrow($exception, 'exhausted');
     }
 });
 

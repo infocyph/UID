@@ -17,6 +17,7 @@ use Psr\Clock\ClockInterface;
 
 final readonly class PersistentDomainClock implements ClockInterface
 {
+    #[\Override]
     public function now(): DateTimeImmutable
     {
         return new DateTimeImmutable('@1800000000.123456');

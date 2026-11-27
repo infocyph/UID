@@ -11,6 +11,7 @@ use Psr\Clock\ClockInterface;
 
 final readonly class RandflakeVectorClock implements ClockInterface
 {
+    #[\Override]
     public function now(): DateTimeImmutable
     {
         return new DateTimeImmutable('@1730000001');

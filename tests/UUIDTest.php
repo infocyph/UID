@@ -11,12 +11,12 @@ test('UUID v1', function () {
     $startedAt = time() - 1;
     $uid = UUID::v1();
     $finishedAt = time() + 1;
-    expect($uid)->toBeString();
+    expect(UUID::isValid($uid))->toBeTrue();
     $parsed = UUID::parse($uid);
     expect($parsed['version'])->toBe(1)
         ->and($parsed['time'])->not()->toBeNull()
-        ->and($parsed['node'])->toBeString()->not()->toBeNull()
-        ->and($parsed['time']->getTimestamp())->toBeBetween($startedAt, $finishedAt);
+        ->and($parsed['node'])->toBeString()
+        ->and($parsed['time']?->getTimestamp())->toBeBetween($startedAt, $finishedAt);
 });
 
 test('UUID v2 encodes local identity and coordinated node fields', function (int $domain, int $identifier, int $sequence): void {
@@ -28,8 +28,8 @@ test('UUID v2 encodes local identity and coordinated node fields', function (int
         ->and(substr($uuid, 0, 8))->toBe(sprintf('%08x', $identifier))
         ->and(substr($uuid, 19, 4))->toBe(sprintf('%02x%02x', 0x80 | $sequence, $domain))
         ->and($parsed['version'])->toBe(2)
-        ->and($parsed['local_domain'])->toBe($domain)
-        ->and($parsed['local_identifier'])->toBe($identifier)
+        ->and(($parsed['local_domain'] ?? null))->toBe($domain)
+        ->and(($parsed['local_identifier'] ?? null))->toBe($identifier)
         ->and($parsed['node'])->toBe('abcdef123456')
         ->and($parsed['time']?->getTimestamp())->toBeBetween($startedAt - 430, time())
         ->and(UUID::fromBytes(UUID::toBytes($uuid)))->toBe($uuid)
@@ -41,8 +41,8 @@ test('UUID v2 parses an independent DCE vector without treating the local ID as 
     $parsed = UUID::parse($uuid);
     $value = new \Infocyph\UID\Value\UuidValue($uuid);
 
-    expect($parsed['local_identifier'])->toBe(501)
-        ->and($parsed['local_domain'])->toBe(0)
+    expect(($parsed['local_identifier'] ?? null))->toBe(501)
+        ->and(($parsed['local_domain'] ?? null))->toBe(0)
         ->and($parsed['time']?->format('Y-m-d H:i:s.u'))->toBe('2020-03-05 04:30:10.619596')
         ->and($value->getTimestamp()?->format('Y-m-d H:i:s.u'))->toBe('2020-03-05 04:30:10.619596')
         ->and($value->getVersion())->toBe(2)
@@ -55,16 +55,17 @@ test('UUID v2 uses fresh random nodes and exposes matching convenience APIs', fu
         for ($index = 0; $index < 100; ++$index) {
             $uuid = $generate(1001);
             $parsed = UUID::parse($uuid);
-            expect($parsed['local_identifier'])->toBe(1001)
-                ->and($parsed['local_domain'])->toBe(0)
-                ->and(hexdec(substr($parsed['node'], 0, 2)) & 1)->toBe(1);
+            expect(($parsed['local_identifier'] ?? null))->toBe(1001)
+                ->and(($parsed['local_domain'] ?? null))->toBe(0)
+                ->and(hexdec(substr($parsed['node'] ?? '', 0, 2)) & 1)->toBe(1);
             $ids[] = $uuid;
         }
     }
     expect(array_unique($ids))->toHaveCount(300);
 });
 
-test('UUID v2 rejects invalid fields and uncoordinated fixed nodes', function (array $arguments): void {
+test('UUID v2 rejects invalid fields and uncoordinated fixed nodes', /** @param array{0:int,1?:int,2?:string|null,3?:int} $arguments */
+function (array $arguments): void {
     expect(fn(): string => UUID::v2(...$arguments))->toThrow(\Infocyph\UID\Exceptions\UUIDException::class);
 })->with([
     [[-1]],
@@ -83,41 +84,41 @@ $ns = UUID::v4();
 
 test('UUID v3', function () use ($ns) {
     $uid = UUID::v3($ns, 'my-string');
-    expect($uid)->toBeString();
+    expect(UUID::isValid($uid))->toBeTrue();
     $parsed = UUID::parse($uid);
     expect($parsed['version'])->toBe(3)
         ->and($parsed['time'])->toBeNull()
-        ->and($parsed['node'])->toBeString()->not()->toBeNull();
+        ->and($parsed['node'])->toBeString();
 });
 
 test('UUID v4', function () {
     $uid = UUID::v4();
-    expect($uid)->toBeString();
+    expect(UUID::isValid($uid))->toBeTrue();
     $parsed = UUID::parse($uid);
     expect($parsed['version'])->toBe(4)
         ->and($parsed['time'])->toBeNull()
-        ->and($parsed['node'])->toBeString()->not()->toBeNull();
+        ->and($parsed['node'])->toBeString();
 });
 
 test('UUID v5', function () use ($ns) {
     $uid = UUID::v5($ns, 'my-string');
-    expect($uid)->toBeString();
+    expect(UUID::isValid($uid))->toBeTrue();
     $parsed = UUID::parse($uid);
     expect($parsed['version'])->toBe(5)
         ->and($parsed['time'])->toBeNull()
-        ->and($parsed['node'])->toBeString()->not()->toBeNull();
+        ->and($parsed['node'])->toBeString();
 });
 
 test('UUID v6', function () {
     $startedAt = time() - 1;
     $uid = UUID::v6();
     $finishedAt = time() + 1;
-    expect($uid)->toBeString();
+    expect(UUID::isValid($uid))->toBeTrue();
     $parsed = UUID::parse($uid);
     expect($parsed['version'])->toBe(6)
         ->and($parsed['time'])->not()->toBeNull()
-        ->and($parsed['node'])->toBeString()->not()->toBeNull()
-        ->and($parsed['time']->getTimestamp())->toBeBetween($startedAt, $finishedAt);
+        ->and($parsed['node'])->toBeString()
+        ->and($parsed['time']?->getTimestamp())->toBeBetween($startedAt, $finishedAt);
 });
 
 test('UUID time parsing preserves fractional timestamps across the Unix epoch', function (int $version, int $offset, string $expected): void {
@@ -143,23 +144,23 @@ test('UUID v7', function () {
     $startedAt = time() - 1;
     $uid = UUID::v7();
     $finishedAt = time() + 1;
-    expect($uid)->toBeString();
+    expect(UUID::isValid($uid))->toBeTrue();
     $parsed = UUID::parse($uid);
     expect($parsed['version'])->toBe(7)
         ->and($parsed['time'])->not()->toBeNull()
         ->and($parsed['node'])->toBeNull()
-        ->and($parsed['tail'])->toBeString()->not()->toBeNull()
-        ->and($parsed['time']->getTimestamp())->toBeBetween($startedAt, $finishedAt);
+        ->and($parsed['tail'])->toBeString()
+        ->and($parsed['time']?->getTimestamp())->toBeBetween($startedAt, $finishedAt);
 });
 
 test('UUID v8', function () {
     $uid = UUID::v8();
-    expect($uid)->toBeString();
+    expect(UUID::isValid($uid))->toBeTrue();
     $parsed = UUID::parse($uid);
     expect($parsed['version'])->toBe(8)
         ->and($parsed['time'])->toBeNull()
         ->and($parsed['node'])->toBeNull()
-        ->and($parsed['tail'])->toBeString()->not()->toBeNull();
+        ->and($parsed['tail'])->toBeString();
 });
 
 test('UUID node must be exactly 12 hex characters when provided', function () {
@@ -191,27 +192,27 @@ test('generated UUID nodes set the multicast bit', function () {
 
     expect(hexdec(substr($node, 0, 2)) & 0x01)->toBe(0x01)
         ->and($parsedNode)->toBeString()
-        ->and(hexdec(substr($parsedNode, 0, 2)) & 0x01)->toBe(0x01);
+        ->and(hexdec(substr($parsedNode ?? '', 0, 2)) & 0x01)->toBe(0x01);
 });
 
 test('GUID', function () {
     $uid = UUID::guid();
-    expect($uid)->toBeString();
+    expect(UUID::isValid($uid))->toBeTrue();
     $parsed = UUID::parse($uid);
     expect($parsed['version'])->toBe(4)
         ->and($parsed['time'])->toBeNull()
-        ->and($parsed['node'])->toBeString()->not()->toBeNull();
+        ->and($parsed['node'])->toBeString();
 });
 
 test('UUID v7 does not move timestamp forward for monotonicity', function () {
     $fixedTime = DateTimeImmutable::createFromFormat('U.u', '1700000000.123000');
-    expect($fixedTime)->not()->toBeFalse();
+    $fixedTime !== false || throw new RuntimeException('Invalid fixed timestamp');
 
     $uid1 = UUID::v7($fixedTime);
     $uid2 = UUID::v7($fixedTime);
 
-    $time1 = (int)UUID::parse($uid1)['time']->format('Uv');
-    $time2 = (int)UUID::parse($uid2)['time']->format('Uv');
+    $time1 = (int) (UUID::parse($uid1)['time']?->format('Uv') ?? '-1');
+    $time2 = (int) (UUID::parse($uid2)['time']?->format('Uv') ?? '-1');
     $expected = (int)$fixedTime->format('Uv');
 
     expect($time1)->toBe($expected)
