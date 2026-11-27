@@ -151,6 +151,7 @@ final class HotspotBench
 
     /**
      * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchOpaqueIdEncode(): void

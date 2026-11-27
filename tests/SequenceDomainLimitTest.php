@@ -54,6 +54,7 @@ final class DomainLimitCache implements CacheInterface
     /**
      * @param iterable<mixed, mixed> $values
      * @throws InvalidArgumentException
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     #[\Override]
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool

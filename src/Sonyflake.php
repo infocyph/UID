@@ -191,6 +191,9 @@ final class Sonyflake
      * @return array{0:int,1:int}
      * @throws \Infocyph\UID\Exceptions\SonyflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
+     * @throws \LogicException
      */
     private static function allocateSequence(
         SequenceProviderInterface $provider,
@@ -437,6 +440,9 @@ final class Sonyflake
 
     /**
      * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function resolveWallTime(
         int $currentTime,

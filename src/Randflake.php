@@ -172,6 +172,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException|FileLockException
+     * @throws \InvalidArgumentException
      */
     public static function generate(
         int $nodeId,
@@ -194,6 +195,8 @@ final class Randflake
 
     /**
      * @throws RandflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function generateString(
         int $nodeId,
@@ -207,6 +210,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException|FileLockException
+     * @throws \InvalidArgumentException
      */
     public static function generateWithConfig(RandflakeConfig $config): string
     {
@@ -254,6 +258,7 @@ final class Randflake
     /**
      * @return array{timestamp: int, node_id: int, sequence: int}
      * @throws RandflakeException
+     * @throws \LogicException
      */
     public static function inspectString(
         string $id,
@@ -368,6 +373,8 @@ final class Randflake
      * @return array{0:int,1:int}
      * @throws \Infocyph\UID\Exceptions\RandflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
      */
     private static function allocateSequence(
         SequenceProviderInterface $provider,
@@ -443,6 +450,7 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     private static function generateInternal(
         int $nodeId,

@@ -173,6 +173,7 @@ final class TBSL
 
     /**
      * @throws Exception
+     * @throws \Throwable
      */
     private static function generateInternal(
         int $machineId,
@@ -235,6 +236,7 @@ final class TBSL
      * @param int $timeSequence The timestamp sequence.
      * @return array{0:int, 1:string}
      * @throws Exception
+     * @throws \Throwable
      */
     private static function resolveTail(
         int $machineId,

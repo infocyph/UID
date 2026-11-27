@@ -31,6 +31,7 @@ final class NumericIdCodec
 
     /**
      * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function decimalFromBytes(string $bytes, int $byteLength): string
     {

@@ -268,6 +268,9 @@ final class Snowflake
 
     /**
      * @throws SnowflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function generateInternal(
         int $datacenter,
@@ -342,6 +345,9 @@ final class Snowflake
     /**
      * @return array{0:int, 1:int}
      * @throws FileLockException|SnowflakeException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
+     * @throws \LogicException
      */
     private static function nextSequenceAtValidTimestamp(
         int $currentTime,
