@@ -85,6 +85,10 @@ test('ObjectID generation is canonical and increments its counter', function () 
 });
 
 test('random sampler maps every accepted byte uniformly', function (int $size) {
+    if ($size < 2 || $size > 256) {
+        throw new InvalidArgumentException('Alphabet fixture size must be between 2 and 256');
+    }
+
     $alphabet = '';
     for ($index = 0; $index < $size; ++$index) {
         $alphabet .= chr($index);

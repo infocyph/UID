@@ -17,7 +17,7 @@ use Infocyph\UID\Sequence\FilesystemSequenceProvider;
 use Infocyph\UID\Sequence\SequenceProviderInterface;
 use Infocyph\UID\Support\BaseEncoder;
 use Infocyph\UID\Support\GetSequence;
-use Infocyph\UID\Support\NumericIdCodec;
+use Infocyph\UID\Support\NumericConversion;
 use Infocyph\UID\Support\UnsignedDecimal;
 
 final class Sonyflake
@@ -49,9 +49,11 @@ final class Sonyflake
      */
     public static function fromBase(string $encoded, int $base): string
     {
-        $id = self::decodeNumeric(
-            fn(): string => NumericIdCodec::decimalFromBase($encoded, $base, 8),
-            null,
+        $id = NumericConversion::decimalFromBase(
+            $encoded,
+            $base,
+            8,
+            static fn(string $message, \InvalidArgumentException $exception): SonyflakeException => new SonyflakeException($message, 0, $exception),
         );
 
         return self::assertDecodedId($id);
@@ -65,9 +67,11 @@ final class Sonyflake
      */
     public static function fromBytes(string $bytes): string
     {
-        $id = self::decodeNumeric(
-            fn(): string => NumericIdCodec::decimalFromBytes($bytes, 8),
+        $id = NumericConversion::decimalFromBytes(
+            $bytes,
+            8,
             'Sonyflake binary data must be exactly 8 bytes',
+            static fn(string $message, \InvalidArgumentException $exception): SonyflakeException => new SonyflakeException($message, 0, $exception),
         );
 
         return self::assertDecodedId($id);
@@ -184,14 +188,13 @@ final class Sonyflake
      */
     public static function toBytes(string $id): string
     {
-        return self::decodeNumeric(
-            fn(): string => NumericIdCodec::bytesFromDecimal(
-                $id,
-                8,
-                self::isValid(...),
-                'Invalid Sonyflake ID string',
-            ),
+        return NumericConversion::bytesFromDecimal(
+            $id,
+            8,
+            self::isValid(...),
+            'Invalid Sonyflake ID string',
             'Unable to convert Sonyflake ID to bytes',
+            static fn(string $message, \InvalidArgumentException $exception): SonyflakeException => new SonyflakeException($message, 0, $exception),
         );
     }
 
@@ -264,19 +267,6 @@ final class Sonyflake
         $maximum = -1 ^ (-1 << self::MACHINE_BITS);
         if ($machineId < 0 || $machineId > $maximum) {
             throw new SonyflakeException("Invalid machine ID, must be between 0 ~ $maximum.");
-        }
-    }
-
-    /**
-     * @param callable():string $operation
-     * @throws SonyflakeException
-     */
-    private static function decodeNumeric(callable $operation, ?string $customMessage): string
-    {
-        try {
-            return $operation();
-        } catch (\InvalidArgumentException $exception) {
-            throw new SonyflakeException($customMessage ?? $exception->getMessage(), 0, $exception);
         }
     }
 
