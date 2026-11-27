@@ -64,20 +64,19 @@ test('UUID v2 uses fresh random nodes and exposes matching convenience APIs', fu
     expect(array_unique($ids))->toHaveCount(300);
 });
 
-test('UUID v2 rejects invalid fields and uncoordinated fixed nodes', /** @param array{0:int,1?:int,2?:string|null,3?:int} $arguments */
-function (array $arguments): void {
-    expect(fn(): string => UUID::v2(...$arguments))->toThrow(\Infocyph\UID\Exceptions\UUIDException::class);
+test('UUID v2 rejects invalid fields and uncoordinated fixed nodes', function (int $identifier, int $domain = 0, ?string $node = null, ?int $sequence = null): void {
+    expect(fn(): string => UUID::v2($identifier, $domain, $node, $sequence))->toThrow(\Infocyph\UID\Exceptions\UUIDException::class);
 })->with([
-    [[-1]],
-    [[0x100000000]],
-    [[1, -1]],
-    [[1, 3]],
-    [[1, 256]],
-    [[1, 0, null, -1]],
-    [[1, 0, null, 64]],
-    [[1, 0, 'abcdef123456']],
-    [[1, 0, "abcdef123456\n", 0]],
-    [[1, 0, 'invalid-node', 0]],
+    [-1],
+    [0x100000000],
+    [1, -1],
+    [1, 3],
+    [1, 256],
+    [1, 0, null, -1],
+    [1, 0, null, 64],
+    [1, 0, 'abcdef123456'],
+    [1, 0, "abcdef123456\n", 0],
+    [1, 0, 'invalid-node', 0],
 ]);
 
 $ns = UUID::v4();

@@ -115,7 +115,7 @@ test('upstream Randflake lease conversion fails with a domain error at integer e
 test('Randflake rechecks live domain state after reentrant provider work', function (\Infocyph\UID\Enums\RandflakeFormat $format): void {
     $nested = false;
     $fixture = new class {
-        public \Infocyph\UID\Configuration\RandflakeConfig $config;
+        public ?\Infocyph\UID\Configuration\RandflakeConfig $config = null;
     };
     $nestedId = null;
     $provider = new \Infocyph\UID\Sequence\CallbackSequenceProvider(
@@ -123,7 +123,8 @@ test('Randflake rechecks live domain state after reentrant provider work', funct
             unset($type, $machineId, $timestamp);
             if (!$nested) {
                 $nested = true;
-                $nestedId = \Infocyph\UID\Randflake::generateWithConfig($fixture->config);
+                $config = $fixture->config ?? throw new LogicException('Missing reentrant configuration');
+                $nestedId = \Infocyph\UID\Randflake::generateWithConfig($config);
             }
 
             return 1;

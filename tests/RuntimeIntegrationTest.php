@@ -155,6 +155,7 @@ test('a cancellation after allocation never recycles the consumed allocation', f
 
 
 /**
+ * @throws \UnexpectedValueException
  * @throws \Infocyph\UID\Exceptions\SnowflakeException
  * @throws \Infocyph\UID\Exceptions\FileLockException
  */

@@ -215,8 +215,7 @@ test('v5 configuration constructor parameters remain an unchanged prefix', funct
     ];
 
     foreach ($contracts as $class => $expectedPrefix) {
-        $constructor = (new ReflectionClass($class))->getConstructor();
-        expect($constructor)->not->toBeNull();
+        $constructor = new ReflectionMethod($class, '__construct');
 
         $names = array_map(
             static fn(ReflectionParameter $parameter): string => $parameter->getName(),
