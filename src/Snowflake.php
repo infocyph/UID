@@ -44,6 +44,7 @@ final class Snowflake
      * Decodes one of bases: 16, 32, 36, 58, 62 into Snowflake decimal.
      *
      * @throws SnowflakeException
+     * @throws \LogicException
      */
     public static function fromBase(string $encoded, int $base): string
     {
@@ -54,6 +55,7 @@ final class Snowflake
      * Converts 8-byte Snowflake binary data to decimal string.
      *
      * @throws SnowflakeException
+     * @throws \LogicException
      */
     public static function fromBytes(string $bytes): string
     {
@@ -67,6 +69,9 @@ final class Snowflake
      * @param int $workerId The ID of the worker (default: 0)
      * @return string The generated snowflake ID
      * @throws SnowflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generate(int $datacenter = 0, int $workerId = 0): string
     {
@@ -83,6 +88,9 @@ final class Snowflake
      *
      * @throws SnowflakeException|FileLockException
      * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generateWithConfig(SnowflakeConfig $config): string
     {
@@ -226,6 +234,7 @@ final class Snowflake
 
     /**
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \LogicException
      */
     private static function decodeNumericBase(string $encoded, int $base): string
     {
@@ -241,6 +250,7 @@ final class Snowflake
 
     /**
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \LogicException
      */
     private static function decodeNumericBytes(string $bytes): string
     {

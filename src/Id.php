@@ -60,6 +60,9 @@ final class Id
     /**
      * @throws \Infocyph\UID\Exceptions\RandflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function randflake(RandflakeConfig $config): string
     {
@@ -76,6 +79,14 @@ final class Id
         return RandomId::generate($length, $alphabet);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     * @throws \UnexpectedValueException
+     */
     public static function snowflake(?SnowflakeConfig $config = null): string
     {
         return $config === null ? Snowflake::generate() : Snowflake::generateWithConfig($config);
@@ -83,12 +94,25 @@ final class Id
 
     /**
      * @throws \InvalidArgumentException
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \LogicException
+     * @throws \Throwable
+     * @throws \UnexpectedValueException
      */
     public static function snowflakeValue(?SnowflakeConfig $config = null): SnowflakeValue
     {
         return new SnowflakeValue(self::snowflake($config), $config?->resolveCustomEpochMs());
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     * @throws \UnexpectedValueException
+     */
     public static function sonyflake(?SonyflakeConfig $config = null): string
     {
         return $config === null ? Sonyflake::generate() : Sonyflake::generateWithConfig($config);
@@ -96,6 +120,11 @@ final class Id
 
     /**
      * @throws \InvalidArgumentException
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \LogicException
+     * @throws \Throwable
+     * @throws \UnexpectedValueException
      */
     public static function sonyflakeValue(?SonyflakeConfig $config = null): SonyflakeValue
     {
@@ -111,6 +140,10 @@ final class Id
         );
     }
 
+    /**
+     * @throws \Exception
+     * @throws \Throwable
+     */
     public static function tbsl(?TBSLConfig $config = null): string
     {
         return $config === null ? TBSL::generate() : TBSL::generateWithConfig($config);

@@ -43,6 +43,9 @@ final class SequenceProviderBench
     /**
      * @throws \Infocyph\UID\Exceptions\RandflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchRandflakeFilesystem(): void
@@ -53,6 +56,9 @@ final class SequenceProviderBench
     /**
      * @throws \Infocyph\UID\Exceptions\RandflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchRandflakeInMemory(): void
@@ -64,6 +70,9 @@ final class SequenceProviderBench
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
      * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchSnowflakeFilesystem(): void
@@ -75,6 +84,9 @@ final class SequenceProviderBench
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
      * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchSnowflakeInMemory(): void

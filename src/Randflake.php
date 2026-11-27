@@ -173,6 +173,8 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generate(
         int $nodeId,
@@ -197,6 +199,7 @@ final class Randflake
      * @throws RandflakeException|FileLockException
      * @throws \InvalidArgumentException
      * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generateString(
         int $nodeId,
@@ -211,6 +214,8 @@ final class Randflake
     /**
      * @throws RandflakeException|FileLockException
      * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generateWithConfig(RandflakeConfig $config): string
     {
@@ -451,6 +456,7 @@ final class Randflake
      * @throws RandflakeException|FileLockException
      * @throws \InvalidArgumentException
      * @throws \LogicException
+     * @throws \Throwable
      */
     private static function generateInternal(
         int $nodeId,

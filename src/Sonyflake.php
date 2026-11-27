@@ -45,6 +45,7 @@ final class Sonyflake
      * Decodes one of bases: 16, 32, 36, 58, 62 into Sonyflake decimal.
      *
      * @throws SonyflakeException
+     * @throws \LogicException
      */
     public static function fromBase(string $encoded, int $base): string
     {
@@ -60,6 +61,7 @@ final class Sonyflake
      * Converts 8-byte Sonyflake binary data to decimal string.
      *
      * @throws SonyflakeException
+     * @throws \LogicException
      */
     public static function fromBytes(string $bytes): string
     {
@@ -77,6 +79,9 @@ final class Sonyflake
      * @param int $machineId The machine identifier. Must be between 0 and the maximum machine ID.
      * @return string The generated unique identifier.
      * @throws SonyflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generate(int $machineId = 0): string
     {
@@ -93,6 +98,9 @@ final class Sonyflake
      *
      * @throws SonyflakeException|FileLockException
      * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     public static function generateWithConfig(SonyflakeConfig $config): string
     {
@@ -335,6 +343,9 @@ final class Sonyflake
 
     /**
      * @throws SonyflakeException|FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function generateInternal(
         int $machineId,

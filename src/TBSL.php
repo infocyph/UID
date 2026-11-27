@@ -56,6 +56,7 @@ final class TBSL
      * @param bool $sequenced Whether to use sequencing.
      * @return string The generated unique identifier.
      * @throws Exception
+     * @throws \Throwable
      */
     public static function generate(int $machineId = 0, bool $sequenced = true): string
     {
@@ -70,6 +71,7 @@ final class TBSL
      * Generates TBSL using configuration object.
      *
      * @throws Exception
+     * @throws \Throwable
      */
     public static function generateRandom(int $machineId = 0): string
     {
@@ -78,6 +80,7 @@ final class TBSL
 
     /**
      * @throws \Exception
+     * @throws \Throwable
      */
     public static function generateWithConfig(TBSLConfig $config): string
     {

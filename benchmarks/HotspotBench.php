@@ -162,6 +162,9 @@ final class HotspotBench
     /**
      * @throws \Infocyph\UID\Exceptions\RandflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchRandflakeFilesystem(): void
@@ -200,6 +203,9 @@ final class HotspotBench
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
      * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchSnowflakeFilesystem(): void
@@ -211,6 +217,9 @@ final class HotspotBench
      * @throws \Infocyph\UID\Exceptions\SonyflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
      * @throws \UnexpectedValueException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchSonyflakeFilesystem(): void
@@ -220,6 +229,7 @@ final class HotspotBench
 
     /**
      * @throws \Exception
+     * @throws \Throwable
      */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchTbslFilesystem(): void

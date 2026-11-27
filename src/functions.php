@@ -47,6 +47,9 @@ function object_id(?DateTimeInterface $dateTime = null): string
 /**
  * @throws \Infocyph\UID\Exceptions\RandflakeException
  * @throws \Infocyph\UID\Exceptions\FileLockException
+ * @throws \InvalidArgumentException
+ * @throws \LogicException
+ * @throws \Throwable
  */
 function randflake(RandflakeConfig $config): string
 {
@@ -61,16 +64,36 @@ function random_id(int $length = 21, string $alphabet = RandomId::DEFAULT_ALPHAB
     return RandomId::generate($length, $alphabet);
 }
 
+/**
+ * @throws \Infocyph\UID\Exceptions\SnowflakeException
+ * @throws \Infocyph\UID\Exceptions\FileLockException
+ * @throws \InvalidArgumentException
+ * @throws \LogicException
+ * @throws \Throwable
+ * @throws \UnexpectedValueException
+ */
 function snowflake(?SnowflakeConfig $config = null): string
 {
     return $config === null ? Snowflake::generate() : Snowflake::generateWithConfig($config);
 }
 
+/**
+ * @throws \Infocyph\UID\Exceptions\SonyflakeException
+ * @throws \Infocyph\UID\Exceptions\FileLockException
+ * @throws \InvalidArgumentException
+ * @throws \LogicException
+ * @throws \Throwable
+ * @throws \UnexpectedValueException
+ */
 function sonyflake(?SonyflakeConfig $config = null): string
 {
     return $config === null ? Sonyflake::generate() : Sonyflake::generateWithConfig($config);
 }
 
+/**
+ * @throws \Exception
+ * @throws \Throwable
+ */
 function tbsl(?TBSLConfig $config = null): string
 {
     return $config === null ? TBSL::generate() : TBSL::generateWithConfig($config);
