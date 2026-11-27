@@ -47,6 +47,9 @@ enough for sequence allocation. For a shared ID domain:
 - coordinate all hosts with an application-supplied distributed synchronizer;
 - keep machine/node ownership stable across writers.
 
+The PSR-16 provider rejects negative timestamps before accessing the cache, so
+invalid input cannot persist malformed sequence state.
+
 UID writes sequence state without an explicit TTL. PSR-16 implementations may
 apply their configured default lifetime when null/default TTL is used, so the
 backend must be configured accordingly. UID fails closed when state that this

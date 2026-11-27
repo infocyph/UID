@@ -238,6 +238,31 @@ test('psr-16 sequence provider supports custom synchronizer callback', function 
         ->and($synchronizerCalls)->toBe(2);
 });
 
+test('psr-16 sequence provider rejects negative timestamps before accessing storage', function (bool $synchronized): void {
+    $cache = new SequenceTestCache();
+    $synchronizer = $synchronized
+        ? static function (string $key, callable $allocate): int {
+            unset($key);
+            $result = $allocate();
+            is_int($result) || throw new LogicException('Invalid allocation result');
+
+            return $result;
+        }
+        : null;
+    $provider = new PsrSimpleCacheSequenceProvider($cache, synchronizer: $synchronizer);
+    $cache->beforeRead = static function (): void {
+        throw new LogicException('Invalid timestamp must not access storage');
+    };
+
+    expect(fn(): int => $provider->next('audit', 1, -1))
+        ->toThrow(InvalidArgumentException::class, 'Sequence timestamp must not be negative')
+        ->and($cache->has('uid.seq.audit.1'))->toBeFalse();
+
+    $cache->beforeRead = null;
+    expect($provider->next('audit', 1, 0))->toBe(1)
+        ->and($provider->next('audit', 1, 0))->toBe(2);
+})->with([false, true]);
+
 test('psr-16 sequence provider fails safely when state cannot be persisted', function () {
     $cache = new SequenceTestCache();
     $cache->failWrites = true;
