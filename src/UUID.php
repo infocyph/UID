@@ -129,15 +129,6 @@ final class UUID
      */
     public static function guid(bool $trim = true): string
     {
-        if (function_exists('com_create_guid')) {
-            $data = com_create_guid();
-            if (!is_string($data)) {
-                throw new UUIDException('Failed to generate GUID');
-            }
-
-            return $trim ? trim($data, '{}') : $data;
-        }
-
         $data = random_bytes(16);
         $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
         $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
@@ -445,7 +436,7 @@ final class UUID
     public static function v7(?DateTimeInterface $dateTime = null): string
     {
         $unixTsMs = $dateTime === null
-            ? (int) floor(microtime(true) * 1000)
+            ? (int) floor(microtime(true) * 1000.0)
             : (int) $dateTime->format('Uv');
         if ($unixTsMs < 0 || $unixTsMs > self::MAX_V7_TIMESTAMP) {
             throw new UUIDException('UUID v7 timestamp must fit in an unsigned 48-bit integer');
@@ -509,9 +500,9 @@ final class UUID
     private static function getTime(array $uuid, int $version): DateTimeInterface
     {
         $timestamp = match ($version) {
-            1 => substr((string) $uuid[2], -3) . $uuid[1] . $uuid[0],
-            2 => substr((string) $uuid[2], -3) . $uuid[1] . '00000000',
-            6 => $uuid[0] . $uuid[1] . substr((string) $uuid[2], -3),
+            1 => substr($uuid[2], -3) . $uuid[1] . $uuid[0],
+            2 => substr($uuid[2], -3) . $uuid[1] . '00000000',
+            6 => $uuid[0] . $uuid[1] . substr($uuid[2], -3),
             7 => $uuid[0] . $uuid[1],
             default => throw new UUIDException('Invalid version (applicable: 1, 2, 6, 7)'),
         };
@@ -705,7 +696,7 @@ final class UUID
                 throw new UUIDException('Timed out waiting for the next UUID v7 timestamp');
             }
             usleep(1000);
-            $next = (int) floor(microtime(true) * 1000);
+            $next = (int) floor(microtime(true) * 1000.0);
         } while ($next <= $lastTimestamp);
 
         if ($next > self::MAX_V7_TIMESTAMP) {

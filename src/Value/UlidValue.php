@@ -7,6 +7,7 @@ namespace Infocyph\UID\Value;
 use Infocyph\UID\Contracts\IdValueInterface;
 use Infocyph\UID\ULID;
 
+/** @api */
 final readonly class UlidValue implements IdValueInterface
 {
     private string $value;
