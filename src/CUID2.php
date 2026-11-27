@@ -67,6 +67,7 @@ final class CUID2
      * Parses CUID2 information.
      *
      * @return array{length: int}
+     * @throws \InvalidArgumentException
      */
     public static function parse(string $id, ?int $length = null): array
     {

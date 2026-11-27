@@ -23,6 +23,9 @@ final readonly class RandflakeConfig
         public ?int $leaseEndExclusive = null,
     ) {}
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     */
     public function resolveLeaseEndExclusive(): int
     {
         if ($this->leaseEndExclusive !== null) {

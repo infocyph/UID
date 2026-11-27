@@ -10,6 +10,9 @@ trait ResolvesMachineId
 {
     private readonly ?Closure $machineIdResolver;
 
+    /**
+     * @throws \UnexpectedValueException
+     */
     public function resolveMachineId(): int
     {
         if ($this->machineIdResolver === null) {

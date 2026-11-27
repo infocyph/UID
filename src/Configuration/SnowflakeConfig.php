@@ -37,6 +37,7 @@ final readonly class SnowflakeConfig
 
     /**
      * @return array{0:int, 1:int}
+     * @throws \UnexpectedValueException
      */
     public function resolveNode(): array
     {

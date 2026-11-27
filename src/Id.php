@@ -16,6 +16,10 @@ use Infocyph\UID\Value\SonyflakeValue;
 
 final class Id
 {
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Exception
+     */
     public static function cuid2(int $length = 24): string
     {
         return CUID2::generate($length);
@@ -26,11 +30,17 @@ final class Id
         return DeterministicId::fromPayload($payload, $length, $namespace);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function ksuid(?DateTimeInterface $dateTime = null): string
     {
         return KSUID::generate($dateTime);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function nanoId(int $length = 21): string
     {
         return NanoID::generate($length);
@@ -41,6 +51,10 @@ final class Id
         return ObjectID::generate($dateTime);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     public static function randflake(RandflakeConfig $config): string
     {
         return Randflake::generateWithConfig($config);
@@ -92,6 +106,9 @@ final class Id
         return TypeID::generate($type);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function ulid(
         ?DateTimeInterface $dateTime = null,
         UlidGenerationMode $mode = UlidGenerationMode::MONOTONIC,
@@ -99,16 +116,26 @@ final class Id
         return ULID::generate($dateTime, $mode);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid(?DateTimeInterface $dateTime = null): string
     {
         return UUID::v7($dateTime);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid1(?string $node = null): string
     {
         return UUID::v1($node);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Exception
+     */
     public static function uuid2(
         int $localIdentifier,
         int $localDomain = UUID::DCE_DOMAIN_PERSON,
@@ -118,36 +145,57 @@ final class Id
         return UUID::v2($localIdentifier, $localDomain, $node, $clockSequence);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     */
     public static function uuid3(string $namespace, string $string): string
     {
         return UUID::v3($namespace, $string);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid4(): string
     {
         return UUID::v4();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     */
     public static function uuid5(string $namespace, string $string): string
     {
         return UUID::v5($namespace, $string);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid6(?string $node = null): string
     {
         return UUID::v6($node);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid7(?DateTimeInterface $dateTime = null): string
     {
         return UUID::v7($dateTime);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function uuid8(?string $node = null): string
     {
         return UUID::v8($node);
     }
 
+    /**
+     * @throws \Exception
+     */
     public static function xid(): string
     {
         return XID::generate();

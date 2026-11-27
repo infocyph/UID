@@ -47,6 +47,7 @@ final class NanoID
      * Parses NanoID information.
      *
      * @return array{length: int, alphabet: string}
+     * @throws \InvalidArgumentException
      */
     public static function parse(string $id, ?int $length = null): array
     {
