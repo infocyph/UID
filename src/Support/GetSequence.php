@@ -99,6 +99,8 @@ trait GetSequence
      * @param int $machineId The machine ID.
      * @param string $type The type identifier.
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \InvalidArgumentException
+     * @throws \Throwable
      */
     private static function sequence(
         int $dateTime,

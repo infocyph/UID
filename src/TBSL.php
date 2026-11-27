@@ -279,6 +279,9 @@ final class TBSL
 
     /**
      * @throws \Infocyph\UID\Exceptions\UIDException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function waitUntilNextTimeSequence(int $last, ?GenerationContext $runtime): int
     {

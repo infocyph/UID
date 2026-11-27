@@ -178,6 +178,8 @@ final class ULID
      * Encodes ULID bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws ULIDException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function toBase(string $ulid, int $base): string
     {

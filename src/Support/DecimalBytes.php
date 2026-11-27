@@ -19,6 +19,10 @@ final class DecimalBytes
 
     private const string TWO_TO_64 = '18446744073709551616';
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     public static function fromBytes(string $bytes): string
     {
         return BaseEncoder::encodeBytes($bytes, 10);

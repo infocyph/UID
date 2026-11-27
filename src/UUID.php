@@ -262,6 +262,7 @@ final class UUID
      * Encodes UUID bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws UUIDException
+     * @throws \LogicException
      */
     public static function toBase(string $uuid, int $base): string
     {

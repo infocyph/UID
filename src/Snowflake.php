@@ -161,6 +161,8 @@ final class Snowflake
      * Encodes Snowflake bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws SnowflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function toBase(string $id, int $base): string
     {
@@ -431,6 +433,9 @@ final class Snowflake
 
     /**
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
     {

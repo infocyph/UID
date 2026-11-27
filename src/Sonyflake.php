@@ -161,6 +161,8 @@ final class Sonyflake
      * Encodes Sonyflake bytes into one of bases: 16, 32, 36, 58, 62.
      *
      * @throws SonyflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function toBase(string $id, int $base): string
     {
@@ -454,6 +456,9 @@ final class Sonyflake
 
     /**
      * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function waitUntilElapsed(
         int $elapsedTime,
@@ -480,6 +485,9 @@ final class Sonyflake
 
     /**
      * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
      */
     private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime): int
     {

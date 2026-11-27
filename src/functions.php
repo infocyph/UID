@@ -53,6 +53,9 @@ function randflake(RandflakeConfig $config): string
     return Randflake::generateWithConfig($config);
 }
 
+/**
+ * @throws \InvalidArgumentException
+ */
 function random_id(int $length = 21, string $alphabet = RandomId::DEFAULT_ALPHABET): string
 {
     return RandomId::generate($length, $alphabet);
