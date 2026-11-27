@@ -102,7 +102,7 @@ final class BaseEncoder
     private static function decodeRadix(string $encoded, int $base, int $bytesLength): string
     {
         $alphabet = self::alphabet($base);
-        $maximumLength = (int) ceil(($bytesLength * 8) / log($base, 2));
+        $maximumLength = (int) ceil((float) ($bytesLength * 8) / log($base, 2));
         if (strlen($encoded) > $maximumLength) {
             throw new InvalidArgumentException('Encoded value exceeds target byte length');
         }

@@ -31,7 +31,7 @@ final readonly class GenerationContext
         $this->assertActive();
 
         if ($this->clock === null) {
-            return (int) floor(microtime(true) * 1_000_000);
+            return (int) floor(microtime(true) * 1_000_000.0);
         }
 
         $now = $this->clock->now();
@@ -40,7 +40,7 @@ final readonly class GenerationContext
             throw new InvalidArgumentException('Generation clock must fit in non-negative integer microseconds');
         }
 
-        return ($seconds * 1_000_000) + (int) $now->format('u');
+        return ($seconds * 1_000_000.0) + (int) $now->format('u');
     }
 
     public function nowMilliseconds(): int

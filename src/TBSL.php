@@ -218,7 +218,7 @@ final class TBSL
 
     private static function nowMicroseconds(?GenerationContext $runtime): int
     {
-        return $runtime?->nowMicroseconds() ?? (int) floor(microtime(true) * 1_000_000);
+        return $runtime?->nowMicroseconds() ?? (int) floor(microtime(true) * 1_000_000.0);
     }
 
     /**

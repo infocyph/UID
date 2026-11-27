@@ -374,7 +374,7 @@ final class Snowflake
 
     private static function nowMilliseconds(?GenerationContext $runtime): int
     {
-        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
+        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000.0);
     }
 
     /**
@@ -386,8 +386,7 @@ final class Snowflake
     ): \ArrayObject {
         self::$lastStateByProvider ??= new \WeakMap();
 
-        /** @var \ArrayObject<string, array{timestamp:int, sequence:int}>|null $state */
-        $state = self::$lastStateByProvider[$provider] ?? null;
+            $state = self::$lastStateByProvider[$provider] ?? null;
         if ($state === null) {
             /** @var \ArrayObject<string, array{timestamp:int, sequence:int}> $state */
             $state = new \ArrayObject();

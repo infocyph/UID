@@ -82,7 +82,7 @@ final class ULID
     ): string {
         self::resetAfterFork();
         $time = $dateTime === null
-            ? (int) floor(microtime(true) * 1000)
+            ? (int) floor(microtime(true) * 1000.0)
             : (int) $dateTime->format('Uv');
         self::assertTimestamp($time);
 
@@ -329,7 +329,7 @@ final class ULID
                 throw new ULIDException('Timed out waiting for the next ULID timestamp');
             }
             usleep(1000);
-            $next = (int) floor(microtime(true) * 1000);
+            $next = (int) floor(microtime(true) * 1000.0);
         } while ($next <= $lastTimestamp);
 
         return $next;

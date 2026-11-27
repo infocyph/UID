@@ -75,7 +75,7 @@ final class RunwireBinding
         if ($this->scope !== null) {
             $this->scope->sleep($seconds);
         } else {
-            usleep((int) ceil($seconds * 1_000_000));
+            usleep((int) ceil($seconds * 1_000_000.0));
         }
 
         $this->assertActive();

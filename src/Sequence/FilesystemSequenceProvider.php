@@ -35,7 +35,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         private readonly int $reservationSize = 1,
         private readonly ?GenerationContext $runtime = null,
     ) {
-        $this->baseDirectory = $baseDirectory ?: sys_get_temp_dir();
+        $this->baseDirectory = $baseDirectory === null || $baseDirectory === '' || $baseDirectory === '0' ? sys_get_temp_dir() : $baseDirectory;
 
         if ($namespace !== '' && preg_match('/^[A-Za-z0-9_-]+$/D', $namespace) !== 1) {
             throw new InvalidArgumentException('Sequence namespace may contain only letters, numbers, underscores, and hyphens');

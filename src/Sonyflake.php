@@ -369,7 +369,7 @@ final class Sonyflake
 
     private static function nowMilliseconds(?GenerationContext $runtime): int
     {
-        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000);
+        return $runtime?->nowMilliseconds() ?? (int) floor(microtime(true) * 1000.0);
     }
 
     private static function packId(
@@ -402,8 +402,7 @@ final class Sonyflake
     ): \ArrayObject {
         self::$lastWallTimeByProvider ??= new \WeakMap();
 
-        /** @var \ArrayObject<string, int>|null $state */
-        $state = self::$lastWallTimeByProvider[$provider] ?? null;
+            $state = self::$lastWallTimeByProvider[$provider] ?? null;
         if ($state === null) {
             /** @var \ArrayObject<string, int> $state */
             $state = new \ArrayObject();
