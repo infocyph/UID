@@ -176,6 +176,9 @@ final class Snowflake
         return self::encodeNumericBytes($id);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     */
     private static function assertDecodedId(string $id): string
     {
         if (!self::isValid($id)) {
@@ -379,6 +382,7 @@ final class Snowflake
 
     /**
      * @return \ArrayObject<string, array{timestamp:int, sequence:int}>
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
      */
     private static function providerState(
         SequenceProviderInterface $provider,
@@ -418,6 +422,9 @@ final class Snowflake
         ];
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     */
     private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
     {
         $deadline = $runtime?->waitDeadlineNanoseconds()

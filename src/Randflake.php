@@ -359,6 +359,7 @@ final class Randflake
 
     /**
      * @return array{0:int,1:int}
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function allocateSequence(
         SequenceProviderInterface $provider,
@@ -389,6 +390,9 @@ final class Randflake
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     */
     private static function assertGenerationTime(
         int $now,
         int $leaseStart,
@@ -515,6 +519,7 @@ final class Randflake
 
     /**
      * @param array{timestamp:int,sequence:int}|null $last
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function normalizeAllocation(int $allocation, ?array $last, int $now): int
     {
@@ -554,6 +559,7 @@ final class Randflake
 
     /**
      * Small secret-key permutation over 64-bit blocks to protect payload fields.
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function permute(string $block, string $secret, bool $decrypt): string
     {
@@ -584,6 +590,7 @@ final class Randflake
 
     /**
      * @return \ArrayObject<string, array{timestamp:int,sequence:int}>
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function providerState(
         SequenceProviderInterface $provider,
@@ -625,6 +632,7 @@ final class Randflake
 
     /**
      * @return array<int, int>
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function roundKeys(string $secret): array
     {
@@ -683,6 +691,7 @@ final class Randflake
 
     /**
      * @return array{0:int,1:int,2:int}
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
      */
     private static function unpackPayload(string $payload): array
     {

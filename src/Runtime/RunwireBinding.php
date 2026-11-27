@@ -23,6 +23,11 @@ final class RunwireBinding
         $this->assertActive();
     }
 
+    /**
+     * @throws \LogicException
+     * @throws \Infocyph\Runwire\Exception\CancelledException
+     * @throws \Throwable
+     */
     public function assertActive(): void
     {
         $pid = getmypid();
@@ -68,6 +73,11 @@ final class RunwireBinding
         return min($requestDeadline, $scopeDeadline);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     * @throws \Throwable
+     */
     public function sleep(float $seconds): void
     {
         $this->assertActive();

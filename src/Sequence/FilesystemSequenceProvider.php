@@ -28,6 +28,9 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
 
     private ?int $sourcePid = null;
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(
         ?string $baseDirectory = null,
         private readonly string $namespace = '',
@@ -50,6 +53,11 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \Infocyph\UID\Exceptions\SequenceTimestampException
+     */
+    #[\Override]
     public function next(string $type, int $machineId, int $timestamp, ?GenerationContext $runtime = null): int
     {
         $this->runtime?->assertActive();
@@ -104,6 +112,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
     /**
      * @param resource $handle
      * @return array{0:int,1:int,2:int}
+     * @throws \Infocyph\UID\Exceptions\FileLockException
      */
     private function readState($handle): array
     {
@@ -148,6 +157,9 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         $this->reservations = [];
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     private function sequenceFileLocation(string $type, int $machineId): string
     {
         $cacheKey = $type . ':' . $machineId;
@@ -167,6 +179,9 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
         return $this->pathCache[$cacheKey] = $this->baseDirectory . DIRECTORY_SEPARATOR . $name;
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     private function storeReservation(
         string $fileLocation,
         int $timestamp,
@@ -207,6 +222,7 @@ final class FilesystemSequenceProvider implements SequenceProviderInterface
 
     /**
      * @param resource $handle
+     * @throws \Infocyph\UID\Exceptions\FileLockException
      */
     private function writeState($handle, string $state, int $oldLength): void
     {

@@ -186,6 +186,7 @@ final class Sonyflake
 
     /**
      * @return array{0:int,1:int}
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
      */
     private static function allocateSequence(
         SequenceProviderInterface $provider,
@@ -228,6 +229,9 @@ final class Sonyflake
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     */
     private static function assertDecodedId(string $id): string
     {
         if (!self::isValid($id)) {
@@ -237,6 +241,9 @@ final class Sonyflake
         return $id;
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     */
     private static function assertMachineId(int $machineId): void
     {
         $maximum = -1 ^ (-1 << self::MACHINE_BITS);
@@ -260,6 +267,7 @@ final class Sonyflake
 
     /**
      * Calculates the elapsed time in 10ms units.
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
      */
     private static function elapsedTime(int $currentTime, int $startTimestamp): int
     {
@@ -292,6 +300,7 @@ final class Sonyflake
 
     /**
      * @return array{seconds:string,fraction:string,sequence:int,machine_id:int}
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
      */
     private static function extractParts(
         string $id,
@@ -395,6 +404,7 @@ final class Sonyflake
 
     /**
      * @return \ArrayObject<string, int>
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
      */
     private static function providerState(
         SequenceProviderInterface $provider,
@@ -421,6 +431,9 @@ final class Sonyflake
         return $provider ?? self::$sequenceProvider ??= new FilesystemSequenceProvider();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     */
     private static function resolveWallTime(
         int $currentTime,
         int $lastWallTime,
@@ -437,6 +450,9 @@ final class Sonyflake
         return self::waitUntilWallTime($lastWallTime, $runtime);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     */
     private static function waitUntilElapsed(
         int $elapsedTime,
         int $startTimestamp,
@@ -460,6 +476,9 @@ final class Sonyflake
         return $next;
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     */
     private static function waitUntilWallTime(int $lastTime, ?GenerationContext $runtime): int
     {
         $deadline = $runtime?->waitDeadlineNanoseconds()

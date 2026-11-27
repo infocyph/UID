@@ -22,6 +22,7 @@ final readonly class CallbackSequenceProvider implements SequenceProviderInterfa
     /**
      * @throws FileLockException
      */
+    #[\Override]
     public function next(string $type, int $machineId, int $timestamp): int
     {
         $value = ($this->callback)($type, $machineId, $timestamp);

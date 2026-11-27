@@ -11,6 +11,9 @@ final readonly class GenerationContext
 {
     private const int DEFAULT_WAIT_TIMEOUT_MICROS = 1_000_000;
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(
         public ?ClockInterface $clock = null,
         public ?RunwireBinding $runwire = null,
@@ -26,6 +29,9 @@ final readonly class GenerationContext
         $this->runwire?->assertActive();
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function nowMicroseconds(): int
     {
         $this->assertActive();
