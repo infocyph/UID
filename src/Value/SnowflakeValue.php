@@ -12,6 +12,9 @@ use Infocyph\UID\Snowflake;
  */
 final readonly class SnowflakeValue extends AbstractParsedIdValue
 {
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(string $value, private ?int $customEpoch = null)
     {
         parent::__construct($value);

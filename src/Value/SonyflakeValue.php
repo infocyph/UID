@@ -13,6 +13,9 @@ use Infocyph\UID\Sonyflake;
  */
 final readonly class SonyflakeValue extends AbstractParsedIdValue
 {
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function __construct(
         string $value,
         private ?int $customEpoch = null,

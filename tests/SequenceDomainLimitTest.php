@@ -51,11 +51,12 @@ final class DomainLimitCache implements CacheInterface
         }
     }
 
-    /** @param iterable<string, mixed> $values */
+    /** @param iterable<mixed, mixed> $values */
     #[\Override]
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
     {
         foreach ($values as $key => $value) {
+            is_string($key) || throw new InvalidArgumentException('Cache key must be a string');
             $this->set($key, $value, $ttl);
         }
 

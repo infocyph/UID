@@ -89,11 +89,12 @@ final class SequenceTestCache implements CacheInterface
         return true;
     }
 
-    /** @param iterable<string, mixed> $values */
+    /** @param iterable<mixed, mixed> $values */
     #[\Override]
     public function setMultiple(iterable $values, null|int|DateInterval $ttl = null): bool
     {
         foreach ($values as $key => $value) {
+            is_string($key) || throw new InvalidArgumentException('Cache key must be a string');
             if (!$this->set($key, $value, $ttl)) {
                 return false;
             }

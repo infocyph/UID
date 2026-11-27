@@ -41,9 +41,7 @@ test('lock identity verification refreshes cached pathname metadata after extern
         expect($failure)->toBeInstanceOf(FileLockException::class)
             ->and(file_get_contents($target))->toBe('unchanged');
     } finally {
-        if (is_resource($handle)) {
-            fclose($handle);
-        }
+        fclose($handle);
         unlink($path);
         unlink($path . '.original');
         unlink($target);

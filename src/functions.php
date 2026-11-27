@@ -36,6 +36,9 @@ function nano_id(int $length = 21): string
     return NanoID::generate($length);
 }
 
+/**
+ * @throws \Infocyph\UID\Exceptions\ObjectIDException
+ */
 function object_id(?DateTimeInterface $dateTime = null): string
 {
     return ObjectID::generate($dateTime);
@@ -70,6 +73,9 @@ function tbsl(?TBSLConfig $config = null): string
     return $config === null ? TBSL::generate() : TBSL::generateWithConfig($config);
 }
 
+/**
+ * @throws \Exception
+ */
 function type_id(string $type = ''): string
 {
     return TypeID::generate($type);

@@ -100,9 +100,9 @@ test('filesystem reservation ranges never overlap across processes', function (i
             $json !== false || throw new RuntimeException('Unable to read child output');
             $values = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
             is_array($values) || throw new RuntimeException('Invalid child output');
-            foreach ($values as $value) {
-                is_int($value) || throw new RuntimeException('Invalid child value');
-                $allocations[] = $value;
+            foreach (array_keys($values) as $index) {
+                is_int($values[$index]) || throw new RuntimeException('Invalid child value');
+                $allocations[] = $values[$index];
             }
         }
 
@@ -164,9 +164,9 @@ test('coordinated generators remain unique across processes', function (string $
             $json !== false || throw new RuntimeException('Unable to read child output');
             $values = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
             is_array($values) || throw new RuntimeException('Invalid child output');
-            foreach ($values as $value) {
-                is_string($value) || throw new RuntimeException('Invalid child value');
-                $ids[] = $value;
+            foreach (array_keys($values) as $index) {
+                is_string($values[$index]) || throw new RuntimeException('Invalid child value');
+                $ids[] = $values[$index];
             }
         }
 

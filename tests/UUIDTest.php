@@ -189,10 +189,10 @@ test('generated UUID nodes set the multicast bit', function () {
     $node = UUID::getNode();
     $uuid = UUID::v1();
     $parsedNode = UUID::parse($uuid)['node'];
+    $parsedNode !== null || throw new RuntimeException('UUID v1 node missing');
 
     expect(hexdec(substr($node, 0, 2)) & 0x01)->toBe(0x01)
-        ->and($parsedNode)->toBeString()
-        ->and(hexdec(substr($parsedNode ?? '', 0, 2)) & 0x01)->toBe(0x01);
+        ->and(hexdec(substr($parsedNode, 0, 2)) & 0x01)->toBe(0x01);
 });
 
 test('GUID', function () {
