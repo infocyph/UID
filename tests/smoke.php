@@ -26,9 +26,12 @@ use Infocyph\UID\ULID;
 use Infocyph\UID\UUID;
 use Infocyph\UID\XID;
 
-require ($argv[1] ?? dirname(__DIR__)) . '/vendor/autoload.php';
+require dirname(__DIR__) . '/vendor/autoload.php';
 
-/** @param array<string, array<string|int, true>> $seen */
+/**
+ * @param array<string, array<string|int, true>> $seen
+ * @throws RuntimeException
+ */
 function uidSmokeId(string $algorithm, string $id, bool $valid, array &$seen): void
 {
     if (!$valid || isset($seen[$algorithm][$id])) {
@@ -134,7 +137,8 @@ try {
     }
     printf("Passed %d generator variants in one 100-cycle smoke pass.\n", count($seen));
 } finally {
-    foreach (glob($directory . '/*') ?: [] as $path) {
+    $paths = glob($directory . '/*');
+    foreach ($paths === false ? [] : $paths as $path) {
         unlink($path);
     }
     rmdir($directory);

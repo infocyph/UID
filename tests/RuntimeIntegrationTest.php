@@ -23,6 +23,7 @@ final readonly class FrozenUidClock implements ClockInterface
 {
     public function __construct(private DateTimeImmutable $time) {}
 
+    #[\Override]
     public function now(): DateTimeImmutable
     {
         return $this->time;
@@ -31,6 +32,7 @@ final readonly class FrozenUidClock implements ClockInterface
 
 final class OverflowUidSequenceProvider implements SequenceProviderInterface
 {
+    #[\Override]
     public function next(string $type, int $machineId, int $timestamp): int
     {
         unset($type, $machineId, $timestamp);
@@ -152,6 +154,10 @@ test('a cancellation after allocation never recycles the consumed allocation', f
 });
 
 
+/**
+ * @throws \Infocyph\UID\Exceptions\SnowflakeException
+ * @throws \Infocyph\UID\Exceptions\FileLockException
+ */
 function forwardUidSnowflake(SnowflakeConfig $config): string
 {
     return Snowflake::generateWithConfig($config);
@@ -166,7 +172,7 @@ test('Runwire bindings survive intermediary config forwarding without rediscover
         runtime: new GenerationContext(runwire: $binding),
     );
 
-    expect(forwardUidSnowflake($config))->toBeString()
+    expect(Snowflake::isValid(forwardUidSnowflake($config)))->toBeTrue()
         ->and($config->runtime?->runwire)->toBe($binding)
         ->and($binding->runtime)->toBe($host)
         ->and($binding->request)->toBe($request);
@@ -201,6 +207,7 @@ test('contended locks suspend cooperatively and stop on host cancellation', func
     $path = $directory . '/uid-snowflake-0.seq';
     file_put_contents($path, '1700000000000,7');
     $held = fopen($path, 'r+b');
+    $held !== false || throw new RuntimeException('Unable to open lock fixture');
     expect(flock($held, LOCK_EX))->toBeTrue();
     $host = RuntimeContext::fromCapabilities(new RuntimeCapabilities(
         driver: RuntimeDriver::NATIVE,
@@ -259,6 +266,7 @@ test('lock timeout forbids allocation after a late cooperative wake', function (
     $path = $directory . '/uid-test-1.seq';
     file_put_contents($path, '100,1');
     $held = fopen($path, 'r+b');
+    $held !== false || throw new RuntimeException('Unable to open lock fixture');
     expect(flock($held, LOCK_EX))->toBeTrue();
     $host = RuntimeContext::fromCapabilities(new RuntimeCapabilities(
         driver: RuntimeDriver::NATIVE,

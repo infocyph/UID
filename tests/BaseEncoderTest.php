@@ -6,10 +6,17 @@ use Infocyph\UID\Support\BaseEncoder;
 
 test('radix encoding matches independent integer vectors across word and carry boundaries', function (): void {
     // Generated with Python int.from_bytes/divmod, independently of the PHP codec.
-    $vectors = json_decode(file_get_contents(__DIR__ . '/Fixtures/radix-vectors.json'), true, 512, JSON_THROW_ON_ERROR);
+    $json = file_get_contents(__DIR__ . '/Fixtures/radix-vectors.json');
+    $json !== false || throw new RuntimeException('Unable to read radix vectors');
+    $vectors = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+    is_array($vectors) || throw new RuntimeException('Invalid radix vectors');
 
     foreach ($vectors as $vector) {
+        if (!is_array($vector) || !is_string($vector['hex'] ?? null) || !is_int($vector['base'] ?? null) || !is_string($vector['sha256'] ?? null)) {
+            throw new RuntimeException('Invalid radix vector');
+        }
         $bytes = hex2bin($vector['hex']);
+        $bytes !== false || throw new RuntimeException('Invalid radix vector bytes');
         $encoded = BaseEncoder::encodeBytes($bytes, $vector['base']);
 
         expect(hash('sha256', $encoded))->toBe($vector['sha256'])

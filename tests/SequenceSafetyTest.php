@@ -15,17 +15,11 @@ test('lock identity verification refreshes cached pathname metadata after extern
     file_put_contents($path, '100,1');
     file_put_contents($target, 'unchanged');
     $handle = fopen($path, 'r+b');
-    $before = null;
-    $verify = Closure::bind(
-        static function () use ($path, $handle, &$before) {
-            return FileLock::verifyHandle($path, $handle, $before, 'replaced lock', function_exists('posix_geteuid') ? posix_geteuid() : null);
-        },
-        null,
-        FileLock::class,
-    );
-    expect($verify)->toBeInstanceOf(Closure::class);
+    $handle !== false || throw new RuntimeException('Unable to open lock fixture');
+    $verify = new ReflectionMethod(FileLock::class, 'verifyHandle');
     // Prime PHP's path cache after loading the verifier and assertion machinery.
     $before = lstat($path);
+    $before !== false || throw new RuntimeException('Unable to stat lock fixture');
     $pid = pcntl_fork();
     if ($pid < 0) {
         throw new RuntimeException('Unable to fork pathname replacement fixture');
@@ -40,7 +34,7 @@ test('lock identity verification refreshes cached pathname metadata after extern
     try {
         $failure = null;
         try {
-            $verify();
+            $verify->invoke(null, $path, $handle, $before, 'replaced lock', function_exists('posix_geteuid') ? posix_geteuid() : null);
         } catch (Throwable $exception) {
             $failure = $exception;
         }
@@ -59,8 +53,6 @@ test('lock identity verification refreshes cached pathname metadata after extern
 
 test('filesystem sequence rejects symlink state without touching its target', function (): void {
     if (PHP_OS_FAMILY === 'Windows') {
-        expect(true)->toBeTrue();
-
         return;
     }
 
@@ -103,7 +95,8 @@ test('cached parent resolution cannot allocate through an externally replaced di
     symlink($directory . '/first', $alias);
     $provider = new FilesystemSequenceProvider($alias);
     expect(realpath($path))->toBe($first);
-    lstat($path);
+    $metadata = lstat($path);
+    $metadata !== false || throw new RuntimeException('Unable to stat parent fixture');
 
     $pid = pcntl_fork();
     if ($pid < 0) {

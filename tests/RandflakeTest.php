@@ -97,7 +97,7 @@ test('Randflake config returns its canonical decimal representation', function (
         ),
     );
 
-    expect($stringId)->toBeString()->toMatch('/^\d+$/');
+    expect($stringId)->toMatch('/^\d+$/');
 });
 
 test('Randflake namespaced helper delegates to the generator', function () {

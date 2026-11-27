@@ -62,7 +62,9 @@ test('generated TypeIDs contain ordered UUIDv7 values', function () {
 });
 
 test('ObjectID matches unsigned timestamp boundary vectors', function (string $hex, string $expected) {
-    $id = ObjectID::fromBytes(hex2bin($hex . str_repeat('00', 8)) ?: '');
+    $bytes = hex2bin($hex . str_repeat('00', 8));
+    $bytes !== false || throw new RuntimeException('Invalid ObjectID fixture');
+    $id = ObjectID::fromBytes($bytes);
 
     expect(ObjectID::parse($id)['time']->format('Y-m-d H:i:s'))->toBe($expected)
         ->and(ObjectID::toBytes($id))->toBe(hex2bin($hex . str_repeat('00', 8)));
@@ -218,7 +220,7 @@ test('v5 configuration constructor parameters remain an unchanged prefix', funct
 
         $names = array_map(
             static fn(ReflectionParameter $parameter): string => $parameter->getName(),
-            $constructor?->getParameters() ?? [],
+            $constructor->getParameters(),
         );
         expect(array_slice($names, 0, count($expectedPrefix)))->toBe($expectedPrefix);
     }
