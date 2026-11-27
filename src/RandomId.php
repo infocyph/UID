@@ -18,6 +18,9 @@ final class RandomId
         return RandomSampler::generate($length, $alphabet);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function isValid(
         string $id,
         ?int $length = null,

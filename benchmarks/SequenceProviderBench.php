@@ -63,6 +63,7 @@ final class SequenceProviderBench
     /**
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \UnexpectedValueException
      */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchSnowflakeFilesystem(): void
@@ -73,6 +74,7 @@ final class SequenceProviderBench
     /**
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \UnexpectedValueException
      */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchSnowflakeInMemory(): void

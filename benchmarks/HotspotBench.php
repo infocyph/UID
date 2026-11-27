@@ -168,18 +168,27 @@ final class HotspotBench
         Randflake::generateWithConfig($this->randflakeConfig);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchRandomId62(): void
     {
         RandomId::generate(21, '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchRandomId64(): void
     {
         RandomId::generate(21, '_-0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchRandomIdDefault61(): void
     {
@@ -189,6 +198,7 @@ final class HotspotBench
     /**
      * @throws \Infocyph\UID\Exceptions\SnowflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \UnexpectedValueException
      */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchSnowflakeFilesystem(): void
@@ -199,6 +209,7 @@ final class HotspotBench
     /**
      * @throws \Infocyph\UID\Exceptions\SonyflakeException
      * @throws \Infocyph\UID\Exceptions\FileLockException
+     * @throws \UnexpectedValueException
      */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchSonyflakeFilesystem(): void

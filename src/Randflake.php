@@ -54,6 +54,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \LogicException
      */
     public static function decodeString(
         string $id,
@@ -95,6 +96,8 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function encodeString(
         string $id,
@@ -114,6 +117,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \LogicException
      */
     public static function fromBase(
         string $encoded,
@@ -144,6 +148,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \LogicException
      */
     public static function fromBytes(
         string $bytes,
@@ -314,6 +319,8 @@ final class Randflake
 
     /**
      * @throws RandflakeException
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function toBase(
         string $id,
@@ -413,6 +420,7 @@ final class Randflake
     /**
      * @throws \InvalidArgumentException
      * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \LogicException
      */
     private static function encodeGeneratedPayload(
         int $timestamp,
@@ -434,6 +442,7 @@ final class Randflake
 
     /**
      * @throws RandflakeException|FileLockException
+     * @throws \InvalidArgumentException
      */
     private static function generateInternal(
         int $nodeId,

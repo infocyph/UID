@@ -45,42 +45,66 @@ final class BaseCodecBench
         $this->typeIdEncoded = TypeIdCodec::encode($this->samples[16]);
     }
 
-    /** @param array{length:int} $params */
+    /**
+     * @param array{length:int} $params
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase16(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 16);
     }
 
-    /** @param array{length:int} $params */
+    /**
+     * @param array{length:int} $params
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase32(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 32);
     }
 
-    /** @param array{length:int} $params */
+    /**
+     * @param array{length:int} $params
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase36(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 36);
     }
 
-    /** @param array{length:int} $params */
+    /**
+     * @param array{length:int} $params
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase58(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 58);
     }
 
-    /** @param array{length:int} $params */
+    /**
+     * @param array{length:int} $params
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase62(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 62);
     }
 
-    /** @param array{length:int} $params */
+    /**
+     * @param array{length:int} $params
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchDecimal(array $params): void
     {

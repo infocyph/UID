@@ -66,6 +66,9 @@ final class Id
         return Randflake::generateWithConfig($config);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function random(
         int $length = 21,
         string $alphabet = RandomId::DEFAULT_ALPHABET,
@@ -78,6 +81,9 @@ final class Id
         return $config === null ? Snowflake::generate() : Snowflake::generateWithConfig($config);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function snowflakeValue(?SnowflakeConfig $config = null): SnowflakeValue
     {
         return new SnowflakeValue(self::snowflake($config), $config?->resolveCustomEpochMs());
@@ -88,6 +94,9 @@ final class Id
         return $config === null ? Sonyflake::generate() : Sonyflake::generateWithConfig($config);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function sonyflakeValue(?SonyflakeConfig $config = null): SonyflakeValue
     {
         $format = SonyflakeFormat::UID;

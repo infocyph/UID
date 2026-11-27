@@ -51,6 +51,7 @@ final class PsrSimpleCacheSequenceProvider implements SequenceProviderInterface
     /**
      * @throws FileLockException
      * @throws \InvalidArgumentException
+     * @throws \Throwable
      */
     #[\Override]
     public function next(string $type, int $machineId, int $timestamp, ?GenerationContext $runtime = null): int
