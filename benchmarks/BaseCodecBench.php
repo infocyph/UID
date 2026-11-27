@@ -10,6 +10,10 @@ use Infocyph\UID\Support\NumericIdCodec;
 use Infocyph\UID\Support\TypeIdCodec;
 use PhpBench\Attributes as Bench;
 
+/**
+ * PHPBench discovers this entry point by reflection.
+ * @api
+ */
 final class BaseCodecBench
 {
     /** @var array<int, string> */
@@ -41,42 +45,49 @@ final class BaseCodecBench
         $this->typeIdEncoded = TypeIdCodec::encode($this->samples[16]);
     }
 
+    /** @param array{length:int} $params */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase16(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 16);
     }
 
+    /** @param array{length:int} $params */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase32(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 32);
     }
 
+    /** @param array{length:int} $params */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase36(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 36);
     }
 
+    /** @param array{length:int} $params */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase58(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 58);
     }
 
+    /** @param array{length:int} $params */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchBase62(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 62);
     }
 
+    /** @param array{length:int} $params */
     #[Bench\Revs(1000), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchDecimal(array $params): void
     {
         BaseEncoder::encodeBytes($this->sample($params), 10);
     }
 
+    /** @param array{base:int,length:int} $params */
     #[Bench\Revs(250), Bench\Iterations(5), Bench\ParamProviders('provideBaseLengthPairs')]
     public function benchDecode(array $params): void
     {
@@ -87,12 +98,14 @@ final class BaseCodecBench
         );
     }
 
+    /** @param array{length:int} $params */
     #[Bench\Revs(500), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchNumericFromBytes(array $params): void
     {
         NumericIdCodec::decimalFromBytes($this->sample($params), $params['length']);
     }
 
+    /** @param array{length:int} $params */
     #[Bench\Revs(500), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchNumericToBytes(array $params): void
     {

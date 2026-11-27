@@ -45,6 +45,7 @@
         "abmmhasan/uuid": "self.version"
     },
     "suggest": {
+        "ext-pcntl": "Required for the development fork and concurrent sequence tests.",
         "infocyph/runwire": "Enables request-aware cooperative waits for coordinated generators.",
         "psr/clock": "Enables injectable wall-clock sampling for coordinated generators.",
         "psr/simple-cache": "Required for the optional PSR-16 sequence provider."

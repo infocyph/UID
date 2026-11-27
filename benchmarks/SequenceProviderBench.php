@@ -12,6 +12,10 @@ use Infocyph\UID\Sequence\InMemorySequenceProvider;
 use Infocyph\UID\Snowflake;
 use PhpBench\Attributes as Bench;
 
+/**
+ * PHPBench discovers this entry point by reflection.
+ * @api
+ */
 final class SequenceProviderBench
 {
     private RandflakeConfig $randflakeFilesystem;
