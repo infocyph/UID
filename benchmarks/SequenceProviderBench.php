@@ -40,24 +40,40 @@ final class SequenceProviderBench
         $this->randflakeInMemory = new RandflakeConfig(1, $leaseStart, $leaseEnd, $secret, $memory);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchRandflakeFilesystem(): void
     {
         Randflake::generateWithConfig($this->randflakeFilesystem);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchRandflakeInMemory(): void
     {
         Randflake::generateWithConfig($this->randflakeInMemory);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchSnowflakeFilesystem(): void
     {
         Snowflake::generateWithConfig($this->snowflakeFilesystem);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     #[Bench\Revs(500), Bench\Iterations(5)]
     public function benchSnowflakeInMemory(): void
     {

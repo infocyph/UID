@@ -97,6 +97,9 @@ final class XID
         return substr(pack('N', self::$counter), 1, 3);
     }
 
+    /**
+     * @throws \LogicException
+     */
     private static function decodeText(string $xid): string
     {
         $buffer = 0;

@@ -98,14 +98,20 @@ final class BaseCodecBench
         );
     }
 
-    /** @param array{length:int} $params */
+    /**
+     * @param array{length:int} $params
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(500), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchNumericFromBytes(array $params): void
     {
         NumericIdCodec::decimalFromBytes($this->sample($params), $params['length']);
     }
 
-    /** @param array{length:int} $params */
+    /**
+     * @param array{length:int} $params
+     * @throws \InvalidArgumentException
+     */
     #[Bench\Revs(500), Bench\Iterations(5), Bench\ParamProviders('provideLengths')]
     public function benchNumericToBytes(array $params): void
     {

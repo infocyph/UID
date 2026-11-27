@@ -70,12 +70,20 @@ final class HotspotBench
         $this->opaque = OpaqueId::fromInt(123456, 'bench');
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchCuid2(): void
     {
         CUID2::generate();
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \Exception
+     */
     #[Bench\Revs(100), Bench\Iterations(5)]
     public function benchCuid2ColdGenerate(): void
     {
@@ -102,12 +110,18 @@ final class HotspotBench
         DeterministicId::fromPayload('payload', 24, 'bench');
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchKsuid(): void
     {
         KSUID::generate();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchNanoId(): void
     {
@@ -120,6 +134,9 @@ final class HotspotBench
         ObjectID::generate();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchOpaqueIdDecode(): void
     {
@@ -132,6 +149,10 @@ final class HotspotBench
         OpaqueId::fromInt(123456, 'bench');
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\RandflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchRandflakeFilesystem(): void
     {
@@ -156,12 +177,20 @@ final class HotspotBench
         RandomId::generate();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchSnowflakeFilesystem(): void
     {
         Snowflake::generateWithConfig($this->snowflakeConfig);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
+     */
     #[Bench\Revs(250), Bench\Iterations(5)]
     public function benchSonyflakeFilesystem(): void
     {
@@ -180,36 +209,55 @@ final class HotspotBench
         TypeID::generate('user');
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUlidMonotonic(): void
     {
         ULID::generateMonotonic();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUlidRandom(): void
     {
         ULID::generateRandom();
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUuidV2(): void
     {
         UUID::v2(1001);
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUuidV4(): void
     {
         UUID::v4();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchUuidV7(): void
     {
         UUID::v7();
     }
 
+    /**
+     * @throws \Exception
+     */
     #[Bench\Revs(1000), Bench\Iterations(5)]
     public function benchXid(): void
     {
