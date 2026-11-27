@@ -213,6 +213,9 @@ final class ULID
         return $bytes;
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ULIDException
+     */
     private static function assertTimestamp(int $timestamp): void
     {
         if ($timestamp < 0 || $timestamp > self::MAX_TIMESTAMP) {
@@ -318,6 +321,9 @@ final class ULID
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\ULIDException
+     */
     private static function waitForNextMillisecond(int $lastTimestamp): int
     {
         if ($lastTimestamp >= self::MAX_TIMESTAMP) {

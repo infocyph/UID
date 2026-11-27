@@ -684,6 +684,7 @@ final class UUID
 
     /**
      * Waits until the system clock moves to the next millisecond.
+     * @throws \Infocyph\UID\Exceptions\UUIDException
      */
     private static function nextV7Timestamp(int $lastTimestamp): int
     {

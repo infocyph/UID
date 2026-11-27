@@ -26,21 +26,25 @@ final readonly class SonyflakeValue extends AbstractParsedIdValue
         return $this->format;
     }
 
+    #[\Override]
     public function getMachineId(): int
     {
         return $this->parsed['machine_id'];
     }
 
+    #[\Override]
     public function getTimestamp(): DateTimeImmutable
     {
         return $this->parsed['time'];
     }
 
+    #[\Override]
     protected function invalidMessage(): string
     {
         return 'Invalid Sonyflake ID string';
     }
 
+    #[\Override]
     protected function parser(): callable
     {
         return $this->customEpoch === null
@@ -48,6 +52,7 @@ final readonly class SonyflakeValue extends AbstractParsedIdValue
             : fn(string $id): array => Sonyflake::parseWithEpoch($id, $this->customEpoch, $this->format);
     }
 
+    #[\Override]
     protected function validator(): callable
     {
         return Sonyflake::isValid(...);
