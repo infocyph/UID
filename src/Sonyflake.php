@@ -92,6 +92,7 @@ final class Sonyflake
      * Generates Sonyflake using configuration object.
      *
      * @throws SonyflakeException|FileLockException
+     * @throws \UnexpectedValueException
      */
     public static function generateWithConfig(SonyflakeConfig $config): string
     {
@@ -187,6 +188,7 @@ final class Sonyflake
     /**
      * @return array{0:int,1:int}
      * @throws \Infocyph\UID\Exceptions\SonyflakeException
+     * @throws \Infocyph\UID\Exceptions\FileLockException
      */
     private static function allocateSequence(
         SequenceProviderInterface $provider,

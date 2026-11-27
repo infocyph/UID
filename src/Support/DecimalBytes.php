@@ -26,6 +26,7 @@ final class DecimalBytes
 
     /**
      * @throws \InvalidArgumentException
+     * @throws \LogicException
      */
     public static function fromLittleEndianSigned64(string $bytes): string
     {

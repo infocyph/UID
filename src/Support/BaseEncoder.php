@@ -54,6 +54,10 @@ final class BaseEncoder
         return self::decodeRadix($encoded, $base, $bytesLength);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     * @throws \LogicException
+     */
     public static function encodeBytes(string $bytes, int $base): string
     {
         self::assertByteLength(strlen($bytes));

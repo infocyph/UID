@@ -48,6 +48,8 @@ final class TypeID
     /**
      * @return array{type:string, uuid:string, time:?DateTimeImmutable}
      * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Infocyph\UID\Exceptions\TypeIDException
+     * @throws \InvalidArgumentException
      */
     public static function parse(string $typeId): array
     {
@@ -65,6 +67,8 @@ final class TypeID
 
     /**
      * @throws \Infocyph\UID\Exceptions\UUIDException
+     * @throws \Infocyph\UID\Exceptions\TypeIDException
+     * @throws \InvalidArgumentException
      */
     public static function toUuid(string $typeId): string
     {

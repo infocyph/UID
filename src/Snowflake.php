@@ -82,6 +82,7 @@ final class Snowflake
      * Generates Snowflake using configuration object.
      *
      * @throws SnowflakeException|FileLockException
+     * @throws \UnexpectedValueException
      */
     public static function generateWithConfig(SnowflakeConfig $config): string
     {
@@ -221,6 +222,9 @@ final class Snowflake
         }
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     */
     private static function decodeNumericBase(string $encoded, int $base): string
     {
         $id = NumericConversion::decimalFromBase(
@@ -233,6 +237,9 @@ final class Snowflake
         return self::assertDecodedId($id);
     }
 
+    /**
+     * @throws \Infocyph\UID\Exceptions\SnowflakeException
+     */
     private static function decodeNumericBytes(string $bytes): string
     {
         $id = NumericConversion::decimalFromBytes(

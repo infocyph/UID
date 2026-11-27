@@ -29,6 +29,9 @@ final class RandomSampler
         }
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function containsOnly(string $value, string $alphabet): bool
     {
         self::assertAlphabet($alphabet);
@@ -77,6 +80,9 @@ final class RandomSampler
         return $result;
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function mapBytes(string $bytes, string $alphabet): string
     {
         self::assertAlphabet($alphabet);

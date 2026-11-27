@@ -96,6 +96,7 @@ final class FileLock
     /**
      * @return resource
      * @throws FileLockException
+     * @throws \Throwable
      */
     private static function openVerified(string $path, string $errorMessage)
     {

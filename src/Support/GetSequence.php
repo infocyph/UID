@@ -34,6 +34,7 @@ trait GetSequence
 
     /**
      * Use the default filesystem-backed sequence provider.
+     * @throws \InvalidArgumentException
      */
     public static function useFilesystemSequenceProvider(
         ?string $baseDirectory = null,
@@ -71,6 +72,7 @@ trait GetSequence
 
     /**
      * Use PSR-16 simple cache-backed sequence provider.
+     * @throws \InvalidArgumentException
      */
     public static function useSimpleCacheSequenceProvider(
         CacheInterface $cache,

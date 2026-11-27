@@ -38,6 +38,9 @@ final class Sparx64
         }
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function decrypt(string $block): string
     {
         $state = self::unpackBlock($block);
@@ -61,6 +64,9 @@ final class Sparx64
         return self::packBlock($state);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public function encrypt(string $block): string
     {
         $state = self::unpackBlock($block);
