@@ -85,6 +85,11 @@ Parsing supports negative epoch milliseconds, including fractional seconds befor
 1970. An epoch plus encoded offset that exceeds PHP's integer range throws
 ``SonyflakeException``.
 
+Date-time epochs are normalized to integer milliseconds, including fractions
+before 1970. For example, ``1969-12-31T23:59:59.500000Z`` is ``-500`` milliseconds.
+A date-time outside PHP's integer millisecond range throws ``InvalidArgumentException``
+when constructing the configuration.
+
 Binary and Alternate Bases
 --------------------------
 

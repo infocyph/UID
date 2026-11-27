@@ -85,3 +85,8 @@ PSR-20 Clock Injection
 controllable wall clock. Monotonic wait accounting remains based on hrtime() and
 Runwire deadlines, so a frozen test clock cannot create an infinite lock or
 rollover wait. Explicit timestamp APIs continue to work without a clock object.
+
+Snowflake, Sonyflake and TBSL share one monotonic wait deadline across the retries
+of a generation call. Clock advancement, repeated sequence exhaustion and clock
+rollback do not renew that budget. A later generation call gets a fresh budget;
+an earlier host deadline or cancellation remains terminal.

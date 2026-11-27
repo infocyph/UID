@@ -301,6 +301,8 @@ final class Snowflake
             ? 'snowflake'
             : 'snowflake_' . $startTimestamp;
 
+        $deadline = $runtime?->waitDeadlineNanoseconds()
+            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
         $currentTime = self::nowMilliseconds($runtime);
         self::assertTimestampRange($currentTime, $startTimestamp);
 
@@ -314,6 +316,7 @@ final class Snowflake
                 $resolvedSequenceProvider,
                 $sequenceType,
                 $runtime,
+                $deadline,
             );
 
             $lastState = $providerState[$stateKey] ?? null;
@@ -328,7 +331,7 @@ final class Snowflake
                 $currentTime < $lastState['timestamp']
                 || ($currentTime === $lastState['timestamp'] && $sequence <= $lastState['sequence'])
             ) {
-                $currentTime = self::waitUntil($lastState['timestamp'] + 1, $runtime);
+                $currentTime = self::waitUntil($lastState['timestamp'] + 1, $runtime, $deadline);
                 self::assertTimestampRange($currentTime, $startTimestamp);
 
                 continue;
@@ -368,6 +371,7 @@ final class Snowflake
         SequenceProviderInterface $sequenceProvider,
         string $sequenceType,
         ?GenerationContext $runtime,
+        int $deadline,
     ): array {
         while (true) {
             try {
@@ -381,7 +385,7 @@ final class Snowflake
                     );
                 }
 
-                $currentTime = self::waitUntil($exception->lastTimestamp, $runtime);
+                $currentTime = self::waitUntil($exception->lastTimestamp, $runtime, $deadline);
                 self::assertTimestampRange($currentTime, $startTimestamp);
 
                 continue;
@@ -395,7 +399,7 @@ final class Snowflake
                 return [$currentTime, $allocation - 1];
             }
 
-            $currentTime = self::waitUntil($currentTime + 1, $runtime);
+            $currentTime = self::waitUntil($currentTime + 1, $runtime, $deadline);
             self::assertTimestampRange($currentTime, $startTimestamp);
         }
     }
@@ -453,14 +457,16 @@ final class Snowflake
      * @throws \LogicException
      * @throws \Throwable
      */
-    private static function waitUntil(int $timestamp, ?GenerationContext $runtime): int
+    private static function waitUntil(int $timestamp, ?GenerationContext $runtime, int $deadline): int
     {
-        $deadline = $runtime?->waitDeadlineNanoseconds()
-            ?? hrtime(true) + (self::WAIT_TIMEOUT_MICROS * 1_000);
-
-        while (($now = self::nowMilliseconds($runtime)) < $timestamp) {
+        while (true) {
+            $now = self::nowMilliseconds($runtime);
             if (hrtime(true) >= $deadline) {
                 throw new SnowflakeException('Timed out waiting for a valid Snowflake timestamp');
+            }
+
+            if ($now >= $timestamp) {
+                return $now;
             }
 
             if ($runtime !== null) {
@@ -469,7 +475,5 @@ final class Snowflake
                 usleep(1_000);
             }
         }
-
-        return $now;
     }
 }

@@ -206,3 +206,57 @@ test('custom epoch parsers reject timestamp overflow with domain exceptions', fu
             ->toThrow(SonyflakeException::class);
     }
 });
+
+test('date epochs preserve fractional milliseconds on both sides of Unix zero', function (string $date, int $milliseconds, bool $mutable): void {
+    $epoch = $mutable ? new DateTime($date) : new DateTimeImmutable($date);
+    $snowflake = new \Infocyph\UID\Configuration\SnowflakeConfig(customEpoch: $epoch);
+    $sonyflake = new SonyflakeConfig(customEpoch: $epoch);
+
+    expect($snowflake->customEpoch)->toBe($milliseconds)
+        ->and($sonyflake->customEpoch)->toBe($milliseconds);
+})->with([
+    ['1969-12-31T23:59:59.500000Z', -500],
+    ['1969-12-31T23:59:58.500000Z', -1_500],
+    ['1969-12-31T23:59:59.999999Z', -1],
+    ['1969-12-31T23:59:59Z', -1_000],
+    ['1970-01-01T05:29:59.500000+05:30', -500],
+    ['1970-01-01T00:00:00Z', 0],
+    ['1970-01-01T00:00:00.001000Z', 1],
+    ['1970-01-01T00:00:01.500000Z', 1_500],
+    ['@9223372036854775.807', PHP_INT_MAX],
+    ['@-9223372036854775.808', PHP_INT_MIN],
+])->with([false, true]);
+
+test('date epochs outside integer milliseconds fail instead of saturating', function (string $date): void {
+    $epoch = new DateTimeImmutable($date);
+    expect(fn(): \Infocyph\UID\Configuration\SnowflakeConfig => new \Infocyph\UID\Configuration\SnowflakeConfig(customEpoch: $epoch))
+        ->toThrow(InvalidArgumentException::class)
+        ->and(fn(): SonyflakeConfig => new SonyflakeConfig(customEpoch: $epoch))
+        ->toThrow(InvalidArgumentException::class);
+})->with([
+    '@9223372036854775.808',
+    '@-9223372036854775.809',
+    '@9223372036854776',
+    '@-9223372036854776.001',
+]);
+
+test('equivalent date and integer epochs generate identical IDs', function (string $family): void {
+    $runtime = new GenerationContext(clock: new ReleaseBoundaryClock(new DateTimeImmutable('@1700000000')));
+    $format = $family === 'sonyflake-upstream' ? SonyflakeFormat::UPSTREAM : SonyflakeFormat::UID;
+    $ids = [];
+    foreach ([new DateTimeImmutable('1969-12-31T23:59:59.500000Z'), -500] as $epoch) {
+        $provider = new InMemorySequenceProvider();
+        $ids[] = match ($family) {
+            'snowflake' => \Infocyph\UID\Snowflake::generateWithConfig(new \Infocyph\UID\Configuration\SnowflakeConfig(
+                customEpoch: $epoch, sequenceProvider: $provider, runtime: $runtime,
+            )),
+            'sonyflake', 'sonyflake-upstream' => Sonyflake::generateWithConfig(new SonyflakeConfig(
+                customEpoch: $epoch, sequenceProvider: $provider, runtime: $runtime,
+                format: $format,
+            )),
+            default => throw new LogicException('Unknown generator family'),
+        };
+    }
+
+    expect($ids[0])->toBe($ids[1]);
+})->with(['snowflake', 'sonyflake', 'sonyflake-upstream']);

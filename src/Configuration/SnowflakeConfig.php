@@ -21,6 +21,7 @@ final readonly class SnowflakeConfig
     /**
      * @param callable():mixed|null $nodeResolver
      * @param DateTimeInterface|int|null $customEpoch Epoch in milliseconds or a date-time value.
+     * @throws \InvalidArgumentException
      */
     public function __construct(
         public int $datacenterId = 0,
